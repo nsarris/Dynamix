@@ -160,6 +160,28 @@ namespace Dynamix.Expressions
             return Expression.Lambda<Func<object, TMember, bool>>(Expression.Equal(body, param2), param, param2);
         }
 
+        public static Expression<Func<T, bool>> GetPredicate<T>(IEnumerable<Tuple<PropertyInfoEx,object>> values)
+        {
+            //var ids = GetKeyProperties(typeof(T)).Select(x => PropertyInfoEx.GetCached(x));
+
+            var p = Expression.Parameter(typeof(T));
+            BinaryExpression e = null;
+
+            foreach (var v in values)
+            {
+                var eqEx = Expression.Equal(
+                    Expression.Property(p, v.Item1.PropertyInfo),
+                    Expression.Constant(v.Item2, v.Item1.PropertyInfo.PropertyType));
+
+                if (e == null)
+                    e = eqEx;
+                else
+                    e = Expression.AndAlso(e, eqEx);
+            }
+
+            return Expression.Lambda<Func<T, bool>>(e, p);
+        }
+
         public static Expression<Func<T, bool>> GetPredicate<T>(T obj, IEnumerable<PropertyInfoEx> props)
         {
             return GetPredicate(obj, props.Select(x => x.PropertyInfo));

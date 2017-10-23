@@ -9,7 +9,7 @@ namespace Dynamix.PredicateBuilder
     public class ComplexNode : NodeBase
     {
         public List<NodeBase> Nodes { get; set; }
-
+        public override bool HasChildren { get { return Nodes.Any(); } }
         public override string GetStringExpression()
         {
             string ret = string.Empty;

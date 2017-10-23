@@ -10,6 +10,7 @@ namespace Dynamix.PredicateBuilder
     {
         public string Property { get; set; }
         new public ExpressionOperator Operator { get; set; }
+        public override bool HasChildren { get { return false; } }
         public object Value { get; set; }
 
         public override string GetStringExpression()

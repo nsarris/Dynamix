@@ -11,6 +11,7 @@ namespace Dynamix.PredicateBuilder
     public abstract class NodeBase
     {
         public LogicalOperator Operator { get; set; }
+        public abstract bool HasChildren { get; }
         public abstract string GetStringExpression();
 
         public LambdaExpression GetLambdaExpression(Type Type, ParameterExpression input = null)

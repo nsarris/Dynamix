@@ -22,18 +22,33 @@ namespace Dynamix.Expressions.Extensions
             visitor.Visit(expression);
         }
 
-        public static List<ParameterExpression> GetParametersOfType<T>(this Expression expression, Func<ParameterExpression, Expression> visitorFunc)
+        public static List<ParameterExpression> GetParameters(this Expression expression)
         {
             var r = new List<ParameterExpression>();
-            var visitor = new ExpressionForEachOfTypeVisitor<ParameterExpression>((ParameterExpression p) =>
-            {
-                if (p.Type == typeof(T))
+            var visitor = new ExpressionForEachOfTypeVisitor<ParameterExpression>(
+                (ParameterExpression p) =>
+                {
                     r.Add(p);
-
-                return p;
-            });
+                    return p;
+                });
             visitor.Visit(expression);
-            return r;
+            return r.Distinct().ToList();
+        }
+
+
+        public static List<ParameterExpression> GetParametersOfType<T>(this Expression expression)
+        {
+            var r = new List<ParameterExpression>();
+            var visitor = new ExpressionForEachOfTypeVisitor<ParameterExpression>(
+                (ParameterExpression p) =>
+                {
+                    if (p.Type == typeof(T))
+                        r.Add(p);
+
+                    return p;
+                });
+            visitor.Visit(expression);
+            return r.Distinct().ToList();
         }
 
         public static ParameterExpression GetFirstParameterOfType<T>(this Expression expression)

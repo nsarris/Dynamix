@@ -49,8 +49,7 @@ namespace Dynamix
             {
                 if (Overwrite)
                 {
-                    DynamicTypeCachedDescriptor td = null;
-                    if (cache.TryGetValue(TypeName, out td))
+                    if (cache.TryGetValue(TypeName, out DynamicTypeCachedDescriptor td))
                     {
                         if (td.Fields.Count() == fields.Count()
                         && td.Fields.Where(x => fields.Any(
@@ -129,8 +128,11 @@ namespace Dynamix
                 ConstructorBuilder constructor = tb.DefineDefaultConstructor(MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
 
                 foreach (var field in fields)
-                    CreateProperty(tb, field.Name, field.Type);
+                {
+                    CreateProperty(tb, field.Name, field.Type, field.AttributeBuilders);
+                }
 
+                
                 Type objectType = tb.CreateType();
                 return objectType;
             }
@@ -157,7 +159,7 @@ namespace Dynamix
             return tb;
         }
 
-        private static void CreateProperty(TypeBuilder tb, string propertyName, Type propertyType)
+        private static void CreateProperty(TypeBuilder tb, string propertyName, Type propertyType, IEnumerable<CustomAttributeBuilder> attributeBuilders = null)
         {
             FieldBuilder fieldBuilder = tb.DefineField("_" + propertyName, propertyType, FieldAttributes.Private);
 
@@ -191,6 +193,10 @@ namespace Dynamix
 
             propertyBuilder.SetGetMethod(getPropMthdBldr);
             propertyBuilder.SetSetMethod(setPropMthdBldr);
+
+            if (attributeBuilders != null)
+                foreach(var attributeBuilder in attributeBuilders)
+                    propertyBuilder.SetCustomAttribute(attributeBuilder);
         }
     }
 }

@@ -89,7 +89,7 @@ namespace Dynamix
                 PropertyPath = path,
                 SourceExpression = sourceExpression,
                 TargetProperty = TargetProperty,
-                TargetType = OverrideType == null ? sourceExpression.ReturnType : OverrideType,
+                TargetType = OverrideType ?? sourceExpression.ReturnType,
                 AsNullable = AsNullable
             });
 

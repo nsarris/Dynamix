@@ -6,16 +6,17 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Dynamix.Reflection;
 
 namespace Dynamix
 {
     public class DynamicQueryable : IQueryable, IEnumerable<object>
     {
-        IQueryable source;
+        protected IQueryable Source { get; private set; }
 
         public DynamicQueryable(IQueryable query)
         {
-            this.source = query;
+            this.Source = query;
         }
 
         protected enum Functions
@@ -112,136 +113,150 @@ namespace Dynamix
 
         public DynamicQueryable Where(LambdaExpression predicate)
         {
-            if (predicate == null) throw new ArgumentNullException("predicate");
-            return new DynamicQueryable((IQueryable)Execute(source, Functions.Where, predicate));
+            if (predicate == null) //throw new ArgumentNullException("predicate");
+                return this;
+            return new DynamicQueryable((IQueryable)Execute(Source, Functions.Where, predicate));
         }
 
         public DynamicQueryable Select(LambdaExpression selector)
         {
             if (selector == null) throw new ArgumentNullException("selector");
-            return new DynamicQueryable((IQueryable)Execute(source, Functions.Select, selector));
+            return new DynamicQueryable((IQueryable)Execute(Source, Functions.Select, selector));
         }
 
         public DynamicOrderedQueryable OrderBy(LambdaExpression ordering)
         {
             if (ordering == null) throw new ArgumentNullException("ordering");
-            return new DynamicOrderedQueryable((IOrderedQueryable)Execute(source, Functions.OrderBy, ordering));
+            return new DynamicOrderedQueryable((IOrderedQueryable)Execute(Source, Functions.OrderBy, ordering));
         }
 
         public DynamicOrderedQueryable OrderByDescending(LambdaExpression ordering)
         {
             if (ordering == null) throw new ArgumentNullException("ordering");
-            return new DynamicOrderedQueryable((IOrderedQueryable)Execute(source, Functions.OrderByDescending, ordering));
+            return new DynamicOrderedQueryable((IOrderedQueryable)Execute(Source, Functions.OrderByDescending, ordering));
         }
 
         public DynamicOrderedQueryable OrderBy(string ordering)
         {
             if (string.IsNullOrWhiteSpace(ordering)) throw new ArgumentNullException("ordering");
-            var first = true;
             DynamicOrderedQueryable res = null;
-            foreach (var order in ParseOrdering(source.ElementType, ordering))
+            foreach (var order in ParseOrdering(Source.ElementType, ordering))
             {
-                if (first)
+                if (res == null)
                     res = (order.Item2 ? OrderByDescending(order.Item1) : OrderBy(order.Item1));
                 else
                     res = (order.Item2 ? res.ThenByDescending(order.Item1) : res.ThenBy(order.Item1));
-                first = false;
             }
             return res;
         }
 
+        public DynamicOrderedQueryable OrderBy(IEnumerable<OrderItem> orderItems)
+        {
+            if (orderItems == null) throw new ArgumentNullException("Order items cannot be null");
+            DynamicOrderedQueryable res = null;
+            foreach (var item in orderItems)
+            {
+                var l = CreateMemberLambda(Source.ElementType, item.PropertyName);
+                if (res == null)
+                    res = (item.IsDescending ? OrderByDescending(l) : OrderBy(l));
+                else
+                    res = (item.IsDescending ? res.ThenByDescending(l) : res.ThenBy(l));
+            }
+            return res ?? new DynamicOrderedQueryable(Source);
+        }
+
         public DynamicQueryable Take(int count)
         {
-            return new DynamicQueryable((IQueryable)Execute(source, Functions.Take, Expression.Constant(count)));
+            return new DynamicQueryable((IQueryable)Execute(Source, Functions.Take, Expression.Constant(count)));
         }
 
         public DynamicQueryable Skip(int count)
         {
-            return new DynamicQueryable((IQueryable)Execute(source, Functions.Skip, Expression.Constant(count)));
+            return new DynamicQueryable((IQueryable)Execute(Source, Functions.Skip, Expression.Constant(count)));
         }
 
         public DynamicQueryable GroupBy(LambdaExpression keySelector)
         {
             if (keySelector == null) throw new ArgumentNullException("keySelector");
-            return new DynamicQueryable((IQueryable)Execute(source, Functions.GroupBy, keySelector));
+            return new DynamicQueryable((IQueryable)Execute(Source, Functions.GroupBy, keySelector));
         }
 
         public DynamicQueryable GroupBy(LambdaExpression keySelector, LambdaExpression elementSelector)
         {
             if (keySelector == null) throw new ArgumentNullException("keySelector");
             if (elementSelector == null) throw new ArgumentNullException("elementSelector");
-            return new DynamicQueryable((IQueryable)Execute(source, Functions.GroupBy, keySelector, elementSelector));
+            return new DynamicQueryable((IQueryable)Execute(Source, Functions.GroupBy, keySelector, elementSelector));
         }
 
         public bool Any(LambdaExpression predicate = null)
         {
-            return (bool)Execute(source, Functions.Any, predicate);
+            return (bool)Execute(Source, Functions.Any, predicate);
         }
 
         public int Count(LambdaExpression predicate = null)
         {
-            return (int)Execute(source, Functions.Count, predicate);
+            return (int)Execute(Source, Functions.Count, predicate);
         }
 
         public DynamicQueryable Distinct(LambdaExpression predicate = null)
         {
-            return new DynamicQueryable((IQueryable)Execute(source, Functions.Distinct, predicate));
+            return new DynamicQueryable((IQueryable)Execute(Source, Functions.Distinct, predicate));
         }
 
         public object First(LambdaExpression predicate = null)
         {
-            return Execute(source, Functions.First, predicate);
+            return Execute(Source, Functions.First, predicate);
         }
 
         public object FirstOrDefault(LambdaExpression predicate = null)
         {
-            return Execute(source, Functions.FirstOrDefault, predicate);
+            return Execute(Source, Functions.FirstOrDefault, predicate);
         }
 
         public object Single(LambdaExpression predicate = null)
         {
-            return Execute(source, Functions.Single, predicate);
+            return Execute(Source, Functions.Single, predicate);
         }
 
         public object SingleOrDefault(LambdaExpression predicate = null)
         {
-            return Execute(source, Functions.SingleOrDefault, predicate);
+            return Execute(Source, Functions.SingleOrDefault, predicate);
         }
 
         public object Last(LambdaExpression predicate = null)
         {
-            return Execute(source, Functions.Single, predicate);
+            return Execute(Source, Functions.Single, predicate);
         }
 
         public object LastOrDefault(LambdaExpression predicate = null)
         {
-            return Execute(source, Functions.SingleOrDefault, predicate);
+            return Execute(Source, Functions.SingleOrDefault, predicate);
         }
 
         public object Min(LambdaExpression predicate = null)
         {
-            return Execute(source, Functions.Min, predicate);
+            return Execute(Source, Functions.Min, predicate);
         }
 
         public object Max(LambdaExpression predicate = null)
         {
-            return Execute(source, Functions.Max, predicate);
+            return Execute(Source, Functions.Max, predicate);
         }
 
         public object Average(LambdaExpression predicate = null)
         {
-            return Execute(source, Functions.Average, predicate);
+            return Execute(Source, Functions.Average, predicate);
         }
 
         public object Sum(LambdaExpression predicate = null)
         {
-            return Execute(source, Functions.Sum, predicate);
+            return Execute(Source, Functions.Sum, predicate);
         }
 
         public override string ToString()
         {
             //return (string)Execute(source, Functions.ToString);
-            return source.ToString();
+            return Source.ToString();
         }
 
         public object ToCastList(Type ListType = null)
@@ -254,7 +269,7 @@ namespace Dynamix
             var method2 = typeof(Enumerable).GetMethod("ToList")
                 .MakeGenericMethod(ListType);
 
-            var castData = method.Invoke(null, new object[] { source });
+            var castData = method.Invoke(null, new object[] { Source });
             var retData = method2.Invoke(null, new object[] { castData });
 
             return retData;
@@ -279,17 +294,17 @@ namespace Dynamix
 
         public IQueryable<T> ToQueryable<T>()
         {
-            return (IQueryable<T>)source.Provider.CreateQuery(source.Expression);
+            return (IQueryable<T>)Source.Provider.CreateQuery(Source.Expression);
         }
 
         public IQueryable<T> AsQueryable<T>()
         {
-            return (IQueryable<T>)source;
+            return (IQueryable<T>)Source;
         }
 
         public IQueryable AsQueryable()
         {
-            return (IQueryable)source;
+            return (IQueryable)Source;
         }
 
         private List<Tuple<LambdaExpression, bool>> ParseOrdering(Type entityType, string ordering)
@@ -327,32 +342,32 @@ namespace Dynamix
 
         public Type ElementType
         {
-            get { return source.ElementType; }
+            get { return Source.ElementType; }
         }
 
         public Expression Expression
         {
-            get { return source.Expression; }
+            get { return Source.Expression; }
         }
 
         public IQueryProvider Provider
         {
-            get { return source.Provider; }
+            get { return Source.Provider; }
         }
 
         public IEnumerator GetEnumerator()
         {
-            return source.GetEnumerator();
+            return Source.GetEnumerator();
         }
 
         IEnumerator<object> IEnumerable<object>.GetEnumerator()
         {
-            var en = source.GetEnumerator();
+            var en = Source.GetEnumerator();
             while (en.MoveNext())
                 yield return en.Current;
         }
 
-        private static LambdaExpression CreateMemberLambda(Type EntityType, string propertyName)
+        internal static LambdaExpression CreateMemberLambda(Type EntityType, string propertyName)
         {
             var param = Expression.Parameter(EntityType, "x");
             Expression body = param;
@@ -394,9 +409,11 @@ namespace Dynamix
 
                         if (setMethods != null)
                         {
-                            efmethods = new EFMethods();
-                            efmethods.SetOfT = setMethods.Where(x => x.Args.Length == 1).Single().Method.MakeGenericMethod(entityType);
-                            efmethods.Set = setMethods.Where(x => x.Args.Length == 0).Single().Method;
+                            efmethods = new EFMethods
+                            {
+                                SetOfT = setMethods.Where(x => x.Args.Length == 1).Single().Method,
+                                Set = setMethods.Where(x => x.Args.Length == 0).Single().Method
+                            };
                         }
                     }
                 }
@@ -408,32 +425,107 @@ namespace Dynamix
             {
                 if (StateTracking)
                 {
-                    return new DynamicQueryable((IQueryable)efmethods.SetOfT.Invoke(dbContext, null));
+                    return new DynamicQueryable((IQueryable)efmethods.SetOfT.MakeGenericMethod(entityType).Invoke(dbContext, null));
                 }
                 else
                     return new DynamicQueryable((IQueryable)efmethods.Set.Invoke(dbContext, new[] { entityType }));
+            }
+        }
+
+        private class LinqToDBMethods
+        {
+            public MethodInfo GetTableT;
+        }
+
+        static LinqToDBMethods linqToDBMethods;
+        static object l2dblock = new object();
+        public static DynamicQueryable FromLinqToDBDataConnection(object dataConnection, Type modelType)
+        {
+            if (linqToDBMethods == null)
+            {
+                lock (l2dblock)
+                {
+                    if (linqToDBMethods == null)
+                    {
+                        linqToDBMethods = new LinqToDBMethods()
+                        {
+                            GetTableT = dataConnection.GetType().GetMethod("GetTable", new Type[] { })
+                        };
+                    }
+                }
+            }
+
+            if (linqToDBMethods.GetTableT == null)
+                throw new Exception("GetTable method not found on DataConnection");
+            else
+            {
+                return new DynamicQueryable((IQueryable)linqToDBMethods.GetTableT.MakeGenericMethodCached(modelType).Invoke(dataConnection, new object [0]));
             }
         }
     }
 
     public class DynamicOrderedQueryable : DynamicQueryable, IOrderedQueryable
     {
-        IOrderedQueryable source;
+        internal DynamicOrderedQueryable(IQueryable query)
+            : base(query.AsQueryable())
+        {
+            
+        }
         public DynamicOrderedQueryable(IOrderedQueryable query)
             : base(query)
         {
-            this.source = query;
+            
         }
         public DynamicOrderedQueryable ThenBy(LambdaExpression ordering)
         {
             if (ordering == null) throw new ArgumentNullException("ordering");
-            return new DynamicOrderedQueryable((IOrderedQueryable)Execute(source, Functions.ThenBy, ordering));
+            if (Source is IOrderedQueryable)
+                return new DynamicOrderedQueryable((IOrderedQueryable)Execute(Source, Functions.ThenBy, ordering));
+            else
+                return OrderBy(ordering);
         }
 
         public DynamicOrderedQueryable ThenByDescending(LambdaExpression ordering)
         {
             if (ordering == null) throw new ArgumentNullException("ordering");
-            return new DynamicOrderedQueryable((IOrderedQueryable)Execute(source, Functions.ThenByDescending, ordering));
+            if (Source is IOrderedQueryable)
+                return new DynamicOrderedQueryable((IOrderedQueryable)Execute(Source, Functions.ThenByDescending, ordering));
+            else
+                return OrderByDescending(ordering);
+        }
+
+        public DynamicOrderedQueryable ThenBy(IEnumerable<OrderItem> orderItems)
+        {
+            if (orderItems == null || !orderItems.Any()) throw new ArgumentNullException("Order items cannot be null or empty");
+            DynamicOrderedQueryable res = null;
+            foreach (var item in orderItems)
+            {
+                var l = CreateMemberLambda(Source.ElementType, item.PropertyName);
+                if (Source is IOrderedQueryable)
+                    res = (item.IsDescending ? res.ThenByDescending(l) : res.ThenBy(l));
+                else
+                    res = (item.IsDescending ? OrderByDescending(l) : OrderBy(l));
+            }
+            return res;
         }
     }
+
+    public class OrderItem
+    {
+        public OrderItem(string propertyName, bool isDescending)
+        {
+            PropertyName = propertyName;
+            IsDescending = isDescending;
+        }
+
+        public OrderItem(string propertyName, string direction)
+        {
+            PropertyName = propertyName;
+            IsDescending = (StringComparer.OrdinalIgnoreCase.Compare(direction, "DESC") == 0);
+        }
+
+        public string PropertyName { get; set; }
+        public bool IsDescending { get; set; }
+    }
+
 }

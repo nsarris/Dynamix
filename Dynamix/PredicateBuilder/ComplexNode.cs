@@ -8,7 +8,7 @@ namespace Dynamix.PredicateBuilder
 {
     public class ComplexNode : NodeBase
     {
-        public List<NodeBase> Nodes { get; set; }
+        public List<NodeBase> Nodes { get; set; } = new List<NodeBase>();
         public override bool HasChildren { get { return Nodes.Any(); } }
         public override string GetStringExpression()
         {
@@ -43,6 +43,9 @@ namespace Dynamix.PredicateBuilder
                 {
                     switch (node.Operator)
                     {
+                        case LogicalOperator.Start:
+                            e = node.GetExpression(Type);
+                            break;
                         case LogicalOperator.And:
                             e = Expression.AndAlso(e, node.GetExpression(Type));
                             break;

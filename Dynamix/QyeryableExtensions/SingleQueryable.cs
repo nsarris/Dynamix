@@ -41,6 +41,11 @@ namespace Dynamix.QueryableExtensions
             return new SingleQueryable<TResult>(Queryable.Select(selector));
         }
 
+        public SingleQueryable<TResult> Cast<TResult>()
+        {
+            return new SingleQueryable<TResult>(Queryable.Cast<TResult>());
+        }
+
         public override string ToString()
         {
             return Queryable.ToString();

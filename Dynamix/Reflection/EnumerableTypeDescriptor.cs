@@ -71,6 +71,7 @@ namespace Dynamix.Reflection
             AddType(typeof(ICollection<>), IsReadOnly: true, IsIndexed: false, EnumerableType: EnumerableTypeEnum.Collection);
             AddType(typeof(IReadOnlyCollection<>), IsReadOnly: true, IsIndexed: false, EnumerableType: EnumerableTypeEnum.Collection);
             AddType(typeof(IDictionary), IsReadOnly: false, IsIndexed: true, EnumerableType: EnumerableTypeEnum.Dictionary);
+            AddType(typeof(IReadOnlyDictionary<,>), IsReadOnly: true, IsIndexed: false, EnumerableType: EnumerableTypeEnum.Dictionary);
             AddType(typeof(IDictionary<,>), IsReadOnly: false, IsIndexed: true,  EnumerableType: EnumerableTypeEnum.Dictionary);
         }
 

@@ -54,6 +54,10 @@
     <Compile Include="Expressions\Builders\MethodInvokerLambdaBuilder.cs" />
     <Compile Include="QyeryableExtensions\QyerableExtensions.cs" />
     <Compile Include="QyeryableExtensions\SingleQueryable.cs" />
+    <Compile Include="Reflection\Assembly\AssemblyArchitectureResolver.cs" />
+    <Compile Include="Reflection\Assembly\AssemblyReflectionManager.cs" />
+    <Compile Include="Reflection\Assembly\AssemblyReflectionProxy.cs" />
+    <Compile Include="Reflection\Assembly\AssemblyReflector.cs" />
     <Compile Include="Reflection\Cache\ConstructorInfoExCache.cs" />
     <Compile Include="Reflection\Cache\MethodInfoExCache.cs" />
     <Compile Include="Reflection\Extensions\ConstructorInfoExTypeExtensions.cs" />

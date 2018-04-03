@@ -17,6 +17,17 @@ namespace Dynamix.PredicateBuilder
         LessThan,
         GreaterThan,
         LessThanOrEqual,
-        GreaterThanOrEqual
+        GreaterThanOrEqual,
+
+        IsContainedIn,
+        IsNotContainedIn,
+
+        IsNull,
+        IsEmpty,
+        IsNullOrEmpty,
+
+        IsNotNull,
+        IsNotEmpty,
+        IsNotNullOrEmpty
     }
 }

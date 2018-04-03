@@ -138,14 +138,14 @@ namespace Dynamix
             return returnType;
         }
 
-        public LambdaExpression CreateSelector(Type ModelType, Type returnType = null)
+        public LambdaExpression CreateSelector(Type ModelType, Type returnType = null, IEnumerable<string> includedProperties = null)
         {
             var inParam = Expression.Parameter(ModelType, "model");
             if (returnType == null)
                 returnType = GetReturnType("tmpDynamicDTO_" + random.Next().ToString());
             
             var memberAssignments = new List<MemberAssignment>();
-            foreach (var p in props)
+            foreach (var p in (includedProperties == null ? props : props.Where(x => includedProperties.Any(ip => StringComparer.OrdinalIgnoreCase.Compare(ip, x.TargetProperty ?? x.PropertyName) == 0))))
             {
                 Expression memberExpression;
 
@@ -161,10 +161,12 @@ namespace Dynamix
 
                     memberExpression = memberlambda.Body;
                 }
+                var targetProperty = returnType.GetProperty(p.TargetProperty);
+
                 memberAssignments.Add(
                 Expression.Bind(
-                    returnType.GetProperty(p.TargetProperty),
-                    memberExpression
+                    targetProperty,
+                    ExpressionEx.ConvertIfNeeded(memberExpression, targetProperty.PropertyType)
                 ));
             }
 

@@ -95,7 +95,7 @@ namespace Dynamix.Reflection
             throw new ArgumentException("Expression is not a member accessor", "expression");
         }
 
-        public static void SetValue<T, TMember>(T obj, TMember value, Expression<Func<T, TMember>> property)
+        public static void SetValue<T, TMember>(T obj, Expression<Func<T, TMember>> property, TMember value)
         {
             var w = new PropertyInfoExWrapper<T>(obj);
             w.Set(GetMemberName(property), value);
@@ -133,7 +133,7 @@ namespace Dynamix.Reflection
 
         public void SetValue<TMember>(T obj, TMember value, Expression<Func<T, TMember>> property)
         {
-            ReflectionHelper.SetValue(obj, value, property);
+            ReflectionHelper.SetValue(obj, property, value);
         }
 
         public TMember GetValue<TMember>(T obj, Expression<Func<T, TMember>> property)

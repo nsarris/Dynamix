@@ -1,4 +1,5 @@
 ﻿using Dynamix;
+using Dynamix.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,11 +16,57 @@ namespace Dynamix.PredicateBuilder
             var property = Type.GetProperty(Property);
             var propertyType = property.PropertyType;
 
-            var left = Expression.Property(input == null ? Expression.Variable(Type, "x") : input, property);
+            var left = Expression.Property(input ?? Expression.Variable(Type, "x"), property);
             Expression right = null;
 
+            if (Value != null && Value.GetType() != typeof(string))
+            {
+                var iface = Value.GetType().GetInterfaces().Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IEnumerable<>)).FirstOrDefault();
+                if (iface != null)
+                {
+                    var enumerableType = iface.GetGenericArguments().First();
+                    if (Operator == ExpressionOperator.IsContainedIn)
+                    {
+                        return GetConstantArrayExpression(Type, Property, Value, left);
+                    }
+                    else if (Operator == ExpressionOperator.IsNotContainedIn)
+                    {
+                        return Expression.Not(GetConstantArrayExpression(Type, Property, Value, left));
+                    }
+                    else
+                        throw new Exception("Enumerable values can only be used with IsContainedIn and IsNotContainedIn");
+                }
+            }
 
-            if (IsNumericType(propertyType))
+            if (Operator == ExpressionOperator.IsEmpty || Operator == ExpressionOperator.IsNotEmpty)
+            {
+                if (propertyType == typeof(string))
+                {
+                    Expression e = Expression.Equal(left, Expression.Constant(string.Empty));
+                    if (Operator == ExpressionOperator.IsNotEmpty) e = Expression.Not(e);
+                    return e;
+                }
+                else
+                    throw new Exception("IsEmpty can only be used with strings");
+            }
+            else if ((Operator == ExpressionOperator.IsNotNullOrEmpty | Operator == ExpressionOperator.IsNullOrEmpty) 
+                && propertyType == typeof(string))
+            {
+                Expression e = Expression.Or(
+                        Expression.Equal(left, Expression.Constant(string.Empty)),
+                        Expression.Equal(left, Expression.Constant(null)));
+                if (Operator == ExpressionOperator.IsNotNullOrEmpty) e = Expression.Not(e);
+                return e;
+            }
+            else if (Operator == ExpressionOperator.IsNullOrEmpty || Operator == ExpressionOperator.IsNull)
+            {
+                return Expression.Equal(left, Expression.Constant(null));
+            }
+            else if (Operator == ExpressionOperator.IsNotNullOrEmpty || Operator == ExpressionOperator.IsNotNull)
+            {
+                return Expression.Not(Expression.Equal(left, Expression.Constant(null)));
+            }
+            else if (IsNumericType(propertyType))
             {
                 #region Integral value types
 
@@ -92,9 +139,19 @@ namespace Dynamix.PredicateBuilder
             }
             else if (propertyType == typeof(bool) || propertyType == typeof(bool?))
             {
-                var v = Convert.ToBoolean(Value);
-                right = Expression.Constant(v);
+                if (Value == null || (Value.ToString() == "null"))
+                {
+                    if (propertyType == typeof(bool?))
+                        Value = (bool?)null;
+                    else
+                        Value = false;
+                }
+                else if (Value.ToString().ToUpper() == "TRUE" || (Value.ToString().ToUpper() != "FALSE" && Value.ToString() != "0"))
+                    Value = true;
+                else
+                    Value = false;
 
+                right = Expression.Constant(Value);
                 if (propertyType == typeof(bool?))
                     right = Expression.Convert(right, typeof(bool?));
 
@@ -110,10 +167,20 @@ namespace Dynamix.PredicateBuilder
             }
             else if (propertyType == typeof(DateTime) || propertyType == typeof(DateTime?))
             {
-                var v = Convert.ToDateTime(Value);
-                right = Expression.Constant(v);
 
-                if (propertyType == typeof(DateTime?))
+                if (Value == null || Value.ToString() == "" || (Value.ToString() == "null"))
+                {
+                    if (propertyType == typeof(DateTime?))
+                        Value = (DateTime?)null;
+                    else
+                        Value = default(DateTime);
+                }
+                else
+                    Value = Convert.ToDateTime(Value);
+
+                right = Expression.Constant(Value);
+
+                if (propertyType == typeof(DateTime?) && !(Value is DateTime?))
                     right = Expression.Convert(right, typeof(DateTime?));
 
                 return GetCommonExpression(left, Operator, right);
@@ -121,6 +188,8 @@ namespace Dynamix.PredicateBuilder
             else if (propertyType == typeof(string))
             {
                 var v = Value.ToString();
+                if (v == "null")
+                    v = null;
                 right = Expression.Constant(v);
 
                 switch (Operator)
@@ -137,6 +206,10 @@ namespace Dynamix.PredicateBuilder
                         return Expression.Equal(left, right);
                     case ExpressionOperator.DoesNotEqual:
                         return Expression.NotEqual(left, right);
+                    case ExpressionOperator.IsContainedIn:
+                        return Expression.Call(right, typeof(string).GetMethod("Contains"), left);
+                    case ExpressionOperator.IsNotContainedIn:
+                        return Expression.Not(Expression.Call(right, typeof(string).GetMethod("Contains"), left));
                     default:
                         throw new NotImplementedException();
                 }
@@ -155,7 +228,7 @@ namespace Dynamix.PredicateBuilder
                 return GetCommonExpression(left, Operator, right);
             }
 
-            else if (isEnumOrNullableEnum(propertyType))
+            else if (IsEnumOrNullableEnum(propertyType))
             {
                 var v = Convert.ToInt32(Value);
                 right = Expression.Constant(v);
@@ -166,6 +239,15 @@ namespace Dynamix.PredicateBuilder
             else
                 throw new NotImplementedException();
 
+        }
+
+        private static Expression GetConstantArrayExpression(Type type, string property, object value, Expression source)
+        {
+            var propType = type.GetPropertyEx(property).PropertyInfo.PropertyType;
+            var castedValue = new DynamicQueryable(((System.Collections.IEnumerable)value).AsQueryable()).ToCastList(propType);
+
+            return Expression.Call(
+                   typeof(Enumerable), "Contains", new[] { propType }, Expression.Constant(castedValue), source);
         }
 
 
@@ -203,13 +285,18 @@ namespace Dynamix.PredicateBuilder
                     throw new NotImplementedException();
             }
         }
-        private static bool isEnumOrNullableEnum(Type Type)
+        private static bool IsEnumOrNullableEnum(Type Type)
         {
             if (Type.IsEnum)
                 return true;
 
             Type u = Nullable.GetUnderlyingType(Type);
             return (u != null) && u.IsEnum;
+        }
+
+        private static bool IsNullable(Type Type)
+        {
+            return Nullable.GetUnderlyingType(Type) != null;
         }
     }
 }

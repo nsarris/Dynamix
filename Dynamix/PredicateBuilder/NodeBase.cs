@@ -16,7 +16,7 @@ namespace Dynamix.PredicateBuilder
 
         public LambdaExpression GetLambdaExpression(Type Type, ParameterExpression input = null)
         {
-            input = input == null ? Expression.Parameter(Type) : input;
+            input = input ?? Expression.Parameter(Type);
             var r = Expression.Lambda(GetExpression(Type), input);
             r = EpxressionParameterReplacer.Replace(r, "x", input);
             return r;
@@ -24,7 +24,7 @@ namespace Dynamix.PredicateBuilder
 
         public Expression<Func<T, bool>> GetLambdaExpression<T>(ParameterExpression input = null)
         {
-            input = input == null ? Expression.Parameter(typeof(T)) : input;
+            input = input ?? Expression.Parameter(typeof(T));
             var expr = GetExpression(typeof(T));
             var lamda = Expression.Lambda<Func<T, bool>>(expr, input);
 

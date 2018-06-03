@@ -48,8 +48,8 @@ namespace Dynamix.Reflection
                 {
                     foreach (var t in signature)
                     {
-                        if ((!object.ReferenceEquals(p, null) && !t.IsAssignableFrom(p.GetType()))
-                            || (object.ReferenceEquals(p, null) && !t.IsByRef))
+                        if ((!(p is null) && !t.IsAssignableFrom(p.GetType()))
+                            || (p is null && !t.IsByRef))
                         {
                             noMatch = true;
                             break;

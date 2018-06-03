@@ -63,8 +63,8 @@ namespace Dynamix.Reflection.DelegateBuilders
 
         public GenericInstanceInvoker BuildGenericInstance(MethodInfo MethodInfo)
         {
-            if (MethodInfo.IsStatic)
-                throw new ArgumentException("Method is not instance", nameof(MethodInfo));
+            //if (MethodInfo.IsStatic)
+                //throw new ArgumentException("Method is not instance", nameof(MethodInfo));
 
             return (GenericInstanceInvoker)BuildGenericInvoker(MethodInfo, true);
         }
@@ -141,7 +141,7 @@ namespace Dynamix.Reflection.DelegateBuilders
         public TDelegate BuildFromDelegate<TDelegate>(MethodInfo methodInfo)
             where TDelegate : class
         {
-            return (TDelegate)Convert.ChangeType(BuildFromDelegate(methodInfo, typeof(TDelegate)),typeof(Delegate));
+            return (TDelegate)(object)BuildFromDelegate(methodInfo, typeof(TDelegate));
         }
 
         /// INSTANCE ///

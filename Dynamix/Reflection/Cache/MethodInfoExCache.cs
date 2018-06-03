@@ -18,13 +18,13 @@ namespace Dynamix.Reflection
 
         public static MethodInfoEx GetMethodEx(MethodInfo methodInfo)
         {
-            if (!cache.TryGetValue(methodInfo, out var prop))
+            if (!cache.TryGetValue(methodInfo, out var method))
             {
-                prop = new MethodInfoEx(methodInfo);
-                cache.TryAdd(methodInfo, prop);
+                method = new MethodInfoEx(methodInfo);
+                cache.TryAdd(methodInfo, method);
             }
 
-            return prop;
+            return method;
         }
 
         

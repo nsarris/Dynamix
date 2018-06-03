@@ -109,8 +109,10 @@ namespace Dynamix.DynamicLinq
 
     internal class Signature : IEquatable<Signature>
     {
-        public DynamicProperty[] properties;
-        public int hashCode;
+        readonly DynamicProperty[] properties;
+        readonly int hashCode;
+
+        public DynamicProperty[] Properties => properties;
 
         public Signature(IEnumerable<DynamicProperty> properties)
         {
@@ -204,7 +206,7 @@ namespace Dynamix.DynamicLinq
                 Type type;
                 if (!classes.TryGetValue(signature, out type))
                 {
-                    type = CreateDynamicClass(signature.properties);
+                    type = CreateDynamicClass(signature.Properties);
                     classes.Add(signature, type);
                 }
 

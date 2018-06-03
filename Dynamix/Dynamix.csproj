@@ -25,6 +25,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <LangVersion>7.1</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -33,6 +34,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <LangVersion>7.1</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -40,18 +42,28 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.Entity" />
+    <Reference Include="System.Linq.Dynamic, Version=1.0.6132.35681, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\Users\nsarris\Documents\Visual Studio 2017\Projects\ConsoleApp7\packages\System.Linq.Dynamic.1.0.7\lib\net40\System.Linq.Dynamic.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DynamicQueryable\DynamicQueryable.cs" />
+    <Compile Include="DynamicType\DynamicTypeCachedDescriptor.cs" />
+    <Compile Include="DynamicType\DynamicTypeProperty.cs" />
+    <Compile Include="DynamicType\CustomAttributeBuilderFactory.cs" />
     <Compile Include="DynamicType\DynamicDTODescriptor.cs" />
-    <Compile Include="DynamicLinq\DynamicLinq.cs" />
-    <Compile Include="DynamicLinq\DynamicLinqParser.cs" />
-    <Compile Include="DynamicLinq\DynamicLinqExtensions.cs" />
     <Compile Include="DynamicType\DynamicType.cs" />
     <Compile Include="DynamicType\DynamicTypeBuilder.cs" />
     <Compile Include="DynamicType\DynamicTypeDescriptor.cs" />
     <Compile Include="Expressions\Builders\ConstructorInvokerLambdaBuilder.cs" />
     <Compile Include="Expressions\Builders\MethodInvokerLambdaBuilder.cs" />
+    <Compile Include="Expressions\Visitors\ExpressionForEachOfTypeVisitor.cs" />
+    <Compile Include="Helpers\NumericValueParser.cs" />
+    <Compile Include="PredicateBuilder\ExpressionNodeVisitor.cs" />
+    <Compile Include="PredicateBuilder\INodeVisitor.cs" />
+    <Compile Include="Helpers\NumericTypeHelper.cs" />
+    <Compile Include="PredicateBuilder\PredicateBuilder.cs" />
+    <Compile Include="PredicateBuilder\PredicateTreeBuilder.cs" />
     <Compile Include="QyeryableExtensions\QyerableExtensions.cs" />
     <Compile Include="QyeryableExtensions\SingleQueryable.cs" />
     <Compile Include="Reflection\Assembly\AssemblyArchitectureResolver.cs" />
@@ -63,19 +75,19 @@
     <Compile Include="Reflection\Extensions\ConstructorInfoExTypeExtensions.cs" />
     <Compile Include="Reflection\Extensions\MethodInfoExTypeExtensions.cs" />
     <Compile Include="Reflection\MemberDelegateBuilders\CompiledExpressionCache.cs" />
-    <Compile Include="Expressions\EpxressionParameterReplacer.cs" />
+    <Compile Include="Expressions\Visitors\EpxressionParameterReplacer.cs" />
     <Compile Include="Expressions\ExpressionBuilder.cs" />
     <Compile Include="Expressions\ExpressionEx.cs" />
     <Compile Include="Expressions\ExpressionExtensions.cs" />
-    <Compile Include="Expressions\ExpressionForEachVisitor.cs" />
+    <Compile Include="Expressions\Visitors\ExpressionForEachVisitor.cs" />
     <Compile Include="Expressions\ExpressionParser.cs" />
-    <Compile Include="Expressions\LambdaParameterReplacer.cs" />
+    <Compile Include="Expressions\Visitors\LambdaParameterReplacer.cs" />
     <Compile Include="Helpers\HashKey.cs" />
     <Compile Include="PredicateBuilder\ComplexNode.cs" />
     <Compile Include="PredicateBuilder\ExpressionOperator.cs" />
     <Compile Include="PredicateBuilder\NodeBase.cs" />
     <Compile Include="PredicateBuilder\LogicalOperator.cs" />
-    <Compile Include="PredicateBuilder\PredicateBuilder.cs" />
+    <Compile Include="PredicateBuilder\PredicateBuilder_old.cs" />
     <Compile Include="PredicateBuilder\UnaryNode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Reflection\ActivatorEx.cs" />
@@ -112,7 +124,9 @@
     <Compile Include="Reflection\ReflectionHelper.cs" />
     <Compile Include="Reflection\Extensions\TypeExtensions.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -8,61 +8,36 @@ namespace Dynamix.PredicateBuilder
 {
     public class ComplexNode : NodeBase
     {
-        public List<NodeBase> Nodes { get; set; } = new List<NodeBase>();
+        public ComplexNode(LogicalOperator logicalOperator)
+            :base(logicalOperator)
+        {
+
+        }
+        public List<NodeBase> Nodes { get; } = new List<NodeBase>();
         public override bool HasChildren { get { return Nodes.Any(); } }
+
         public override string GetStringExpression()
         {
-            string ret = string.Empty;
-            foreach (var node in Nodes)
-                ret += " (" + node.GetStringExpression() + " " + node.Operator.ToString() + ") ";
-            return ret;
+            return string.Join(" ",
+                Nodes.Select(node => 
+                $"({node} {node.LogicalOperator})"
+                ));
         }
 
-        //public override Expression<Func<T, bool>> GetExpression<T>(ParameterExpression input = null)
-        //{
-        //    return (Expression<Func<T, bool>>)GetLambdaExpression(typeof(T), input);
-        //}
-
-        //public override LambdaExpression GetLambdaExpression<T>(ParameterExpression input = null)
-        //{
-        //    return GetLambdaExpression(typeof(T), input);
-        //}
-
-        public override Expression GetExpression(Type Type)
+        
+        public override T Accept<T>(INodeVisitor<T> visitor)
         {
-            Expression e = null;
-            LogicalOperator nextOp;
+            return visitor.VisitComplexNode(this);
+        }
 
-            foreach (var node in Nodes)
-            {
-                if (e == null)
-                {
-                    e = node.GetExpression(Type);
-                }
-                else
-                {
-                    switch (node.Operator)
-                    {
-                        case LogicalOperator.Start:
-                            e = node.GetExpression(Type);
-                            break;
-                        case LogicalOperator.And:
-                            e = Expression.AndAlso(e, node.GetExpression(Type));
-                            break;
-                        case LogicalOperator.Or:
-                            e = Expression.OrElse(e, node.GetExpression(Type));
-                            break;
-                        case LogicalOperator.End:
-                            e = Expression.AndAlso(e, node.GetExpression(Type));
-                            break;
-                        default:
-                            throw new NotImplementedException();
-                    }
-                }
-                nextOp = node.Operator;
-            }
+        public override T Accept<T, TInput>(INodeVisitor<T, TInput> visitor, TInput input)
+        {
+            return visitor.VisitComplexNode(this, input);
+        }
 
-            return e;
+        public override T Accept<T, TInput, TState>(INodeVisitor<T, TInput, TState> visitor, TInput input, TState state)
+        {
+            return visitor.VisitComplexNode(this, input, state);
         }
     }
 }

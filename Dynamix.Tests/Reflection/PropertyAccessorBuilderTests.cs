@@ -86,7 +86,7 @@ namespace Dynamix.Tests.Reflection
             Assert.True((int)idx == 9);
 
             setterIndex.Invoke(o, 10, "test", 20);
-            Assert.True(o.I == 10 & o.S == "test" & o.GetID() == 20);
+            Assert.True(o.I == 10 && o.S == "test" && o.GetID() == 20);
 
 
             var getterStatic = builder.BuildStaticGetter<string>(pStatic).Compile();

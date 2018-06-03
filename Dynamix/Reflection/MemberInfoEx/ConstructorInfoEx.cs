@@ -30,7 +30,7 @@ namespace Dynamix.Reflection
 
         MemberInfoExKind IMemberInfoEx.Kind => MemberInfoExKind.Constructor;
 
-        GenericStaticInvoker invoker;
+        readonly GenericStaticInvoker invoker;
 
         public ConstructorInfoEx(ConstructorInfo ctor, bool enableDelegateCaching = true)
         {
@@ -48,7 +48,12 @@ namespace Dynamix.Reflection
         
         public object Invoke(object instance, params object[] arguments)
         {
-            return Invoke(instance, arguments);
+            return invoker(instance, arguments);
+        }
+
+        public static implicit operator ConstructorInfo(ConstructorInfoEx constructorInfoEx)
+        {
+            return constructorInfoEx.ConstructorInfo;
         }
     }
 }

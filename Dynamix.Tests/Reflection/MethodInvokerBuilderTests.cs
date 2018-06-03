@@ -125,7 +125,7 @@ namespace Dynamix.Tests.Reflection
             var d2 = (GenericInstanceInvoker)e8.CompileCached();
             var d3 = (GenericInstanceInvoker)e8.CompileCached();
             var d4 = (GenericInstanceInvoker)e8.Compile();
-            Assert.IsTrue((d1 == d2) & (d2 == d3));
+            Assert.IsTrue((d1 == d2) && (d2 == d3));
             Assert.IsTrue(d4 != d1);
 
 
@@ -133,29 +133,29 @@ namespace Dynamix.Tests.Reflection
             var nameValue = "Jim";
             var dateValue = DateTime.Now;
             var r1 = m1.Invoke(o, nameValue, dateValue);
-            Assert.IsTrue(r1 == null & o.FirstName == nameValue & o.DOB == dateValue);
+            Assert.IsTrue(r1 == null && o.FirstName == nameValue && o.DOB == dateValue);
 
             var r2 = m2.Invoke(o, 2, 3);
-            Assert.IsTrue(r2.GetType() == typeof(int) & (int)r2 == 5);
+            Assert.IsTrue(r2.GetType() == typeof(int) && (int)r2 == 5);
 
             var r3 = m3.Invoke(2, 2);
-            Assert.IsTrue(r3 != null & r3.Equals(true));
+            Assert.IsTrue(r3 != null && r3.Equals(true));
             var r3b = m3b.Invoke(null, 3, 3);
-            Assert.IsTrue(r3b != null & r3b.Equals(true));
+            Assert.IsTrue(r3b != null && r3b.Equals(true));
 
             var r4 = m4.Invoke(o, nameValue);
-            Assert.IsTrue(r4 != null & r4.Equals(true));
+            Assert.IsTrue(r4 != null && r4.Equals(true));
 
             var r5 = m5.Invoke(o, nameValue);
-            Assert.IsTrue(r5 != null & r5.Equals(true));
+            Assert.IsTrue(r5 != null && r5.Equals(true));
 
             o.FirstName = "";
             var r6 = m6.Invoke(o, nameValue);
-            Assert.IsTrue(r6 == null & o.FirstName.Equals(nameValue));
+            Assert.IsTrue(r6 == null && o.FirstName.Equals(nameValue));
 
             o.FirstName = "";
             var r7 = m7.Invoke(o, nameValue);
-            Assert.IsTrue(r7 == null & o.FirstName.Equals(nameValue));
+            Assert.IsTrue(r7 == null && o.FirstName.Equals(nameValue));
 
 
             var m1t = builder.BuildFromDelegate<Action<TestTargetClass, string, DateTime>>(typeof(TestTargetClass).GetMethod("VoidFoo")).Compile();
@@ -169,7 +169,7 @@ namespace Dynamix.Tests.Reflection
 
             o = new TestTargetClass();
             var r1t = m1.Invoke(o, nameValue, dateValue);
-            Assert.IsTrue(o.FirstName == nameValue & o.DOB == dateValue);
+            Assert.IsTrue(o.FirstName == nameValue && o.DOB == dateValue);
 
             var r2t = m2t.Invoke(o, 2, 3);
             Assert.IsTrue(r2t == 5);
@@ -192,10 +192,10 @@ namespace Dynamix.Tests.Reflection
             var ctor2 = ctors.Skip(1).First();
 
             var c1 = ((Expression<Func<TestTargetClass>>)ctorBuilder.BuildFromTypes(ctor1)).Compile().Invoke();
-            Assert.True(c1 != null & c1.GetType() == typeof(TestTargetClass));
+            Assert.True(c1 != null && c1.GetType() == typeof(TestTargetClass));
 
             var c2 = ((Expression<Func<string, TestTargetClass>>)ctorBuilder.BuildFromTypes(ctor2)).Compile().Invoke("test");
-            Assert.True(c2 != null & c2.GetType() == typeof(TestTargetClass) & c2.FirstName == "test");
+            Assert.True(c2 != null && c2.GetType() == typeof(TestTargetClass) && c2.FirstName == "test");
 
             var ctorBuilder2 = new ConstructorInvokerLambdaBuilder();
             var ctors2 = typeof(TestTargetClass).GetConstructors();

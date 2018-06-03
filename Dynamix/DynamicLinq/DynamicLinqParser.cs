@@ -1356,7 +1356,7 @@ namespace Dynamix.DynamicLinq
             TypeCode sc = st.IsEnum ? TypeCode.Object : Type.GetTypeCode(st);
             TypeCode tc = tt.IsEnum ? TypeCode.Object : Type.GetTypeCode(tt);
 
-            if (st.IsEnum & !tt.IsEnum) // If the source is an enum and the target is numeric 
+            if (st.IsEnum && !tt.IsEnum) // If the source is an enum and the target is numeric 
             {
                 switch (tc)
                 {

@@ -36,10 +36,10 @@ namespace Dynamix
 
         public Type CreateAndRegisterType(DynamicTypeDescriptor descr, bool Overwrite = true)
         {
-            return CreateAndRegisterType(descr.Name, descr.Properties, Overwrite, descr.BaseType);
+            return CreateAndRegisterType(descr.Name, descr.Properties, Overwrite, descr.BaseType, descr.AttributeBuilders);
         }
 
-        public Type CreateAndRegisterType(string TypeName, IEnumerable<DynamicTypeProperty> fields, bool Overwrite = true, Type BaseType = null)
+        public Type CreateAndRegisterType(string TypeName, IEnumerable<DynamicTypeProperty> fields, bool Overwrite = true, Type BaseType = null, IEnumerable<CustomAttributeBuilder> customAttributeBuilders = null)
         {
             if (string.IsNullOrWhiteSpace(TypeName))
                 throw new ArgumentException("TypeName cannot be null or whitespace");
@@ -57,19 +57,19 @@ namespace Dynamix
                             return td.Type;
                         else
                         {
-                            t = CreateType(fields, TypeName, BaseType);
+                            t = CreateType(fields, TypeName, BaseType, customAttributeBuilders);
                             cache[TypeName] = new DynamicTypeCachedDescriptor(t, fields);
                         }
                     }
                     else
                     {
-                        t = CreateType(fields, TypeName, BaseType);
+                        t = CreateType(fields, TypeName, BaseType, customAttributeBuilders);
                         cache[TypeName] = new DynamicTypeCachedDescriptor(t, fields);
                     }
                 }
                 else
                 {
-                    t = CreateType(fields, TypeName, BaseType);
+                    t = CreateType(fields, TypeName, BaseType, customAttributeBuilders);
                     cache.Add(TypeName, new DynamicTypeCachedDescriptor(t, fields));
                 }
             }
@@ -107,10 +107,10 @@ namespace Dynamix
 
         public Type CreateType(DynamicTypeDescriptor descriptor, string TypeName = null)
         {
-            return CreateType(descriptor.Properties, TypeName, descriptor.BaseType);
+            return CreateType(descriptor.Properties, TypeName ?? descriptor.Name, descriptor.BaseType, descriptor.AttributeBuilders);
         }
-        
-        public Type CreateType(IEnumerable<DynamicTypeProperty> fields, string TypeName = null, Type BaseType = null)
+
+        public Type CreateType(IEnumerable<DynamicTypeProperty> fields, string TypeName = null, Type BaseType = null, IEnumerable<CustomAttributeBuilder> customAttributeBuilders = null)
         {
             TypeBuilder tb;
             lock (o)
@@ -132,11 +132,14 @@ namespace Dynamix
                     CreateProperty(tb, field.Name, field.Type, field.AttributeBuilders);
                 }
 
-                
+                if (customAttributeBuilders != null)
+                    foreach (var a in customAttributeBuilders)
+                        tb.SetCustomAttribute(a);
+
                 Type objectType = tb.CreateType();
                 return objectType;
             }
-            
+
         }
 
         private TypeBuilder GetTypeBuilder(string AssemblyName, string ModuleName, string TypeName, Type BaseType = null)
@@ -195,7 +198,7 @@ namespace Dynamix
             propertyBuilder.SetSetMethod(setPropMthdBldr);
 
             if (attributeBuilders != null)
-                foreach(var attributeBuilder in attributeBuilders)
+                foreach (var attributeBuilder in attributeBuilders)
                     propertyBuilder.SetCustomAttribute(attributeBuilder);
         }
     }

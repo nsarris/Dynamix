@@ -18,6 +18,9 @@ namespace Dynamix.Expressions
         /// <returns></returns>
         public static Expression ConvertIfNeeded(Expression expression, Type type)
         {
+            if (type.IsByRef)
+                type = type.GetElementType();
+
             if (type == expression.Type)
                 return expression;
             else

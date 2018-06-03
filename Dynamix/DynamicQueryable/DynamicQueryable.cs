@@ -304,7 +304,7 @@ namespace Dynamix
 
         public IQueryable AsQueryable()
         {
-            return (IQueryable)Source;
+            return Source;
         }
 
         private List<Tuple<LambdaExpression, bool>> ParseOrdering(Type entityType, string ordering)
@@ -384,7 +384,7 @@ namespace Dynamix
         }
 
         static EFMethods efmethods;
-        static object eflock = new object();
+        static readonly object eflock = new object();
         public static DynamicQueryable FromDbContextSet(object dbContext, Type entityType, bool StateTracking = false)
         {
             //TODO DbSet<T> not working properly, disabling StateTracking by default
@@ -419,7 +419,7 @@ namespace Dynamix
                 }
             }
 
-            if (efmethods.Set == null)
+            if (efmethods is null || efmethods.Set is null)
                 throw new Exception("DbSet method not found on DbContext");
             else
             {
@@ -501,7 +501,7 @@ namespace Dynamix
             foreach (var item in orderItems)
             {
                 var l = CreateMemberLambda(Source.ElementType, item.PropertyName);
-                if (Source is IOrderedQueryable)
+                if (res != null)
                     res = (item.IsDescending ? res.ThenByDescending(l) : res.ThenBy(l));
                 else
                     res = (item.IsDescending ? OrderByDescending(l) : OrderBy(l));

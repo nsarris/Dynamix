@@ -53,7 +53,7 @@ namespace Dynamix.Reflection
         public Type DictionaryElementType { get; private set; }
         public Type ElementType { get; private set; }
         public bool IsReadOnly { get; private set; }
-        public bool IsInterFace { get; private set; }
+        public bool IsInterface { get; private set; }
 
         static void AddType(Type Type, bool IsReadOnly = false, bool IsIndexed = false, EnumerableTypeEnum EnumerableType = EnumerableTypeEnum.Enumerable)
         {
@@ -86,7 +86,7 @@ namespace Dynamix.Reflection
 
         private void ConstructInterfaceType()
         {
-            IsInterFace = true;
+            IsInterface = true;
             IsGeneric = Type.IsGenericType;
             if (Type.IsGenericType)
                 GenericType = Type.GetGenericTypeDefinition();
@@ -126,6 +126,9 @@ namespace Dynamix.Reflection
 
         private void ConstructClassType()
         {
+            if (Type == typeof(string))
+                throw new Exception("System.String is not supported as an enumerable class");
+
             var interfaces = Type.GetInterfaces()
                 .Where(x => x.IsGenericType ? Types.ContainsKey(x.GetGenericTypeDefinition()) : Types.ContainsKey(x))
                 .Select(x => new { Type = x, TypeDescriptor = x.IsGenericType ? Types[x.GetGenericTypeDefinition()] : Types[x] })
@@ -144,9 +147,9 @@ namespace Dynamix.Reflection
 
             if (genericEnumerator != null)
             {
-                this.IsGeneric = true;
+                this.IsGeneric = Type.IsGenericType;
                 this.ElementType = genericEnumerator.GetGenericArguments()[0];
-                this.GenericType = Type.GetGenericTypeDefinition();
+                this.GenericType = Type.IsGenericType ? Type.GetGenericTypeDefinition() : null;
                 interfaces = interfaces.Where(x => x.Type.HasGenericArguments(ElementType)).ToList();
             }
             else
@@ -196,7 +199,7 @@ namespace Dynamix.Reflection
 
         public static EnumerableTypeDescriptor Get(Type t)
         {
-            if (!t.GetInterfaces().Any(x => x == typeof(IEnumerable)))
+            if (t == typeof(string) || !t.GetInterfaces().Any(x => x == typeof(IEnumerable)))
                 return null;
             else
                 return new EnumerableTypeDescriptor(t);
@@ -353,7 +356,7 @@ namespace Dynamix.Reflection
             if (enumerable == null)
                 return null;
 
-            if (IsInterFace)
+            if (IsInterface)
             {
                 if (IsReadOnly)
                 {

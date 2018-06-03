@@ -8,45 +8,40 @@ namespace Dynamix.PredicateBuilder
 {
     public class UnaryNode : NodeBase
     {
-        public string Property { get; set; }
-        new public ExpressionOperator Operator { get; set; }
+        public UnaryNode(string expression, ExpressionOperator expressionOperator, object value, LogicalOperator logicalOperator)
+            :base(logicalOperator)
+        {
+            if (string.IsNullOrEmpty(expression))
+                throw new ArgumentException(nameof(expression) + " cannot be null or empty", nameof(expression));
+
+            this.Expression = expression;
+            this.Operator = expressionOperator;
+            this.Value = value;
+        }
+        public string Expression { get; }
+        public ExpressionOperator Operator { get; }
         public override bool HasChildren { get { return false; } }
-        public object Value { get; set; }
+        public object Value { get; }
 
         public override string GetStringExpression()
         {
-            return this.ToString();
+            return $"{Expression} {Operator} {Value}";
         }
 
-        //public override Expression<Func<T,bool>> GetExpression<T>(ParameterExpression input = null)
-        //{
-        //    //return PredicateBuilder.GetStronglyTypedPredicate<T>(Property, Operator, Value, input); 
-        //    return null;
-        //}
-
-        //public override LambdaExpression GetLambdaExpression<T>(ParameterExpression input = null)
-        //{
-        //    //return PredicateBuilder.GetPredicate(typeof(T), Property, Operator, Value, input); 
-        //    return null;
-        //}
-
-        //public override LambdaExpression GetLambdaExpression(Type Type, ParameterExpression input = null)
-        //{
-        //    //return PredicateBuilder.GetPredicate(Type, Property, Operator, Value, input);
-        //    return null;
-        //}
-
-
-
-        public override string ToString()
+        
+        public override T Accept<T>(INodeVisitor<T> visitor)
         {
-            return Property + " " + Operator.ToString() + " " + Value.ToString();
+            return visitor.VisitUnaryNode(this);
         }
 
-
-        public override Expression GetExpression(Type Type)
+        public override T Accept<T, TInput>(INodeVisitor<T, TInput> visitor, TInput input)
         {
-            return PredicateBuilder.GetPredicateExpression(Type, Property, Operator, Value);
+            return visitor.VisitUnaryNode(this, input);
+        }
+
+        public override T Accept<T, TInput, TState>(INodeVisitor<T, TInput, TState> visitor, TInput input, TState state)
+        {
+            return visitor.VisitUnaryNode(this, input, state);
         }
     }
 }

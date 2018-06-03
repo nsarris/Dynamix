@@ -122,5 +122,22 @@ namespace Dynamix.Reflection
         {
             return typeof(Delegate).IsAssignableFrom(type);
         }
+
+        
+        public static object DefaultOf(this Type type)
+        {
+            return defaultOfGenericMethod.Value
+                .MakeGenericMethodCached(type)
+                .Invoke(null, null);
+        }
+
+        static readonly Lazy<MethodInfo> defaultOfGenericMethod = new Lazy<MethodInfo>(() =>
+            typeof(TypeExtensions).GetMethod(nameof(DefaultOfInternal), BindingFlags.Static | BindingFlags.NonPublic)
+        );
+
+        private static T DefaultOfInternal<T>()
+        {
+            return default(T);
+        }
     }
 }

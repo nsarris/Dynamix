@@ -38,7 +38,7 @@ namespace Dynamix
             {
                 var firstHasValue = firstEnumerator.MoveNext();
                 var secondHasValue = secondEnumerator.MoveNext();
-                while (firstHasValue | secondHasValue)
+                while (firstHasValue || secondHasValue)
                 {
                     yield return resultSelector(
                         firstHasValue ? firstEnumerator.Current : emptyFirst,

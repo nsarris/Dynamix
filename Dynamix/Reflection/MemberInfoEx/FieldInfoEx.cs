@@ -117,5 +117,10 @@ namespace Dynamix.Reflection
         {
             return (T)Convert.ChangeType(Get(null), typeof(T));
         }
+
+        public static implicit operator FieldInfo(FieldInfoEx fieldInfoEx)
+        {
+            return fieldInfoEx.FieldInfo;
+        }
     }
 }

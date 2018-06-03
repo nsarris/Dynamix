@@ -9,7 +9,7 @@ namespace Dynamix
 {
     internal class HashKey : IEquatable<HashKey>
     {
-        int hashCode;
+        readonly int hashCode;
         public HashKey(IEnumerable values)
         {
             hashCode = GetHashCode(values);

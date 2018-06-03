@@ -267,7 +267,7 @@ namespace Dynamix.Expressions
                         else
                             itemexp = Expression.AndAlso(itemexp, eqEx);
                     }
-                    if (e == null)
+                    if (itemexp == null)
                         e = itemexp;
                     else
                         e = Expression.OrElse(e, itemexp);

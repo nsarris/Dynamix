@@ -7,9 +7,9 @@ namespace Dynamix.PredicateBuilder
 {
     public enum LogicalOperator
     {
-        Start,
+        //Start,
         And,
         Or,
-        End
+        //End
     }
 }

@@ -142,8 +142,9 @@ namespace Dynamix.Expressions.LambdaBuilders
                 delegateType = typeof(GenericStaticInvoker);
             }
 
+            //TODO: To support ref/out they need to be declared as variables at the start of the block, used as ref/out and then set back to the object array
             var body = (methodInfo.ReturnType == typeof(void)) ?
-                    (Expression)Expression.Block(typeof(object), invokerExpression, Expression.Constant(null)) :
+                    Expression.Block(typeof(object), invokerExpression, Expression.Constant(null)) :
                     ExpressionEx.CastTypeSafe(invokerExpression, typeof(object));
 
             var lambda = Expression.Lambda(delegateType, body, expressionParameters);

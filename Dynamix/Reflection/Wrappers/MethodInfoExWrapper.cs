@@ -88,6 +88,6 @@ namespace Dynamix.Reflection
 
         }
 
-        public new T WrappedObject { get { return (T)WrappedObject; } }
+        public new T WrappedObject { get { return (T)base.WrappedObject; } }
     }
 }

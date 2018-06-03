@@ -10,32 +10,27 @@ namespace Dynamix.PredicateBuilder
 {
     public abstract class NodeBase
     {
-        public LogicalOperator Operator { get; set; }
+        public NodeBase(LogicalOperator logicalOperator)
+        {
+            LogicalOperator = logicalOperator;
+        }
+        public LogicalOperator LogicalOperator { get; set; }
         public abstract bool HasChildren { get; }
         public abstract string GetStringExpression();
+        public override string ToString() => GetStringExpression();
 
-        public LambdaExpression GetLambdaExpression(Type Type, ParameterExpression input = null)
+        public abstract T Accept<T>(INodeVisitor<T> visitor);
+        public abstract T Accept<T, TInput>(INodeVisitor<T, TInput> visitor, TInput input);
+        public abstract T Accept<T, TInput, TState>(INodeVisitor<T, TInput, TState> visitor, TInput input, TState state);
+
+        public LambdaExpression GetLambdaExpression(Type type)
         {
-            input = input ?? Expression.Parameter(Type);
-            var r = Expression.Lambda(GetExpression(Type), input);
-            r = EpxressionParameterReplacer.Replace(r, "x", input);
-            return r;
+            return new ExpressionNodeVisitor().VisitLambda(this, type);
         }
 
-        public Expression<Func<T, bool>> GetLambdaExpression<T>(ParameterExpression input = null)
+        public Expression<Func<T, bool>> GetLambdaExpression<T>()
         {
-            input = input ?? Expression.Parameter(typeof(T));
-            var expr = GetExpression(typeof(T));
-            var lamda = Expression.Lambda<Func<T, bool>>(expr, input);
-
-            return EpxressionParameterReplacer.Replace(lamda, "x", input);
+            return new ExpressionNodeVisitor().VisitLambda<T>(this);
         }
-
-        public Expression GetExpression<T>()
-        {
-            return GetExpression(typeof(T));
-        }
-        public abstract Expression GetExpression(Type Type);
-
     }
 }

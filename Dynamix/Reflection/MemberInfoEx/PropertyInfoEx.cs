@@ -241,5 +241,10 @@ namespace Dynamix.Reflection
         {
             return (T)Convert.ChangeType(Get(instance, indexer1, indexer2, indexer3), typeof(T));
         }
+
+        public static implicit operator PropertyInfo(PropertyInfoEx propertyInfoEx)
+        {
+            return propertyInfoEx.PropertyInfo;
+        }
     }
 }

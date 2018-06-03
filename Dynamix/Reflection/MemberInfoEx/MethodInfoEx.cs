@@ -31,8 +31,8 @@ namespace Dynamix.Reflection
 
         MemberInfoExKind IMemberInfoEx.Kind => MemberInfoExKind.Method;
 
-        GenericInstanceInvoker instanceInvoker;
-        GenericStaticInvoker staticInvoker;
+        readonly GenericInstanceInvoker instanceInvoker;
+        readonly GenericStaticInvoker staticInvoker;
 
         public MethodInfoEx(MethodInfo method, bool enableDelegateCaching = true)
         {
@@ -52,6 +52,7 @@ namespace Dynamix.Reflection
                 instanceInvoker = builder.BuildGenericInstance(method).Compile();
                 if (method.IsStatic)
                     staticInvoker = builder.BuildGenericStatic(method).Compile();
+                    
             }
         }
 
@@ -65,7 +66,13 @@ namespace Dynamix.Reflection
 
         public object Invoke(object instance, params object[] arguments)
         {
-            return Invoke(instance, arguments);
+            return instanceInvoker(instance, arguments);
         }
+
+        public static implicit operator MethodInfo(MethodInfoEx methodInfoEx)
+        {
+            return methodInfoEx.MethodInfo;
+        }
+
     }
 }

@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Dynamix.PredicateBuilder
 {
@@ -14,11 +15,11 @@ namespace Dynamix.PredicateBuilder
         static readonly MethodInfoEx stringContainsMethod = typeof(string).GetMethodEx(nameof(string.Contains), new Type[] { typeof(string) });
         static readonly MethodInfoEx stringStartsWithMethod = typeof(string).GetMethodEx(nameof(string.StartsWith), new Type[] { typeof(string) });
         static readonly MethodInfoEx stringEndsWithMethod = typeof(string).GetMethodEx(nameof(string.EndsWith), new Type[] { typeof(string) });
-        static readonly MethodInfoEx enumerableContainsMethod = typeof(Enumerable).GetMethodEx(nameof(Enumerable.Contains), new Type[] { typeof(string) });
 
-        static readonly MethodInfoEx enumerableAnyMethod = typeof(Enumerable).GetMethodEx(nameof(Enumerable.Any), new Type[] { typeof(IEnumerable<>) });
-        static readonly MethodInfoEx enumerableCastMethod = typeof(Enumerable).GetMethodEx(nameof(Enumerable.Cast), new Type[] { typeof(Type) });
-        static readonly MethodInfoEx enumerableToListMethod = typeof(Enumerable).GetMethodEx(nameof(Enumerable.ToList), new Type[] { });
+        static readonly MethodInfo enumerableContainsMethod = typeof(Enumerable).GetMethods().Where(x => x.Name == nameof(Enumerable.Contains) && x.GetParameters().Length == 2).FirstOrDefault();
+        static readonly MethodInfo enumerableAnyMethod = typeof(Enumerable).GetMethods().Where(x => x.Name == nameof(Enumerable.Any) && x.GetParameters().Length == 1).FirstOrDefault();
+        static readonly MethodInfo enumerableCastMethod = typeof(Enumerable).GetMethod(nameof(Enumerable.Cast));
+        static readonly MethodInfo enumerableToListMethod = typeof(Enumerable).GetMethod(nameof(Enumerable.ToList));
 
         static readonly Expression nullConstantExpresion = Expression.Constant(null);
         static readonly Expression emptyStringConstantExpresion = Expression.Constant(string.Empty);
@@ -40,96 +41,22 @@ namespace Dynamix.PredicateBuilder
         }
         private class Predicate
         {
-            public Expression SourceExpression { get; }
+            public Expression Expression { get; }
             public ExpressionOperator Operator { get; }
-            public object Value { get; set; }
+            public object Value { get; }
             public bool IsNullable { get; }
             public bool IsNullableType { get; }
+            public Type Type => Expression.Type;
             public Type EffectiveType { get; }
-            public PredicateDataType PredicateDataType { get; }
-            //public bool isEmptyable { get; }
-            
+
             public Predicate(Expression sourceExpression, ExpressionOperator @operator, object value)
             {
-                SourceExpression = sourceExpression;
+                Expression = sourceExpression;
                 Operator = @operator;
                 Value = value;
-                EffectiveType = Nullable.GetUnderlyingType(SourceExpression.Type);
-                IsNullableType = EffectiveType != SourceExpression.Type;
+                EffectiveType = Nullable.GetUnderlyingType(Expression.Type) ?? Expression.Type;
+                IsNullableType = EffectiveType != Expression.Type;
                 IsNullable = IsNullableType || !EffectiveType.IsValueType;
-
-                if (ValueIsNull(value))
-                    value = null;
-
-                PredicateDataType = GetDataType();
-
-                var isEmptyable =
-                    PredicateDataType == PredicateDataType.String ||
-                    PredicateDataType == PredicateDataType.Collection;
-
-                var equalsNullOrEmptyCheck = Operator == ExpressionOperator.IsNullOrEmpty || Operator == ExpressionOperator.IsNull;
-                var notEqualsNullOrEmptyCheck = Operator == ExpressionOperator.IsNotNullOrEmpty || Operator == ExpressionOperator.IsNotNull;
-
-                var isNullCheck = Operator == ExpressionOperator.IsNull || Operator == ExpressionOperator.IsNotNull;
-                var isEmptyCheck = Operator == ExpressionOperator.IsEmpty || Operator == ExpressionOperator.IsNotEmpty;
-                var isNullOrEmptyCheck = Operator == ExpressionOperator.IsNullOrEmpty || Operator == ExpressionOperator.IsNullOrEmpty;
-
-                if (isNullCheck)
-                    value = null;
-                if (isEmptyCheck || isNullOrEmptyCheck)
-                    value = GetEmptyValue(SourceExpression.Type);
-                
-
-                if (!isEmptyable && IsNullable 
-                    && (isEmptyCheck || isNullOrEmptyCheck))
-                {
-                    Operator = equalsNullOrEmptyCheck ? ExpressionOperator.IsNull : ExpressionOperator.IsNotNull;
-                    
-                }
-                else if (isEmptyable && !IsNullable
-                    && (isNullCheck || isNullOrEmptyCheck))
-                {
-                    Operator = equalsNullOrEmptyCheck ? ExpressionOperator.IsEmpty : ExpressionOperator.IsNotEmpty;
-                    value = null;
-                }
-                else if(!isEmptyable && !IsNullable
-                    && (isNullCheck || isEmptyCheck || isNullOrEmptyCheck))
-                    throw new Exception($"IsNull/IsEmpty cannot be used with a type of {SourceExpression.Type}");
-            }
-
-            private object GetEmptyValue(Type type)
-            {
-                switch (PredicateDataType)
-                {
-                    case PredicateDataType.String:
-                        return string.Empty;
-                    case PredicateDataType.Number:
-                    case PredicateDataType.Boolean:
-                    case PredicateDataType.DateTime:
-                    case PredicateDataType.TimeStamp:
-                    case PredicateDataType.Collection:
-                    case PredicateDataType.Unsupported:
-                    default:
-                        return null;
-                }
-            }
-
-            private PredicateDataType GetDataType()
-            {
-                return
-                    SourceExpression.Type == typeof(string) ?
-                        PredicateDataType.String :
-                    IsNumericType(SourceExpression.Type) ?
-                        PredicateDataType.Number :
-                    IsBoolean(SourceExpression.Type) ?
-                        PredicateDataType.Boolean :
-                    IsDateTime(SourceExpression.Type) ?
-                        PredicateDataType.DateTime :
-                    IsTimeSpan(SourceExpression.Type) ?
-                        PredicateDataType.TimeStamp :
-                    IsCollection(SourceExpression.Type) ?
-                        PredicateDataType.Collection :
-                        PredicateDataType.Unsupported;
             }
         }
 
@@ -147,35 +74,17 @@ namespace Dynamix.PredicateBuilder
         {
             var predicate = new Predicate(sourceExpression, @operator, value);
 
-            if (ValueIsNull(value))
-                value = null;
+            return
+                AssertNullOrEmptyPredicate(predicate) ??
+                BuildCollectionPredicate(predicate) ??
+                BuildStringPredicate(predicate) ??
+                BuildEnumPredicate(predicate) ??
+                BuildBooleanPredicate(predicate) ??
+                BuildNumericPredicate(predicate) ??
+                BuildDateTimePredicate(predicate) ??
+                BuildTimeSpanPredicate(predicate) ??
+                ThrowInvalidPredicateException(predicate);
 
-            //if (IsCollection(sourceExpression.Type, out var enumerableTypeDescriptor))
-            //{
-            //    //validate list item type
-            //    //if numeric types use common
-
-            //    var right = Expression.Constant((
-            //        (IEnumerable)value).ToCastedList(sourceExpression.Type));
-
-            //    e = BuildCollectionExpression(sourceExpression, @operator, right);
-            //}
-            //else 
-            if (sourceExpression.Type == typeof(string))
-            {
-                return BuildStringPredicate(sourceExpression, @operator, value);
-            }
-            else
-            {
-                return
-                    AssertNullCheck(predicate) ??
-                    BuildEnumPredicate(sourceExpression, @operator, value) ??
-                    BuildBooleanPredicate(sourceExpression, @operator, value) ??
-                    BuildNumericPredicate(sourceExpression, @operator, value) ??
-                    BuildDateTimePredicate(sourceExpression, @operator, value) ??
-                    BuildTimeSpanPredicate(sourceExpression, @operator, value) ??
-                    ThrowInvalidPredicateException(sourceExpression, @operator, value);
-            }
         }
 
         private static bool ValueIsNull(object value)
@@ -183,123 +92,172 @@ namespace Dynamix.PredicateBuilder
             return (value is null || (value is string && ((string)value).ToLower() == "null"));
         }
 
-        private static Expression AssertNullCheck(Predicate predicate)
+        private static bool IsEmptyable(Type type)
         {
-            var PredicateDataType = predicate.PredicateDataType;
-            var Operator = predicate.Operator;
-            var value = predicate.Value;
-            var IsNullable = predicate.IsNullable;
-            var SourceExpression = predicate.SourceExpression;
+            return type == typeof(string)
+                || IsCollection(type);
+        }
 
-            var isEmptyable =
-                PredicateDataType == PredicateDataType.String ||
-                PredicateDataType == PredicateDataType.Collection;
+        private static Expression ConditionalNot(this Expression expression, bool condition)
+        {
+            return condition ? Expression.Not(expression) : expression;
+        }
 
-            var equalsNullOrEmptyCheck = Operator == ExpressionOperator.IsNullOrEmpty || Operator == ExpressionOperator.IsNull;
-            var notEqualsNullOrEmptyCheck = Operator == ExpressionOperator.IsNotNullOrEmpty || Operator == ExpressionOperator.IsNotNull;
+        private static Expression GetIsNullExpression(this Expression expression)
+        {
+            return Expression.Equal(expression, nullConstantExpresion);
 
-            var isNullCheck = Operator == ExpressionOperator.IsNull || Operator == ExpressionOperator.IsNotNull;
-            var isEmptyCheck = Operator == ExpressionOperator.IsEmpty || Operator == ExpressionOperator.IsNotEmpty;
-            var isNullOrEmptyCheck = Operator == ExpressionOperator.IsNullOrEmpty || Operator == ExpressionOperator.IsNullOrEmpty;
+        }
 
-            if (isNullCheck)
-            {
-                value = null;
-            }
-            if (isEmptyCheck || isNullOrEmptyCheck)
-                value = null;// GetEmptyValue(SourceExpression.Type);
+        private static Expression GetIsNullOrEmptyExpression(this Expression expression)
+        {
+            return Expression.Or(GetIsNullExpression(expression), GetIsEmptyExpression(expression));
+        }
 
-            if (!isEmptyable && IsNullable
-                && (isEmptyCheck || isNullOrEmptyCheck))
-            {
-                Operator = equalsNullOrEmptyCheck ? ExpressionOperator.Equals : ExpressionOperator.DoesNotEqual;
-                value = null;
-            }
-            else if (isEmptyable && !IsNullable
-                && (isNullCheck || isNullOrEmptyCheck))
-            {
-                Operator = equalsNullOrEmptyCheck ? ExpressionOperator.Equals : ExpressionOperator.DoesNotEqual;
-                value = null; // GetEmptyValue(SourceExpression.Type);
-            }
-            else if (!isEmptyable && !IsNullable
-                && (isNullCheck || isEmptyCheck || isNullOrEmptyCheck))
-                throw new Exception($"IsNull/IsEmpty cannot be used with a type of {SourceExpression.Type}");
+        private static Expression GetIsEmptyExpression(this Expression expression)
+        {
+            return IsCollection(expression.Type) ?
+                    (Expression)Expression.Call(expression, enumerableAnyMethod) :
+                    Expression.Equal(expression, GetEmptyValueExpression(expression.Type));
+        }
+
+        private static Expression GetEmptyValueExpression(Type type)
+        {
+            if (type == typeof(string))
+                return emptyStringConstantExpresion;
+            else
+                return nullConstantExpresion;
+        }
 
 
+        private static Expression AssertNullOrEmptyPredicate(Predicate predicate)
+        {
+            var isNullable = predicate.IsNullable;
+            var isEmptyable = IsEmptyable(predicate.Type);
+            var @operator = predicate.Operator;
+
+            var value = (ValueIsNull(predicate.Value)) ? null : predicate.Value;
+
+            //Convert Equals/DoesNotEqual null to IsNull/IsNotNull
             if (value is null)
             {
-                return
-                    !predicate.IsNullable ?
-                    predicate.Operator == ExpressionOperator.IsNotNullOrEmpty 
-                        || predicate.Operator == ExpressionOperator.IsNotNull ? 
-                        
-                        trueConstantExpresion : falseConstantExpresion:
+                if (@operator == ExpressionOperator.Equals)
+                    @operator = ExpressionOperator.IsNull;
+                else if (@operator == ExpressionOperator.DoesNotEqual)
+                    @operator = ExpressionOperator.IsNotNull;
+            }
 
-                    predicate.Operator == ExpressionOperator.Equals ?
+            //Convert IsNull to IsEmpty or vice versa if one the two is supported.
+            //If none are supported return true only when IsNotNull/IsNotEmpty otherwise false
 
-                        Expression.Equal(predicate.SourceExpression, nullConstantExpresion) :
-                        Expression.NotEqual(predicate.SourceExpression, nullConstantExpresion);
+            if (@operator == ExpressionOperator.IsNull || @operator == ExpressionOperator.IsNotNull)
+            {
+                var not = @operator == ExpressionOperator.IsNotNull;
 
+                if (isNullable)
+                    return predicate.Expression.GetIsNullExpression().ConditionalNot(not);
+                else if (isEmptyable)
+                    return predicate.Expression.GetIsEmptyExpression().ConditionalNot(not);
+                else
+                    return not ? trueConstantExpresion : falseConstantExpresion;
+            }
+            else if (@operator == ExpressionOperator.IsEmpty || @operator == ExpressionOperator.IsNotEmpty)
+            {
+                var not = @operator == ExpressionOperator.IsNotEmpty;
+
+                if (isEmptyable)
+                    return predicate.Expression.GetIsEmptyExpression().ConditionalNot(not);
+                if (isNullable)
+                    return predicate.Expression.GetIsNullExpression().ConditionalNot(not);
+                else
+                    return not ? trueConstantExpresion : falseConstantExpresion;
+            }
+            else if (@operator == ExpressionOperator.IsNullOrEmpty || @operator == ExpressionOperator.IsNullOrEmpty)
+            {
+                var not = @operator == ExpressionOperator.IsNotNullOrEmpty;
+                if (isNullable && isEmptyable)
+                    return predicate.Expression.GetIsNullOrEmptyExpression().ConditionalNot(not);
+                if (!isNullable && isEmptyable)
+                    return predicate.Expression.GetIsEmptyExpression().ConditionalNot(not);
+                else if (!isEmptyable && isNullable)
+                    return predicate.Expression.GetIsNullExpression().ConditionalNot(not);
+                else if (!isNullable && !isEmptyable)
+                    return not ? trueConstantExpresion : falseConstantExpresion;
+            }
+            //Any other operation with null returns false
+            else if (value is null)
+            {
+                return falseConstantExpresion;
             }
 
             return null;
         }
 
-        private static Expression BuildStringPredicate(Expression left, ExpressionOperator @operator, object value)
+        private static Expression BuildCollectionPredicate(Predicate predicate)
         {
-            if (left.Type != typeof(string))
+            if (!IsCollection(predicate.Type, out var enumerableTypeDescriptor))
                 return null;
 
-            var v = value?.ToString();
-            var right = v is null ? nullConstantExpresion : Expression.Constant(v);
+            //TODO: Check element type is supported and try cast value to it
+            var right = Expression.Constant(predicate.Value);
 
-            return BuildEquitableExpression(left, @operator, right)
-                ?? BuildComparableExpression(left, @operator, right)
-                ?? BuildStringSpecificExpression(left, @operator, right);
+            return BuildCollectionSpecificExpression(predicate.Expression, predicate.Operator, right);
         }
 
-        private static Expression BuildNumericPredicate(Expression left, ExpressionOperator @operator, object value)
+        private static Expression BuildStringPredicate(Predicate predicate)
         {
-            if (!IsNumericType(left.Type, out var numericTypeDefinition))
+            if (predicate.Type != typeof(string))
+                return null;
+
+            var value = predicate.Value?.ToString();
+            var right = value is null ? nullConstantExpresion : Expression.Constant(value);
+
+            return BuildEquitableExpression(predicate.Expression, predicate.Operator, right)
+                ?? BuildComparableExpression(predicate.Expression, predicate.Operator, right)
+                ?? BuildStringSpecificExpression(predicate.Expression, predicate.Operator, right);
+        }
+
+        private static Expression BuildNumericPredicate(Predicate predicate)
+        {
+            if (!IsNumericType(predicate.Type, out var numericTypeDefinition))
                 return null;
 
             //Validate and convert to numeric if string
-            value = AsNumeric(value, numericTypeDefinition.EffectiveType);
+            var value = AsNumeric(predicate.Value, numericTypeDefinition.EffectiveType);
 
             //Convert to a type that can be compared
-            var conversionType = NumericTypeHelper.GetCommonTypeForConvertion(left.Type, value.GetType());
+            var conversionType = NumericTypeHelper.GetCommonTypeForConvertion(predicate.Type, value.GetType());
             if (conversionType != value.GetType())
                 value = Convert.ChangeType(value, conversionType);
 
             //Get left operand
+            var left = predicate.Expression;
             if (numericTypeDefinition.Nullable)
-                left = Expression.Property(left, nameof(Nullable<int>.Value));
+                left = Expression.Property(predicate.Expression, nameof(Nullable<int>.Value));
             left = ExpressionEx.ConvertIfNeeded(left, conversionType);
 
             //Get right operand
             var right = Expression.Constant(value);
 
             //Execute
-            return BuildEquitableExpression(left, @operator, right)
-                ?? BuildComparableExpression(left, @operator, right);
+            return BuildEquitableExpression(left, predicate.Operator, right)
+                ?? BuildComparableExpression(left, predicate.Operator, right);
         }
 
-        private static Expression BuildEnumPredicate(Expression left, ExpressionOperator @operator, object value)
+        private static Expression BuildEnumPredicate(Predicate predicate)
         {
-            if (!IsEnum(left.Type, out var enumUnderlyingType))
+            if (!IsEnum(predicate.Type, out var enumUnderlyingType))
                 return null;
 
-            var enumType = Nullable.GetUnderlyingType(left.Type) ?? left.Type;
-            var isNullable = enumType != left.Type;
-
             //Validate and convert to numeric if string
-            value = AsNumericFromEnum(value, enumType);
+            var value = AsNumericFromEnum(predicate.Value, predicate.EffectiveType);
 
             //Convert to a type that can be compared
             var conversionType = NumericTypeHelper.GetCommonTypeForConvertion(enumUnderlyingType, value.GetType());
 
             //Get left operand
-            if (isNullable)
+            var left = predicate.Expression;
+            if (predicate.IsNullableType)
                 left = Expression.Property(left, nameof(Nullable<int>.Value));
             left = ExpressionEx.ConvertIfNeeded(left, conversionType);
 
@@ -307,69 +265,72 @@ namespace Dynamix.PredicateBuilder
             var right = Expression.Constant(Convert.ChangeType(value, conversionType));
 
             //Execute
-            return BuildEquitableExpression(left, @operator, right)
-                ?? BuildComparableExpression(left, @operator, right);
+            return BuildEquitableExpression(left, predicate.Operator, right)
+                ?? BuildComparableExpression(left, predicate.Operator, right);
         }
-   
-        private static Expression BuildBooleanPredicate(Expression left, ExpressionOperator @operator, object value)
+
+        private static Expression BuildBooleanPredicate(Predicate predicate)
         {
-            if (!IsBoolean(left.Type))
+            if (!IsBoolean(predicate.Type))
                 return null;
 
-            if ((value is bool))
+            bool value = false;
+
+            if (predicate.Value is bool b)
+                value = b;
+            else
             {
-                var v = value.ToString().ToLower();
-                if (trueValueStrings.Contains(v))
+                var stringValue = predicate.Value.ToString().ToLower() as object;
+                if (trueValueStrings.Contains(stringValue))
                     value = true;
-                else if (falseValueStrings.Contains(value))
+                else if (falseValueStrings.Contains(stringValue))
                     value = false;
                 else
                     throw new InvalidOperationException($"Value {value} cannot be converted to boolean");
             }
 
-
-            return BuildEquitableExpression(left, @operator, (bool)value ? trueConstantExpresion : falseConstantExpresion);
+            return BuildEquitableExpression(predicate.Expression, predicate.Operator, value ? trueConstantExpresion : falseConstantExpresion);
         }
 
-        private static Expression BuildDateTimePredicate(Expression left, ExpressionOperator @operator, object value)
+        private static Expression BuildDateTimePredicate(Predicate predicate)
         {
-            if (!IsDateTime(left.Type))
+            if (!IsDateTime(predicate.Type))
                 return null;
 
-            if (!(value is DateTime d)
-                && !DateTime.TryParse(value.ToString(), out d))
-                throw new InvalidOperationException($"Value {value} cannot be converted to DateTime");
+            if (!(predicate.Value is DateTime d)
+                && !DateTime.TryParse(predicate.Value.ToString(), out d))
+                throw new InvalidOperationException($"Value {predicate.Value} cannot be converted to DateTime");
 
             var right = Expression.Constant(d);
 
-            return BuildEquitableExpression(left, @operator, right)
-                   ?? BuildComparableExpression(left, @operator, right);
+            return BuildEquitableExpression(predicate.Expression, predicate.Operator, right)
+                   ?? BuildComparableExpression(predicate.Expression, predicate.Operator, right);
         }
 
-        private static Expression BuildTimeSpanPredicate(Expression left, ExpressionOperator @operator, object value)
+        private static Expression BuildTimeSpanPredicate(Predicate predicate)
         {
-            if (!IsTimeSpan(left.Type))
+            if (!IsTimeSpan(predicate.Type))
                 return null;
 
             TimeSpan timeSpan = TimeSpan.Zero;
-            if (value is DateTime d
-                || !DateTime.TryParse(value.ToString(), out d))
+            if (predicate.Value is DateTime d
+                || !DateTime.TryParse(predicate.Value.ToString(), out d))
                 timeSpan = d.TimeOfDay;
-            else if (value is TimeSpan t
-                || !TimeSpan.TryParse(value.ToString(), out t))
+            else if (predicate.Value is TimeSpan t
+                || !TimeSpan.TryParse(predicate.Value.ToString(), out t))
                 timeSpan = t;
             else
-                throw new InvalidOperationException($"Value {value} cannot be converted to TimeSpan");
+                throw new InvalidOperationException($"Value {predicate.Value} cannot be converted to TimeSpan");
 
             var right = Expression.Constant(timeSpan);
 
-            return BuildEquitableExpression(left, @operator, right)
-                   ?? BuildComparableExpression(left, @operator, right);
+            return BuildEquitableExpression(predicate.Expression, predicate.Operator, right)
+                   ?? BuildComparableExpression(predicate.Expression, predicate.Operator, right);
         }
 
-        private static Expression ThrowInvalidPredicateException(Expression left, ExpressionOperator @operator, object value)
+        private static Expression ThrowInvalidPredicateException(Predicate predicate)
         {
-            throw new NotSupportedException($"Could not build predicate for expression of type {left.Type} and operator {@operator.ToString()}");
+            throw new NotSupportedException($"Could not build predicate for expression of type {predicate.Expression.Type} and operator {predicate.Operator.ToString()}");
         }
 
         private static bool IsCollection(Type type)
@@ -457,32 +418,7 @@ namespace Dynamix.PredicateBuilder
             return value;
         }
 
-        private static Expression BuildCollectionAnyExpression(Expression left, ExpressionOperator expressionOperator)
-        {
-            switch (expressionOperator)
-            {
-                case ExpressionOperator.IsNull:
-                    return Expression.Equal(left, nullConstantExpresion);
-                case ExpressionOperator.IsNotNull:
-                    return Expression.NotEqual(left, nullConstantExpresion);
-                case ExpressionOperator.IsEmpty:
-                    return GetAnyExpression(left);
-                case ExpressionOperator.IsNotEmpty:
-                    return GetAnyExpression(left);
-                case ExpressionOperator.IsNullOrEmpty:
-                    return Expression.Or(
-                        Expression.Equal(left, nullConstantExpresion),
-                        GetAnyExpression(left));
-                case ExpressionOperator.IsNotNullOrEmpty:
-                    return Expression.Not(Expression.Or(
-                        Expression.Equal(left, nullConstantExpresion),
-                        GetAnyExpression(left)));
-                default:
-                    return null;
-            }
-        }
-
-        private static Expression BuildCollectionIsContainedExpression(Expression left, ExpressionOperator expressionOperator, object value)
+        private static Expression BuildIsContainedInExpression(Expression left, ExpressionOperator expressionOperator, object value)
         {
             var right = Expression.Constant((
                     (IEnumerable)value).ToCastedList(left.Type));
@@ -490,23 +426,15 @@ namespace Dynamix.PredicateBuilder
             switch (expressionOperator)
             {
                 case ExpressionOperator.IsContainedIn:
-                    return GetIsContainedInConstantArrayExpression(left, right);
+                    return Expression.Call(right, enumerableContainsMethod, left);
                 case ExpressionOperator.IsNotContainedIn:
-                    return Expression.Not(GetIsContainedInConstantArrayExpression(left, right));
+                    return Expression.Not(Expression.Call(right, enumerableContainsMethod, left));
                 default:
                     return null;
             }
         }
 
-        private static Expression GetIsContainedInConstantArrayExpression(Expression source, Expression array)
-        {
-            return Expression.Call(array, enumerableContainsMethod, source);
-        }
 
-        private static Expression GetAnyExpression(Expression source)
-        {
-            return Expression.Call(source, enumerableAnyMethod);
-        }
 
         private static Expression BuildEquitableExpression(Expression left, ExpressionOperator expressionOperator, Expression right)
         {
@@ -554,27 +482,41 @@ namespace Dynamix.PredicateBuilder
                     return Expression.Call(right, stringContainsMethod, left);
                 case ExpressionOperator.IsNotContainedIn:
                     return Expression.Not(Expression.Call(right, stringContainsMethod, left));
-                case ExpressionOperator.IsNull:
-                    return Expression.Equal(left, nullConstantExpresion);
-                case ExpressionOperator.IsNotNull:
-                    return Expression.NotEqual(left, nullConstantExpresion);
-                case ExpressionOperator.IsEmpty:
-                    return Expression.Equal(left, emptyStringConstantExpresion);
-                case ExpressionOperator.IsNotEmpty:
-                    return Expression.NotEqual(left, emptyStringConstantExpresion);
-                case ExpressionOperator.IsNullOrEmpty:
-                    return Expression.Or(
-                        Expression.Equal(left, emptyStringConstantExpresion),
-                        Expression.Equal(left, nullConstantExpresion));
-                case ExpressionOperator.IsNotNullOrEmpty:
-                    return Expression.Not(Expression.Or(
-                        Expression.Equal(left, emptyStringConstantExpresion),
-                        Expression.Equal(left, nullConstantExpresion)
-                        ));
+                //case ExpressionOperator.IsNull:
+                //    return Expression.Equal(left, nullConstantExpresion);
+                //case ExpressionOperator.IsNotNull:
+                //    return Expression.NotEqual(left, nullConstantExpresion);
+                //case ExpressionOperator.IsEmpty:
+                //    return Expression.Equal(left, emptyStringConstantExpresion);
+                //case ExpressionOperator.IsNotEmpty:
+                //    return Expression.NotEqual(left, emptyStringConstantExpresion);
+                //case ExpressionOperator.IsNullOrEmpty:
+                //    return Expression.Or(
+                //        Expression.Equal(left, emptyStringConstantExpresion),
+                //        Expression.Equal(left, nullConstantExpresion));
+                //case ExpressionOperator.IsNotNullOrEmpty:
+                //    return Expression.Not(Expression.Or(
+                //        Expression.Equal(left, emptyStringConstantExpresion),
+                //        Expression.Equal(left, nullConstantExpresion)
+                //        ));
                 default:
                     return null;
             }
         }
+
+        private static Expression BuildCollectionSpecificExpression(Expression left, ExpressionOperator expressionOperator, Expression right)
+        {
+            switch (expressionOperator)
+            {
+                case ExpressionOperator.Contains:
+                    return Expression.Call(left, enumerableContainsMethod, right);
+                case ExpressionOperator.DoesNotContain:
+                    return Expression.Not(Expression.Call(left, enumerableContainsMethod, right));
+                default:
+                    return null;
+            }
+        }
+
 
 
         private static bool IsEnum(Type type)
@@ -603,67 +545,14 @@ namespace Dynamix.PredicateBuilder
             if (typeToCastTo == null)
                 typeToCastTo = typeof(object);
 
-            var castMethod = enumerableCastMethod.MethodInfo.MakeGenericMethodCached(typeToCastTo);
-            var toListMethod = enumerableToListMethod.MethodInfo.MakeGenericMethodCached(typeToCastTo);
-
-            var castedData = castMethod.Invoke(null, new object[] { enumerable });
-            var returnData = toListMethod.Invoke(null, new object[] { castedData });
+            var castedData = enumerableCastMethod.MakeGenericMethodCached(typeToCastTo).Invoke(null, new object[] { enumerable });
+            var returnData = enumerableToListMethod.MakeGenericMethodCached(typeToCastTo).Invoke(null, new object[] { castedData });
 
             return returnData;
         }
 
-        private static TReturn Pipe<T, TReturn>(T p1, params Func<T,TReturn>[] delegates)
-            where TReturn : class
-        {
-            return delegates.Aggregate((TReturn)null,(current,next) => current ?? next(p1));
-        }
 
-        private static TReturn Pipe<T1,T2, TReturn>(T1 p1, T2 p2, params Func<T1,T2, TReturn>[] delegates)
-            where TReturn : class
-        {
-            return delegates.Aggregate((TReturn)null, (current, next) => current ?? next(p1, p2));
-        }
-
-        private static TReturn Pipe<T1, T2, T3, TReturn>(T1 p1, T2 p2, T3 p3, params Func<T1, T2,T3, TReturn>[] delegates)
-            where TReturn : class
-        {
-            return delegates.Aggregate((TReturn)null, (current, next) => current ?? next(p1, p2, p3));
-        }
     }
 
-    public static class Piper
-    {
-        public static Piper<T1, T2, T3> With<T1, T2, T3>(T1 p1, T2 p2, T3 p3)
-        {
-            return new Piper<T1, T2, T3>(p1, p2, p3);
-        }
-    }
 
-    public class Piper<T1,T2,T3>
-    {
-        readonly T1 p1;
-        readonly T2 p2;
-        readonly T3 p3;
-
-        //IEnumerable<Func<T1, T2, T3>>
-
-        public Piper(T1 p1, T2 p2, T3 p3)
-        {
-            this.p1 = p1;
-            this.p2 = p2;
-            this.p3 = p3;
-        }
-
-        public TReturn Pipe<TReturn>(IEnumerable<Func<T1, T2, T3, TReturn>>[] delegates)
-            where TReturn : class
-        {
-            return Pipe(delegates.ToArray());
-        }
-
-        public TReturn Pipe<TReturn>(params Func<T1, T2, T3, TReturn>[] delegates)
-            where TReturn : class
-        {
-            return delegates.Aggregate((TReturn)null, (current, next) => current ?? next(p1, p2, p3));
-        }
-    }
 }

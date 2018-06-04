@@ -90,11 +90,29 @@ namespace Dynamix.Expressions.LambdaBuilders
             var inputParameters = Expression.Parameter(typeof(object[]), "parameters");
 
             var methodParameters = methodInfo.GetParameters();
-            var methodCallParameters = methodParameters
+
+            var methodInstanceParameters = methodParameters
                 .Skip(asInstance && methodInfo.IsExtension() ? 1 : 0)
+                .ToList();
+
+            var byRefVariables = methodInstanceParameters
+                .Select((x, i) => new { Index = i, Parameter = x })
+                .Where(x => x.Parameter.ParameterType.IsByRef)
+                .Select(x => new
+                {
+                    x.Index,
+                    Variable = Expression.Variable(x.Parameter.ParameterType.GetElementType(), x.Parameter.Name)
+                })
+                .ToArray();
+
+            var methodCallParameters =
+                methodInstanceParameters
                 .Select((x, i) => ExpressionEx.ConvertIfNeeded(
-                            Expression.ArrayAccess(inputParameters, Expression.Constant(i)),
-                            x.ParameterType));
+                            x.ParameterType.IsByRef ?
+                            (Expression)byRefVariables.Single(v => v.Index == i).Variable :
+                            (Expression)Expression.ArrayAccess(inputParameters, Expression.Constant(i)),
+                            x.ParameterType))
+                .ToList();
 
             Expression invokerExpression;
             ParameterExpression[] expressionParameters;
@@ -142,11 +160,44 @@ namespace Dynamix.Expressions.LambdaBuilders
                 delegateType = typeof(GenericStaticInvoker);
             }
 
-            //TODO: To support ref/out they need to be declared as variables at the start of the block, used as ref/out and then set back to the object array
-            var body = (methodInfo.ReturnType == typeof(void)) ?
-                    Expression.Block(typeof(object), invokerExpression, Expression.Constant(null)) :
-                    ExpressionEx.CastTypeSafe(invokerExpression, typeof(object));
+            
+            var isFunc = methodInfo.ReturnType != typeof(void);
 
+            
+                
+            var byRefAssignmentsFromArray = byRefVariables
+                .Select(x => (Expression)Expression.Assign(x.Variable, 
+                    ExpressionEx.ConvertIfNeeded(
+                        Expression.ArrayAccess(inputParameters, Expression.Constant(x.Index)), x.Variable.Type)));
+
+            var byRefAssignmentsToArray = byRefVariables
+                .Select(x => (Expression)Expression.Assign(Expression.ArrayAccess(inputParameters, Expression.Constant(x.Index)), ExpressionEx.ConvertIfNeeded(x.Variable, typeof(object))));
+
+            var returnVariable = isFunc && byRefVariables.Any() ? Expression.Variable(methodInfo.ReturnType) : null;
+
+            var declaredVariables =
+                (returnVariable != null ? new[] { returnVariable } : Enumerable.Empty<ParameterExpression>())
+                .Concat(byRefVariables.Select(x => x.Variable))
+                .ToArray();
+
+            var invokerBody = Enumerable.Empty<Expression>()
+                .Concat(byRefAssignmentsFromArray)
+                .Concat(returnVariable != null ? new[] { Expression.Assign(returnVariable, invokerExpression) } : new[] { invokerExpression })
+                .Concat(byRefAssignmentsToArray)
+                .Concat(returnVariable != null ? new[] { returnVariable } : Enumerable.Empty<Expression>());
+               
+            if (!isFunc)
+                invokerBody.Concat(new Expression[] { Expression.Constant(null) });
+
+            //If is Action, return null as object
+            //Else if is Func return actual type and cast to object
+            var body = (!isFunc) ?
+                    Expression.Block(typeof(object), declaredVariables, invokerBody) :
+                    ExpressionEx.ConvertIfNeeded(
+                        Expression.Block(methodInfo.ReturnType, declaredVariables, invokerBody), 
+                        typeof(object));
+
+            
             var lambda = Expression.Lambda(delegateType, body, expressionParameters);
 
             if (EnableCaching)

@@ -18,17 +18,14 @@ namespace Dynamix
                 x => (INumericValueParser)Activator.CreateInstance(
                         typeof(NumericValueParser<>).MakeGenericType(x)));
 
-
-        private static NumericValueParser<T> GetParser<T>()
-            where T : struct
-        {
-            return (NumericValueParser<T>)parsers[typeof(T)];
-        }
-
         private static INumericValueParser GetParser(Type type)
         {
             var effectiveType = Nullable.GetUnderlyingType(type) ?? type;
-            return parsers[effectiveType];
+
+            if (!parsers.TryGetValue(effectiveType, out var parser))
+                throw new NotSupportedException($"Type {type.Name} is not a supported numeric type");
+
+            return parser;
         }
 
         private static bool IsNullable<T>()

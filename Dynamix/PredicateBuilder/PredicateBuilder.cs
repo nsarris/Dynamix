@@ -3,6 +3,7 @@ using Dynamix.Expressions.Extensions;
 using Dynamix.Reflection;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -109,7 +110,7 @@ namespace Dynamix.PredicateBuilder
                     PredicateDataType.Unsupported;
         }
 
-        
+
 
         private bool ValueIsNull(object value)
         {
@@ -122,13 +123,13 @@ namespace Dynamix.PredicateBuilder
                 || Configuration.GetEmptyValues(DataType).Any();
         }
 
-        
 
-        private bool TryParseDateTime(string s,out DateTime d)
+
+        private bool TryParseDateTime(string s, out DateTime d)
         {
             return Configuration.DateTimeFormats.Length == 0 ?
                 DateTime.TryParse(s, Configuration.FormatProvider, Configuration.DateTimeStyles, out d) :
-                DateTime.TryParseExact(s,Configuration.DateTimeFormats, Configuration.FormatProvider, Configuration.DateTimeStyles, out d);
+                DateTime.TryParseExact(s, Configuration.DateTimeFormats, Configuration.FormatProvider, Configuration.DateTimeStyles, out d);
         }
 
         private bool TryParseTimeSpan(string s, out TimeSpan t)
@@ -147,7 +148,7 @@ namespace Dynamix.PredicateBuilder
             var isNullable = IsNullable;
             var isEmptyable = GetIsEmptyable();
             var @operator = Operator;
-            
+
             var value = (ValueIsNull(Value)) ? null : Value;
 
             //Convert Equals/DoesNotEqual null to IsNull/IsNotNull
@@ -206,6 +207,7 @@ namespace Dynamix.PredicateBuilder
                 return null;
 
             //TODO: Check element type is supported and try cast value to it
+            //If numeric times need be casted a where expression is needed
             var right = Expression.Constant(Value);
 
             return BuildCollectionSpecificExpression(Expression, Operator, right);
@@ -219,7 +221,8 @@ namespace Dynamix.PredicateBuilder
             var value = Value?.ToString();
             var right = value is null ? ExpressionEx.Constants.Null : Expression.Constant(value);
 
-            return BuildEquitableExpression(Expression, Operator, right)
+            return
+                BuildEquitableExpression(Expression, Operator, right)
                 ?? BuildComparableExpression(Expression, Operator, right)
                 ?? BuildStringSpecificExpression(Expression, Operator, right);
         }
@@ -299,7 +302,7 @@ namespace Dynamix.PredicateBuilder
             if (!(Value is DateTime d)
                 && !TryParseDateTime(Value.ToString(), out d))
                 throw new InvalidOperationException($"Value {Value} cannot be converted to DateTime");
-            
+
             var right = Expression.Constant(d);
 
             return BuildEquitableExpression(Expression, Operator, right)
@@ -312,7 +315,7 @@ namespace Dynamix.PredicateBuilder
                 return null;
 
             TimeSpan timeSpan = TimeSpan.Zero;
-            
+
             if (Value is TimeSpan t
                 || !TryParseTimeSpan(Value.ToString(), out t))
                 timeSpan = t;
@@ -337,17 +340,83 @@ namespace Dynamix.PredicateBuilder
 
         #region ExpressionBuilders
 
-        private static Expression BuildIsContainedInExpression(Expression left, ExpressionOperator expressionOperator, object value)
+        private Expression BuildIsContainedInPredicate()
         {
-            var right = Expression.Constant((
-                    (IEnumerable)value).ToCastedList(left.Type));
+            //TODO: fix
+            if (Operator == ExpressionOperator.IsContainedIn || Operator == ExpressionOperator.IsNotContainedIn)
+            {
+                if (Value != null)
+                {
+                    var enumerableTypeDescriptor = EnumerableTypeDescriptor.Get(Value.GetType());
+
+                    if (enumerableTypeDescriptor == null) //or string
+                    {
+                        //Try to parse
+                        var s = Value.ToString();
+                        var items = s
+                            .Substring(1, s.Length - 2)
+                            .Split(',')
+                            //quoted string or else same else null
+                            //.Select(x => x[0] == "\" ||)
+                            //.Where(x => x != null)
+                            ;
+                        //if date, bool, time => tryparse each
+                        //if enum/numeric to decimal
+                        //enumerableTypeDescriptor = EnumerableTypeDescriptor.Get(pasredValue);
+                    }
+
+                    if (enumerableTypeDescriptor != null)
+                    {
+                        var elementType = enumerableTypeDescriptor.ElementType;
+
+                        if (elementType.Is<string>() || elementType.IsOrNullable<bool>() ||
+                            elementType.IsOrNullable<DateTime>() || elementType.IsOrNullable<TimeSpan>())
+                        {
+                            //types dont match
+                            if ((Nullable.GetUnderlyingType(elementType) ?? elementType) != EffectiveType)
+                                return ExpressionEx.Constants.False;
+
+                            var data = (IEnumerable)Value;// ((IEnumerable)Value).DynamicToList(elementType);
+                            var count = data.DynamicCount();
+
+                            var right = Expression.Constant(data);
+                        }
+                        else if (elementType.IsEnumOrNullableEnum())
+                        {
+                            //left must be numeric or enum
+                            //cast both to common numeric type
+                        }
+                        else if (elementType.IsNumericOrNullable())
+                        {
+                            //left must be numeric
+                            //cast both to common numeric type
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private Expression BuildIsContainedInExpression(Expression left, ExpressionOperator expressionOperator, object value)
+        {
+            var data = value != null ? ((IEnumerable)value).ToCastedList(left.Type) : null;
+            var count = data?.DynamicCount() ?? 0;
+            var right = Expression.Constant(data);
 
             switch (expressionOperator)
             {
                 case ExpressionOperator.IsContainedIn:
-                    return Expression.Call(right, EnumerableExtensions.Methods.Contains, left);
+                    return
+                        count == 0 ?
+                        ExpressionEx.Constants.False :
+                        Expression.Call(right, EnumerableExtensions.Methods.Contains, left);
+
                 case ExpressionOperator.IsNotContainedIn:
-                    return Expression.Not(Expression.Call(right, EnumerableExtensions.Methods.Contains, left));
+                    return
+                        count == 0 ?
+                        ExpressionEx.Constants.True :
+                        Expression.Not(Expression.Call(right, EnumerableExtensions.Methods.Contains, left));
                 default:
                     return null;
             }
@@ -446,6 +515,7 @@ namespace Dynamix.PredicateBuilder
 
         private static Expression BuildEmptyValueExpression(Type type)
         {
+            //TODO: Build is contained with empty values
             if (type == typeof(string))
                 return ExpressionEx.Constants.EmptyString;
             else

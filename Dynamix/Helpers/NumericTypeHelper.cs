@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Dynamix
 {
-    public class NumericTypeDefinition
+    public class NumericTypeDescriptor
     {
         public Type Type { get; }
         public Type EffectiveType { get; }
@@ -15,7 +16,7 @@ namespace Dynamix
         public bool Signed { get; }
         public bool Nullable { get; }
         public bool IsIntegral { get; }
-        public NumericTypeDefinition(Type type)
+        public NumericTypeDescriptor(Type type)
         {
             var nullableUnderlyingType = System.Nullable.GetUnderlyingType(type);
 
@@ -68,15 +69,15 @@ namespace Dynamix
 
     public static class NumericTypeHelper
     {
-        static readonly Dictionary<Type, NumericTypeDefinition> numericTypes;
+        static readonly Dictionary<Type, NumericTypeDescriptor> numericTypes;
         static readonly byte maxIntegralSizeBytes;
         static readonly Type commonConvertibleType;
         static NumericTypeHelper()
         {
-            numericTypes = NumericTypeDefinition.SupportedTypes
-                .Concat(NumericTypeDefinition.SupportedTypes
+            numericTypes = NumericTypeDescriptor.SupportedTypes
+                .Concat(NumericTypeDescriptor.SupportedTypes
                     .Select(x => typeof(Nullable<>).MakeGenericType(x)))
-                .ToDictionary(x => x, x => new NumericTypeDefinition(x));
+                .ToDictionary(x => x, x => new NumericTypeDescriptor(x));
 
             
             
@@ -88,17 +89,21 @@ namespace Dynamix
                 commonConvertibleType = numericTypes.Values.Where(x => x.SizeBytes == maxSizeBytes).Select(x => x.EffectiveType).FirstOrDefault();
         }
 
-        public static bool IsNumericType(Type type)
+        public static bool IsNumericType(Type type, bool includeNullable = true)
         {
-            return numericTypes.ContainsKey(type);
+
+            if (numericTypes.TryGetValue(type, out var numericTypeDefinition))
+                return includeNullable || numericTypeDefinition.Nullable;
+            else
+                return false;
         }
 
-        public static bool IsNumericType(Type type, out NumericTypeDefinition numericTypeDefinition)
+        public static bool IsNumericType(Type type, out NumericTypeDescriptor numericTypeDefinition, bool includeNullable = true)
         {
             return numericTypes.TryGetValue(type, out numericTypeDefinition);
         }
 
-        public static NumericTypeDefinition GetNumericTypeDefinition(Type type)
+        public static NumericTypeDescriptor GetNumericTypeDefinition(Type type)
         {
             if (numericTypes.TryGetValue(type, out var numericTypeDefinition))
                 return numericTypeDefinition;
@@ -139,23 +144,160 @@ namespace Dynamix
             }
         }
 
+        public static void ConvertToComparableType(ref object left, ref object right, out Type comparableType)
+        {
+            AssertNumericType(left, true);
+            AssertNumericType(right, true);
+
+            if (left == null && right == null)
+                comparableType = typeof(int?);
+            else if (left == null)
+                comparableType = right.GetType();
+            else if (right == null)
+                comparableType = left.GetType();
+            else
+                comparableType = GetCommonTypeForConvertion(left.GetType(), right.GetType());
+
+            left = Convert.ChangeType(left, comparableType);
+            right = Convert.ChangeType(left, comparableType);
+        }
+
+        public static object ConvertToComparableType(object value, Type targetType, out Type comparableType)
+        {
+            comparableType = targetType;
+
+            AssertNumericType(targetType);
+            AssertNumericType(value, true);
+
+            if (value?.GetType() == targetType)
+                return value;
+
+            comparableType =
+                value == null ? targetType : GetCommonTypeForConvertion(value.GetType(), targetType);
+
+            return Convert.ChangeType(value, comparableType);
+        }
+
+        public static object ConvertToComparableType(object value, Type targetType)
+        {
+            return ConvertToComparableType(value, targetType, out var _);
+        }
+
+        public static void ConvertToComparableType(ref object left, ref object right)
+        {
+            ConvertToComparableType(ref left, ref right, out var _);
+        }
+
+        private static void AssertNumericType(object value, bool ignoreNull = false)
+        {
+            if ((value == null && !ignoreNull) ||
+                (value != null && !IsNumericType(value.GetType())))
+                throw new InvalidOperationException($"Type {value.GetType().Name} is not numeric");
+        }
+
+        private static void AssertNumericType(Type numericType)
+        {
+            if (!IsNumericType(numericType))
+                throw new InvalidOperationException($"Type {numericType.Name} is not numeric");
+        }
+
+        public static object AsNumeric(object value, Type numericType)
+        {
+            return AsNumeric(value, numericType, out var _);
+        }
+        public static object AsNumeric(object value, Type numericType, out Type comparableType)
+        {
+            return AsNumeric(value, numericType, NumberStyles.Any, CultureInfo.CurrentCulture.NumberFormat, out comparableType);
+        }
+
+        public static object AsNumeric(object value, Type numericType, NumberStyles numberStyles, IFormatProvider formatProvider)
+        {
+            return AsNumeric(value, numericType, NumberStyles.Any, CultureInfo.CurrentCulture.NumberFormat, out var _);
+        }
+
+        public static object AsNumeric(object value, Type numericType, NumberStyles numberStyles, IFormatProvider formatProvider, out Type comparableType)
+        {
+            AssertNumericType(numericType);
+
+            comparableType = null;
+
+            if (value is null)
+            {
+                if (Nullable.GetUnderlyingType(numericType) != null)
+                    return null;
+                else
+                    throw new InvalidOperationException($"Cannot convert from null to a non nullable type of {numericType.Name}");
+            }
+
+            var effectiveType = Nullable.GetUnderlyingType(value.GetType()) ?? value.GetType();
+            var enumUnderlyingType = effectiveType.IsEnum ? Enum.GetUnderlyingType(effectiveType) : null;
+
+            if (enumUnderlyingType != null)
+                value = Convert.ChangeType(value, enumUnderlyingType);
+            else
+            {
+
+                if (!IsNumericType(value.GetType())
+                            && !NumericValueParser.TryParse(numericType, value.ToString(), numberStyles, formatProvider, out value))
+                    throw new InvalidOperationException($"Value {value} is not a number or cannot be converted to type {numericType.Name}");
+            }
+
+            comparableType = GetCommonTypeForConvertion(numericType, value.GetType());
+            if (comparableType != value.GetType())
+                value = Convert.ChangeType(value, comparableType);
+
+            return value;
+        }
+
+        public static object AsNumericFromEnum(object value, Type enumType)
+        {
+            return AsNumericFromEnum(value, enumType, out var _);
+        }
+
+        public static object AsNumericFromEnum(object value, Type enumType, out Type comparableType)
+        {
+            comparableType = null;
+
+            var effectiveValueType = Nullable.GetUnderlyingType(value.GetType()) ?? value.GetType();
+            var effectiveEnumType = Nullable.GetUnderlyingType(enumType) ?? enumType;
+            
+            if (value is null)
+            {
+                if (enumType == effectiveEnumType)
+                    return null;
+                else
+                    throw new InvalidOperationException($"Cannot convert from null to a non nullable target type of ${enumType.Name}");
+            }      
+
+            if (!effectiveEnumType.IsEnum)
+                throw new InvalidOperationException($"Type {effectiveEnumType.Name} is not an enum");
+
+            var enumUnderlyingType = effectiveEnumType.IsEnum ? Enum.GetUnderlyingType(effectiveEnumType) : null;
+
+            if (!effectiveValueType.IsEnum
+                && !IsNumericType(value.GetType()) 
+                && !EnumParser.TryParse(enumType, value.ToString(), out value))
+                throw new InvalidOperationException($"Value {value} is not a number or cannot be converted to enum type {enumType.Name}");
+
+            value = ConvertToComparableType(EnumToNumber(value), enumUnderlyingType, out comparableType);
+
+            return value;
+        }
+
+        private static object EnumToNumber(object value)
+        {
+            if (value == null) return null;
+
+            var effectiveValueType = Nullable.GetUnderlyingType(value.GetType()) ?? value.GetType();
+
+            if (!effectiveValueType.IsEnum)
+                return value;
+
+            var underlyingEnumType = Enum.GetUnderlyingType(effectiveValueType);
+
+            return Convert.ChangeType(value, underlyingEnumType);
+        }
+
         public static IEnumerable<Type> SupportedTypes => numericTypes.Keys;
-
-        //public static Type[] IntegralTypes { get; } =
-        //    new Type[]
-        //    {
-        //        typeof(sbyte), typeof(byte), typeof(short), typeof(ushort),
-        //        typeof(int), typeof(uint), typeof(long), typeof(ulong),
-
-        //        typeof(sbyte?), typeof(byte?), typeof(short?), typeof(ushort?),
-        //        typeof(int?), typeof(uint), typeof(long), typeof(ulong)
-        //    };
-
-        //public static Type[] DecimalTypes { get; } =
-        //    new Type[]
-        //    {
-        //        typeof(sbyte), typeof(byte), typeof(short), typeof(ushort),
-        //        typeof(int), typeof(uint), typeof(long), typeof(ulong)
-        //    };
     }
 }

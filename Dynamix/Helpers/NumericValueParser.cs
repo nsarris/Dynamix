@@ -12,7 +12,7 @@ namespace Dynamix
     public static class NumericValueParser
     {
         readonly static Dictionary<Type, INumericValueParser> parsers
-            = NumericTypeDefinition.SupportedTypes
+            = NumericTypeDescriptor.SupportedTypes
             .ToDictionary(
                 x => x,
                 x => (INumericValueParser)Activator.CreateInstance(

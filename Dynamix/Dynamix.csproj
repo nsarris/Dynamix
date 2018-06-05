@@ -47,7 +47,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DynamicQueryable\DynamicEnumerable.cs" />
+    <Compile Include="DynamicQueryable\DynamicOrderedEnumerable.cs" />
+    <Compile Include="DynamicQueryable\DynamicOrderedQueryable.cs" />
     <Compile Include="DynamicQueryable\DynamicQueryable.cs" />
+    <Compile Include="DynamicQueryable\OrderItem.cs" />
     <Compile Include="DynamicType\DynamicTypeCachedDescriptor.cs" />
     <Compile Include="DynamicType\DynamicTypeProperty.cs" />
     <Compile Include="DynamicType\CustomAttributeBuilderFactory.cs" />
@@ -58,12 +62,15 @@
     <Compile Include="Expressions\Builders\ConstructorInvokerLambdaBuilder.cs" />
     <Compile Include="Expressions\Builders\MethodInvokerLambdaBuilder.cs" />
     <Compile Include="Expressions\Visitors\ExpressionForEachOfTypeVisitor.cs" />
+    <Compile Include="Helpers\EnumerableExtensions.cs" />
     <Compile Include="Helpers\EnumParser.cs" />
     <Compile Include="Helpers\NumericValueParser.cs" />
     <Compile Include="PredicateBuilder\ExpressionNodeVisitor.cs" />
     <Compile Include="PredicateBuilder\INodeVisitor.cs" />
     <Compile Include="Helpers\NumericTypeHelper.cs" />
     <Compile Include="PredicateBuilder\PredicateBuilder.cs" />
+    <Compile Include="PredicateBuilder\PredicateBuilderConfiguration.cs" />
+    <Compile Include="PredicateBuilder\PredicateDataType.cs" />
     <Compile Include="PredicateBuilder\PredicateTreeBuilder.cs" />
     <Compile Include="QyeryableExtensions\QyerableExtensions.cs" />
     <Compile Include="QyeryableExtensions\SingleQueryable.cs" />
@@ -88,7 +95,6 @@
     <Compile Include="PredicateBuilder\ExpressionOperator.cs" />
     <Compile Include="PredicateBuilder\NodeBase.cs" />
     <Compile Include="PredicateBuilder\LogicalOperator.cs" />
-    <Compile Include="PredicateBuilder\PredicateBuilder_old.cs" />
     <Compile Include="PredicateBuilder\UnaryNode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Reflection\ActivatorEx.cs" />

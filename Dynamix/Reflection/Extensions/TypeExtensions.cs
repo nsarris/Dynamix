@@ -123,7 +123,72 @@ namespace Dynamix.Reflection
             return typeof(Delegate).IsAssignableFrom(type);
         }
 
-        
+        public static bool Is<T>(this Type type)
+        {
+            return type == typeof(T);
+        }
+
+        public static bool IsNullable<T>(this Type type) where T : struct
+        {
+            return type == typeof(T?);
+        }
+
+        public static bool IsOrNullable<T>(this Type type) where T : struct
+        {
+            return type == typeof(T) || type == typeof(T?);
+        }
+
+        public static bool IsNumeric(this Type type)
+        {
+            return NumericTypeHelper.IsNumericType(type, false);
+        }
+
+        public static bool IsNumeric(this Type type, out NumericTypeDescriptor numericTypeDefinition)
+        {
+            return NumericTypeHelper.IsNumericType(type, out numericTypeDefinition, false);
+        }
+        public static bool IsNumericOrNullable(this Type type)
+        {
+            return NumericTypeHelper.IsNumericType(type);
+        }
+
+        public static bool IsNumericOrNullable(this Type type, out NumericTypeDescriptor numericTypeDefinition)
+        {
+            return NumericTypeHelper.IsNumericType(type, out numericTypeDefinition);
+        }
+
+        public static bool IsEnumOrNullableEnum(this Type type)
+        {
+            return (Nullable.GetUnderlyingType(type) ?? type).IsEnum;
+        }
+
+        public static bool IsEnum(this Type type, out Type underlyingType)
+        {
+            underlyingType = Enum.GetUnderlyingType(type);
+            return underlyingType != null;
+        }
+
+        public static bool IsEnumOrNullableEnum(this Type type, out Type underlyingType)
+        {
+            type = Nullable.GetUnderlyingType(type) ?? type;
+
+            underlyingType = type.IsEnum ? Enum.GetUnderlyingType(type) : null;
+            
+            return underlyingType != null;
+        }
+
+        public static bool IsEnumerable(this Type type, out EnumerableTypeDescriptor enumerableTypeDescriptor)
+        {
+            enumerableTypeDescriptor = EnumerableTypeDescriptor.Get(type);
+            return (enumerableTypeDescriptor != null);
+        }
+
+        public static bool IsEnumerable(this Type type)
+        {
+            return EnumerableTypeDescriptor.Get(type) != null;
+        }
+
+
         public static object DefaultOf(this Type type)
         {
             return defaultOfGenericMethod.Value
@@ -139,5 +204,7 @@ namespace Dynamix.Reflection
         {
             return default(T);
         }
+
+        
     }
 }

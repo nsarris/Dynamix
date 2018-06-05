@@ -67,5 +67,24 @@ namespace Dynamix.Expressions.Extensions
             visitor.Visit(expression);
             return r;
         }
+
+        public static Expression ApplyConditional(this Expression expression, bool condition, Func<Expression, Expression> f)
+        {
+            return condition ? f(expression) : expression;
+        }
+
+        public static Expression ConditionalNot(this Expression expression, bool condition)
+        {
+            return condition ? Expression.Not(expression) : expression;
+        }
+
+        public static Expression IsNull(this Expression expression, bool not = false)
+        {
+            return
+                not ?
+                Expression.NotEqual(expression, ExpressionEx.Constants.Null) :
+                Expression.Equal(expression, ExpressionEx.Constants.Null);
+        }
+
     }
 }

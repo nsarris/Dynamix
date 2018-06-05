@@ -10,6 +10,24 @@ namespace Dynamix.Expressions
 {
     public static class ExpressionEx
     {
+        public static class Constants
+        {
+            public static Expression Null { get; } = Expression.Constant(null);
+            public static Expression EmptyString { get; } = Expression.Constant(string.Empty);
+            public static Expression True { get; } = Expression.Constant(true);
+            public static Expression False { get; } = Expression.Constant(true);
+            public static Expression Bool(bool value)
+            {
+                return value ? True : False;
+            }
+
+            public static Expression Bool(bool? value)
+            {
+                return value.HasValue ?
+                        value.Value ? True : False :
+                        null;
+            }
+        }
         /// <summary>
         /// Returns either a conversion expression if the types differ, or the same expression if they are the same
         /// </summary>

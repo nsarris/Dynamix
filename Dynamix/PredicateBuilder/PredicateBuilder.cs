@@ -39,7 +39,7 @@ namespace Dynamix.PredicateBuilder
 
         public PredicateBuilder(Expression sourceExpression, ExpressionOperator @operator, object value, PredicateBuilderConfiguration configuration = null)
         {
-            Configuration = configuration ?? new PredicateBuilderConfiguration();
+            Configuration = configuration ?? PredicateBuilderConfiguration.Default;
             Expression = sourceExpression;
             Operator = @operator;
             Value = value;
@@ -54,18 +54,18 @@ namespace Dynamix.PredicateBuilder
         #region Public API
 
         public static Expression GetPredicateExpression
-            (ParameterExpression instanceParameter, string sourceExpression, ExpressionOperator @operator, object value)
+            (ParameterExpression instanceParameter, string sourceExpression, ExpressionOperator @operator, object value, PredicateBuilderConfiguration configuration = null)
         {
             var left = System.Linq.Dynamic.DynamicExpression.Parse(
                                 new[] { instanceParameter }, null, instanceParameter.Name + "." + sourceExpression);
 
-            return GetPredicateExpression(left, @operator, value);
+            return GetPredicateExpression(left, @operator, value, configuration);
         }
 
         public static Expression GetPredicateExpression
-            (Expression sourceExpression, ExpressionOperator @operator, object value)
+            (Expression sourceExpression, ExpressionOperator @operator, object value, PredicateBuilderConfiguration configuration = null)
         {
-            var predicateBuilder = new PredicateBuilder(sourceExpression, @operator, value);
+            var predicateBuilder = new PredicateBuilder(sourceExpression, @operator, value, configuration);
 
             return predicateBuilder.BuildPredicateExpression();
 
@@ -110,8 +110,6 @@ namespace Dynamix.PredicateBuilder
                     PredicateDataType.Unsupported;
         }
 
-
-
         private bool ValueIsNull(object value)
         {
             return (value is null || Configuration.IsNullString(value));
@@ -122,8 +120,6 @@ namespace Dynamix.PredicateBuilder
             return DataType == PredicateDataType.Collection
                 || Configuration.GetEmptyValues(DataType).Any();
         }
-
-
 
         private bool TryParseDateTime(string s, out DateTime d)
         {
@@ -137,6 +133,59 @@ namespace Dynamix.PredicateBuilder
             return Configuration.TimeSpanFormats.Length == 0 ?
                 TimeSpan.TryParse(s, Configuration.FormatProvider, out t) :
                 TimeSpan.TryParseExact(s, Configuration.TimeSpanFormats, Configuration.FormatProvider, out t);
+        }
+
+        private void AssertCompatibleValues(IEnumerable<object> values, out Type comparableType)
+        {
+            comparableType = Type;
+            values.Aggregate(Type, (ct, item) => { AssertCompatibleValue(item, out ct); return ct; });
+        }
+
+        private void AssertCompatibleValue(object value, out Type comparableType)
+        {
+            comparableType = Type;
+
+            if (value == null)
+            {
+                if (IsNullable)
+                    return;
+            }
+            else
+            {
+                var valueType = value.GetType();
+                switch (DataType)
+                {
+                    case PredicateDataType.String:
+                        return;
+                    case PredicateDataType.Boolean:
+                    case PredicateDataType.DateTime:
+                    case PredicateDataType.TimeSpan:
+                        if (value.GetType().StripNullable() == EffectiveType)
+                            return;
+                        break;
+                    case PredicateDataType.Number:
+                        if (valueType.IsNumericOrNullable())
+                        {
+                            comparableType = NumericTypeHelper.GetCommonTypeForConvertion(EffectiveType, valueType);
+                            return;
+                        }
+                        break;
+                    case PredicateDataType.Enum:
+                        if (valueType.IsEnumOrNullableEnum())
+                        {
+                            comparableType = NumericTypeHelper.GetCommonTypeForConvertion(Enum.GetUnderlyingType(EffectiveType), Enum.GetUnderlyingType(valueType));
+                            return;
+                        }
+                        if (valueType.IsNumericOrNullable())
+                        {
+                            comparableType = NumericTypeHelper.GetCommonTypeForConvertion(Enum.GetUnderlyingType(EffectiveType), valueType);
+                            return;
+                        }
+                        break;
+                }
+            }
+
+            throw new InvalidOperationException($"Value '{value}' is not compatible with type {Type.Name}");
         }
 
         #endregion
@@ -165,21 +214,31 @@ namespace Dynamix.PredicateBuilder
 
             if (@operator == ExpressionOperator.IsNull || @operator == ExpressionOperator.IsNotNull)
             {
-                var not = @operator == ExpressionOperator.IsNotNull;
+                if (!IsNullable)
+                {
+                    var not = @operator == ExpressionOperator.IsNotNull;
 
-                if (!IsNullable && isEmptyable)
-                    @operator = not ? ExpressionOperator.IsNotEmpty : ExpressionOperator.IsEmpty;
-                else
-                    return ExpressionEx.Constants.Bool(not);
+                    if (isEmptyable)
+                        @operator = not ? ExpressionOperator.IsNotEmpty : ExpressionOperator.IsEmpty;
+                    else
+                        return ExpressionEx.Constants.Bool(not);
+                }
+
+                return BuildIsNullOrEmptyExpression(Expression, @operator);
             }
             else if (@operator == ExpressionOperator.IsEmpty || @operator == ExpressionOperator.IsNotEmpty)
             {
-                var not = @operator == ExpressionOperator.IsNotEmpty;
+                if (!isEmptyable)
+                {
+                    var not = @operator == ExpressionOperator.IsNotEmpty;
 
-                if (!isEmptyable && isNullable)
-                    @operator = not ? ExpressionOperator.IsNotNull : ExpressionOperator.IsNull;
-                else
-                    return ExpressionEx.Constants.Bool(not);
+                    if (isNullable)
+                        @operator = not ? ExpressionOperator.IsNotNull : ExpressionOperator.IsNull;
+                    else
+                        return ExpressionEx.Constants.Bool(not);
+                }
+
+                return BuildIsNullOrEmptyExpression(Expression, @operator);
             }
             else if (@operator == ExpressionOperator.IsNullOrEmpty || @operator == ExpressionOperator.IsNullOrEmpty)
             {
@@ -191,6 +250,8 @@ namespace Dynamix.PredicateBuilder
                     @operator = not ? ExpressionOperator.IsNotNull : ExpressionOperator.IsNull;
                 else if (!isNullable && !isEmptyable)
                     return ExpressionEx.Constants.Bool(not);
+
+                return BuildIsNullOrEmptyExpression(Expression, @operator);
             }
             //Any other operation with null returns false
             else if (value is null)
@@ -198,7 +259,7 @@ namespace Dynamix.PredicateBuilder
                 return ExpressionEx.Constants.False;
             }
 
-            return BuildIsNullOrEmptyExpression(Expression, @operator);
+            return null;
         }
 
         private Expression BuildCollectionPredicate()
@@ -377,9 +438,8 @@ namespace Dynamix.PredicateBuilder
                                 return ExpressionEx.Constants.False;
 
                             var data = (IEnumerable)Value;// ((IEnumerable)Value).DynamicToList(elementType);
-                            var count = data.DynamicCount();
 
-                            var right = Expression.Constant(data);
+                            return BuildIsContainedInValuesExpression(Expression, data);
                         }
                         else if (elementType.IsEnumOrNullableEnum())
                         {
@@ -398,29 +458,7 @@ namespace Dynamix.PredicateBuilder
             return null;
         }
 
-        private Expression BuildIsContainedInExpression(Expression left, ExpressionOperator expressionOperator, object value)
-        {
-            var data = value != null ? ((IEnumerable)value).ToCastedList(left.Type) : null;
-            var count = data?.DynamicCount() ?? 0;
-            var right = Expression.Constant(data);
-
-            switch (expressionOperator)
-            {
-                case ExpressionOperator.IsContainedIn:
-                    return
-                        count == 0 ?
-                        ExpressionEx.Constants.False :
-                        Expression.Call(right, EnumerableExtensions.Methods.Contains, left);
-
-                case ExpressionOperator.IsNotContainedIn:
-                    return
-                        count == 0 ?
-                        ExpressionEx.Constants.True :
-                        Expression.Not(Expression.Call(right, EnumerableExtensions.Methods.Contains, left));
-                default:
-                    return null;
-            }
-        }
+        
 
 
         private Expression BuildEquitableExpression(Expression left, ExpressionOperator expressionOperator, Expression right)
@@ -513,22 +551,37 @@ namespace Dynamix.PredicateBuilder
             }
         }
 
-        private static Expression BuildEmptyValueExpression(Type type)
+        private Expression BuildIsContainedInValuesExpression(Expression expression, IEnumerable values)
         {
-            //TODO: Build is contained with empty values
-            if (type == typeof(string))
-                return ExpressionEx.Constants.EmptyString;
+            var castedValues = values.Cast<object>().ToArray();
+
+            AssertCompatibleValues(castedValues, out var comparableType);
+
+            var left = ExpressionEx.ConvertIfNeeded(expression, comparableType);
+
+            if (!castedValues.Any())
+                return ExpressionEx.Constants.False;
+            if (castedValues.Count() == 1)
+                return Expression.Equal(
+                    left,
+                    Expression.Constant(Convert.ChangeType(castedValues.First(), comparableType)));
             else
-                return ExpressionEx.Constants.Null;
+                return Expression.Call(
+                    null,
+                    EnumerableExtensions.Methods.Contains.MakeGenericMethodCached(comparableType),
+                    Expression.Constant(values.DynamicCast(comparableType)),
+                    left);
         }
 
         private Expression BuildIsEmptyExpression(bool not, Expression expression)
         {
             return (DataType == PredicateDataType.Collection ?
                     (Expression)Expression.Call(expression, EnumerableExtensions.Methods.Any) :
-                    Expression.Equal(expression, BuildEmptyValueExpression(expression.Type)))
+                    BuildIsContainedInValuesExpression(expression, Configuration.GetEmptyValues(DataType)))
                     .ConditionalNot(not);
         }
+
+        
 
         #endregion
     }

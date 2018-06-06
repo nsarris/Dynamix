@@ -75,6 +75,11 @@ namespace Dynamix.Expressions.Extensions
 
         public static Expression ConditionalNot(this Expression expression, bool condition)
         {
+            if (expression is ConstantExpression constantExpression)
+                return condition ?
+                    ExpressionEx.Constants.Bool(true.Equals(constantExpression.Value)) :
+                    constantExpression;
+
             return condition ? Expression.Not(expression) : expression;
         }
 

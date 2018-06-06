@@ -73,6 +73,48 @@ namespace Dynamix.Expressions
             return Cast(expression, type, true);
         }
 
+        /// <summary>
+        /// Checks if any of the elements of the binary operation and true or false constants and ommits them
+        /// </summary>
+        /// <param name="left">The left expression</param>
+        /// <param name="right">The right expression</param>
+        /// <returns>If the deterministic outcome is True/False returns an appropriate constant. Otherwise falls back to Expression.AndAlso()</returns>
+        public static Expression AndAlso(Expression left, Expression right)
+        {
+            if (left != null && right != null
+                && (left.NodeType == ExpressionType.Constant
+                    || right.NodeType == ExpressionType.Constant))
+            { 
+                if (left is ConstantExpression leftConstantExpression)
+                    return true.Equals(leftConstantExpression.Value) ? right : Constants.False;
+                else if (right is ConstantExpression rightConstantExpression)
+                    return true.Equals(rightConstantExpression.Value) ? left : Constants.False;
+            }
+
+            return Expression.AndAlso(left, right);
+        }
+
+        /// <summary>
+        /// Checks if any of the elements of the binary operation and true or false constants and ommits them
+        /// </summary>
+        /// <param name="left">The left expression</param>
+        /// <param name="right">The right expression</param>
+        /// <returns>If the deterministic outcome is True/False returns an appropriate constant. Otherwise falls back to Expression.AndAlso()</returns>
+        public static Expression OrElse(Expression left, Expression right)
+        {
+            if (left != null && right != null
+                && (left.NodeType == ExpressionType.Constant 
+                    || right.NodeType == ExpressionType.Constant))
+            {
+                if (left is ConstantExpression leftConstantExpression)
+                    return true.Equals(leftConstantExpression.Value) ? Constants.True : right;
+                else if (right is ConstantExpression rightConstantExpression)
+                    return true.Equals(rightConstantExpression.Value) ? Constants.True : left;
+            }
+
+            return Expression.OrElse(left, right);
+        }
+
         public static Expression ForEach(Expression collection, ParameterExpression loopVar, Expression loopContent)
         {
             var elementType = loopVar.Type;

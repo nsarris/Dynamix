@@ -66,6 +66,7 @@
     <Compile Include="Helpers\EnumParser.cs" />
     <Compile Include="Helpers\NumericValueParser.cs" />
     <Compile Include="PredicateBuilder\ExpressionNodeVisitor.cs" />
+    <Compile Include="PredicateBuilder\ExpressionNodeVisitorInput.cs" />
     <Compile Include="PredicateBuilder\INodeVisitor.cs" />
     <Compile Include="Helpers\NumericTypeHelper.cs" />
     <Compile Include="PredicateBuilder\PredicateBuilder.cs" />

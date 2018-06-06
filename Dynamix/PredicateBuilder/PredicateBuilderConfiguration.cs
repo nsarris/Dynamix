@@ -14,6 +14,8 @@ namespace Dynamix.PredicateBuilder
         private readonly Dictionary<PredicateDataType, IEnumerable<object>> emptyValues
             = new Dictionary<PredicateDataType, IEnumerable<object>>();
 
+        public static PredicateBuilderConfiguration Default { get; } = new PredicateBuilderConfiguration();
+
         public IEnumerable<string> TrueTextValues { get; private set; } = trueValueStrings;
         public IEnumerable<string> FalseTextValues { get; private set; } = falseValueStrings;
         public IEnumerable<string> NullTextValues { get; private set; } = nullValueStrings;
@@ -28,11 +30,22 @@ namespace Dynamix.PredicateBuilder
         public string[] DateTimeFormats { get; private set; }
         public string[] TimeSpanFormats { get; private set; }
 
+
+
         public PredicateBuilderConfiguration WithEmptyValues(PredicateDataType dataType, IEnumerable<object> values)
+        {
+            return WithEmptyValues(dataType, values?.ToArray());
+        }
+        public PredicateBuilderConfiguration WithEmptyValues(PredicateDataType dataType, params object[] values)
         {
             if (dataType == PredicateDataType.Collection
                 || dataType == PredicateDataType.Unsupported)
                 throw new InvalidOperationException($"Cannot set empty values for {dataType} types");
+
+            values = (values ?? Enumerable.Empty<object>())
+                .Select(x => dataType == PredicateDataType.String ?
+                            x?.ToString() : x)
+                 .ToArray();
 
             if (emptyValues.ContainsKey(dataType))
                 emptyValues[dataType] = values;

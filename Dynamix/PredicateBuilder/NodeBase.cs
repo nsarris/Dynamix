@@ -23,14 +23,14 @@ namespace Dynamix.PredicateBuilder
         public abstract T Accept<T, TInput>(INodeVisitor<T, TInput> visitor, TInput input);
         public abstract T Accept<T, TInput, TState>(INodeVisitor<T, TInput, TState> visitor, TInput input, TState state);
 
-        public LambdaExpression GetLambdaExpression(Type type)
+        public LambdaExpression GetLambdaExpression(Type type, PredicateBuilderConfiguration configuration = null)
         {
-            return new ExpressionNodeVisitor().VisitLambda(this, type);
+            return new ExpressionNodeVisitor().VisitLambda(this, type, configuration);
         }
 
-        public Expression<Func<T, bool>> GetLambdaExpression<T>()
+        public Expression<Func<T, bool>> GetLambdaExpression<T>(PredicateBuilderConfiguration configuration = null)
         {
-            return new ExpressionNodeVisitor().VisitLambda<T>(this);
+            return new ExpressionNodeVisitor().VisitLambda<T>(this, configuration);
         }
     }
 }

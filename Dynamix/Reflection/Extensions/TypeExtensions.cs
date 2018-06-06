@@ -138,6 +138,11 @@ namespace Dynamix.Reflection
             return type == typeof(T) || type == typeof(T?);
         }
 
+        public static Type StripNullable(this Type type)
+        {
+            return Nullable.GetUnderlyingType(type) ?? type;
+        }
+
         public static bool IsNumeric(this Type type)
         {
             return NumericTypeHelper.IsNumericType(type, false);

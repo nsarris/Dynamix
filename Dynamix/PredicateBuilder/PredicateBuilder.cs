@@ -56,9 +56,8 @@ namespace Dynamix.PredicateBuilder
         public static Expression GetPredicateExpression
             (ParameterExpression instanceParameter, string sourceExpression, ExpressionOperator @operator, object value, PredicateBuilderConfiguration configuration = null)
         {
-            //TODO: Fix it parameter
             var left = System.Linq.Dynamic.DynamicExpression.Parse(
-                                new[] { instanceParameter }, null, instanceParameter.Name + "." + sourceExpression);
+                                new[] { instanceParameter }, null, sourceExpression);
 
             return GetPredicateExpression(left, @operator, value, configuration);
         }
@@ -269,7 +268,7 @@ namespace Dynamix.PredicateBuilder
                 return null;
 
             //TODO: Check element type is supported and try cast value to it
-            //If numeric times need be casted a where expression is needed
+            //If numeric types need be casted a where expression is needed
             var right = Expression.Constant(Value);
 
             return BuildCollectionSpecificExpression(Expression, Operator, right);
@@ -402,6 +401,43 @@ namespace Dynamix.PredicateBuilder
 
         #region ExpressionBuilders
 
+        private static readonly char[] quoteCharacters = new [] { '"', '\'' };
+
+        private string StripQuotes(string s) => StripQuotes(s, quoteCharacters);
+        private string StripQuotes(string s, params char[] quoteChars)
+        {
+            if (s == null) return null;
+
+            foreach (var c in quoteChars)
+                if ((s.First() == c) && s.Last() == c)
+                    return s.Substring(0, s.Length - 2);
+
+            return s;
+        }
+        private IEnumerable ParseArray(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s))
+                return s;
+
+            if (s.StartsWith("[") && s.EndsWith("]"))
+            {
+                var items = s
+                        .Substring(1, s.Length - 2)
+                        .Split(',')
+                        .Select(x => StripQuotes(s))
+                        //.Select(x =>
+                        //{
+                        //if date, bool, time => tryparse each
+                        //if enum/numeric to decimal
+                        //})
+                        ;
+
+                return items;
+            }
+
+            throw new InvalidOperationException($"Expression '{s}' is not a valid array");
+        }
+
         private Expression BuildIsContainedInPredicate()
         {
             //TODO: fix
@@ -411,20 +447,11 @@ namespace Dynamix.PredicateBuilder
                 {
                     var enumerableTypeDescriptor = EnumerableTypeDescriptor.Get(Value.GetType());
 
-                    if (enumerableTypeDescriptor == null) //or string
+                    if (enumerableTypeDescriptor == null)
                     {
-                        //Try to parse
-                        var s = Value.ToString();
-                        var items = s
-                            .Substring(1, s.Length - 2)
-                            .Split(',')
-                            //quoted string or else same else null
-                            //.Select(x => x[0] == "\" ||)
-                            //.Where(x => x != null)
-                            ;
-                        //if date, bool, time => tryparse each
-                        //if enum/numeric to decimal
-                        //enumerableTypeDescriptor = EnumerableTypeDescriptor.Get(pasredValue);
+                        var parsedValues = ParseArray(Value.ToString());
+                        //we only get element type, we can use out in parse
+                        //enumerableTypeDescriptor = EnumerableTypeDescriptor.Get(parsedValues);
                     }
 
                     if (enumerableTypeDescriptor != null)
@@ -436,7 +463,8 @@ namespace Dynamix.PredicateBuilder
                         {
                             //types dont match
                             if ((Nullable.GetUnderlyingType(elementType) ?? elementType) != EffectiveType)
-                                return ExpressionEx.Constants.False;
+                                //or maybe error?
+                                return ExpressionEx.Constants.Bool(Operator == ExpressionOperator.IsNotContainedIn);
 
                             var data = (IEnumerable)Value;// ((IEnumerable)Value).DynamicToList(elementType);
 
@@ -454,12 +482,14 @@ namespace Dynamix.PredicateBuilder
                         }
                     }
                 }
+                else
+                    return ExpressionEx.Constants.Bool(Operator == ExpressionOperator.IsNotContainedIn);
             }
 
             return null;
         }
 
-        
+
 
 
         private Expression BuildEquitableExpression(Expression left, ExpressionOperator expressionOperator, Expression right)
@@ -582,7 +612,7 @@ namespace Dynamix.PredicateBuilder
                     .ConditionalNot(not);
         }
 
-        
+
 
         #endregion
     }

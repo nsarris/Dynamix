@@ -45,14 +45,14 @@ namespace Dynamix.PredicateBuilder
 
         public LambdaExpression VisitLambda(NodeBase root, Type instanceType, PredicateBuilderConfiguration configuration = null)
         {
-            var instanceParameter = Expression.Parameter(instanceType, "x");
-            return Expression.Lambda(Visit(root, new ExpressionNodeVisitorInput(instanceParameter, configuration)), instanceParameter);
+            var input = new ExpressionNodeVisitorInput(instanceType, configuration);
+            return Expression.Lambda(Visit(root, input), input.ItParameterExpression);
         }
 
         public Expression<Func<T,bool>> VisitLambda<T>(NodeBase root, PredicateBuilderConfiguration configuration = null)
         {
-            var instanceParameter = Expression.Parameter(typeof(T), "x");
-            return Expression.Lambda<Func<T,bool>>(Visit(root, new ExpressionNodeVisitorInput(instanceParameter, configuration)), instanceParameter);
+            var input = new ExpressionNodeVisitorInput(typeof(T), configuration);
+            return Expression.Lambda<Func<T,bool>>(Visit(root, input), input.ItParameterExpression);
         }
     }
 }

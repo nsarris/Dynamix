@@ -27,7 +27,7 @@ namespace Dynamix
             return Properties.ToDictionary(x => x.Key, x => x.Value.Get(this));
         }
 
-        [PropertyInfoExIgnoreAttribute]
+        [PropertyInfoExIgnore]
         protected IReadOnlyDictionary<string, PropertyInfoEx> Properties
         {
             get
@@ -39,13 +39,12 @@ namespace Dynamix
             }
         }
 
-        [PropertyInfoExIgnoreAttribute]
+        [PropertyInfoExIgnore]
         public object this[string PropertyName]
         {
             get
             {
-                PropertyInfoEx prop;
-                if (Properties.TryGetValue(PropertyName, out prop))
+                if (Properties.TryGetValue(PropertyName, out PropertyInfoEx prop))
                 {
                     return prop.Get(this);
                 }
@@ -53,8 +52,7 @@ namespace Dynamix
             }
             set
             {
-                PropertyInfoEx prop;
-                if (Properties.TryGetValue(PropertyName, out prop))
+                if (Properties.TryGetValue(PropertyName, out PropertyInfoEx prop))
                 {
                     prop.Set(this, value);
                 }
@@ -69,7 +67,7 @@ namespace Dynamix
             if (nullableOf == null)
                 return (T)Convert.ChangeType(v, typeof(T));
             else if (v == null)
-                return default(T);
+                return default;
             else if (nullableOf == v.GetType())
                 return (T)v;
             else 

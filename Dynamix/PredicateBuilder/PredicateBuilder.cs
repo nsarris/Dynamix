@@ -56,6 +56,7 @@ namespace Dynamix.PredicateBuilder
         public static Expression GetPredicateExpression
             (ParameterExpression instanceParameter, string sourceExpression, ExpressionOperator @operator, object value, PredicateBuilderConfiguration configuration = null)
         {
+            //TODO: Fix it parameter
             var left = System.Linq.Dynamic.DynamicExpression.Parse(
                                 new[] { instanceParameter }, null, instanceParameter.Name + "." + sourceExpression);
 

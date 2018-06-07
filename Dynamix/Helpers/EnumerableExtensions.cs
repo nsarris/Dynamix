@@ -17,6 +17,7 @@ namespace Dynamix
             internal static readonly MethodInfo Cast = typeof(Enumerable).GetMethod(nameof(Enumerable.Cast));
             internal static readonly MethodInfo Contains = typeof(Enumerable).GetMethods().Where(x => x.Name == nameof(Enumerable.Contains) && x.GetParameters().Length == 2).FirstOrDefault();
             internal static readonly MethodInfo Count = typeof(Enumerable).GetMethods().Where(x => x.Name == nameof(Enumerable.Count) && x.GetParameters().Length == 1).FirstOrDefault();
+            internal static readonly MethodInfo First = typeof(Enumerable).GetMethods().Where(x => x.Name == nameof(Enumerable.First) && x.GetParameters().Length == 0).FirstOrDefault();
             internal static readonly MethodInfo ToList = typeof(Enumerable).GetMethod(nameof(Enumerable.ToList));
         }
 
@@ -41,6 +42,13 @@ namespace Dynamix
             enumerable = enumerable.Prepare(ref elementType);
 
             return (bool)Methods.Any.MakeGenericMethodCached(elementType).Invoke(null, new object[] { enumerable });
+        }
+
+        public static object DynamicFirst(this IEnumerable enumerable, Type elementType = null)
+        {
+            enumerable = enumerable.Prepare(ref elementType);
+
+            return (bool)Methods.First.MakeGenericMethodCached(elementType).Invoke(null, new object[] { enumerable });
         }
 
         public static int DynamicCount(this IEnumerable enumerable, Type elementType = null)

@@ -76,6 +76,7 @@ namespace Dynamix.PredicateBuilder
             return
                 AssertNullOrEmptyPredicate() ??
                 BuildCollectionPredicate() ??
+                BuildIsContainedInPredicate() ??
                 BuildStringPredicate() ??
                 BuildEnumPredicate() ??
                 BuildBooleanPredicate() ??
@@ -121,6 +122,19 @@ namespace Dynamix.PredicateBuilder
                 || Configuration.GetEmptyValues(DataType).Any();
         }
 
+        private bool TryParseNumber(string s, Type numericType, out object number)
+        {
+            return NumericValueParser.TryParse(numericType, s, Configuration.NumberStyles, Configuration.FormatProvider, out number);
+        }
+
+        private bool TryParseBool(string s, out bool d)
+        {
+            d = false;
+            if (Configuration.IsTrueString(s)) { d = true; return true; }
+            else if (Configuration.IsTrueString(s)) { d = true; return false; }
+            else return false;
+        }
+
         private bool TryParseDateTime(string s, out DateTime d)
         {
             return Configuration.DateTimeFormats.Length == 0 ?
@@ -137,18 +151,89 @@ namespace Dynamix.PredicateBuilder
 
         private void AssertCompatibleValues(IEnumerable<object> values, out Type comparableType)
         {
-            comparableType = Type;
-            values.Aggregate(Type, (ct, item) => { AssertCompatibleValue(item, out ct); return ct; });
+            comparableType = values.Aggregate(Type, (ct, item) => { AssertCompatibleValue(item, ct, out ct); return ct; });
         }
 
-        private void AssertCompatibleValue(object value, out Type comparableType)
+        private bool TryParseToPredicateType(string s, out object value)
         {
-            comparableType = Type;
+            value = null;
+            if (ValueIsNull(s))
+                return !IsNullable;
+
+            if (EffectiveType.Is<string>())
+            {
+                value = s;
+                return true;
+            }
+            else if (DataType == PredicateDataType.Number)
+            {
+                return TryParseNumber(s, Type, out value);
+            }
+            else if (DataType == PredicateDataType.Boolean)
+            {
+                var r = TryParseBool(s, out var b); value = b; return r;
+            }
+            else if (DataType == PredicateDataType.DateTime)
+            {
+                var r = TryParseDateTime(s, out var d); value = d; return r;
+            }
+            else if (DataType == PredicateDataType.TimeSpan)
+            {
+                var r = TryParseTimeSpan(s, out var t); value = t; return r;
+            }
+
+            return false;
+        }
+
+        private static readonly char[] quoteCharacters = new[] { '"', '\'' };
+
+        private string StripQuotes(string s) => StripQuotes(s, quoteCharacters);
+        private string StripQuotes(string s, params char[] quoteChars)
+        {
+            if (s == null) return null;
+
+            foreach (var c in quoteChars)
+                if ((s.First() == c) && s.Last() == c)
+                    return s.Substring(1, s.Length - 2);
+
+            return s;
+        }
+        private bool TryParseArray(string s, out IEnumerable<object> array)
+        {
+            array = new List<object>();
+
+            if (string.IsNullOrWhiteSpace(s))
+                return false;
+
+            if (s.StartsWith("[") && s.EndsWith("]"))
+            {
+                foreach (var x in
+                    s.Substring(1, s.Length - 2)
+                    .Split(',')
+                    .Select(x => StripQuotes(x)))
+                {
+                    //TODO: Parse to decimal then go cast to smallest possible type, 
+                    // then find comparable type from smallest and predicate type and cast to it
+                    if (!TryParseToPredicateType(x, out var value))
+                        return false;
+                    ((List<object>)array).Add(value);
+                }
+            }
+
+            return true;
+        }
+
+        private void AssertCompatibleValue(object value, Type targetType, out Type comparableType)
+        {
+            comparableType = targetType;
 
             if (value == null)
             {
                 if (IsNullable)
+                {
+                    comparableType = typeof(Nullable<>).MakeGenericTypeCached(targetType);
                     return;
+                }
             }
             else
             {
@@ -164,6 +249,11 @@ namespace Dynamix.PredicateBuilder
                             return;
                         break;
                     case PredicateDataType.Number:
+                        if (valueType.IsEnumOrNullableEnum())
+                        {
+                            comparableType = NumericTypeHelper.GetCommonTypeForConvertion(EffectiveType, Enum.GetUnderlyingType(valueType));
+                            return;
+                        }
                         if (valueType.IsNumericOrNullable())
                         {
                             comparableType = NumericTypeHelper.GetCommonTypeForConvertion(EffectiveType, valueType);
@@ -211,7 +301,6 @@ namespace Dynamix.PredicateBuilder
 
             //Convert IsNull to IsEmpty or vice versa if one the two is supported.
             //If none are supported return true only when IsNotNull/IsNotEmpty otherwise false
-
             if (@operator == ExpressionOperator.IsNull || @operator == ExpressionOperator.IsNotNull)
             {
                 if (!IsNullable)
@@ -293,19 +382,15 @@ namespace Dynamix.PredicateBuilder
             if (DataType != PredicateDataType.Number)
                 return null;
 
-            //Validate and convert to numeric if string
             var value = NumericTypeHelper.AsNumeric(Value, EffectiveType, Configuration.NumberStyles, Configuration.FormatProvider, out var comparableType);
 
-            //Get left operand
             var left = Expression;
             if (numericTypeDescriptor.Nullable)
                 left = Expression.Property(Expression, nameof(Nullable<int>.Value));
             left = ExpressionEx.ConvertIfNeeded(left, comparableType);
 
-            //Get right operand
             var right = Expression.Constant(value);
 
-            //Execute
             return BuildEquitableExpression(left, Operator, right)
                 ?? BuildComparableExpression(left, Operator, right);
         }
@@ -315,19 +400,15 @@ namespace Dynamix.PredicateBuilder
             if (DataType != PredicateDataType.Enum)
                 return null;
 
-            //Validate and convert to numeric if string
             var value = NumericTypeHelper.AsNumericFromEnum(Value, EffectiveType, out var comparableType);
 
-            //Get left operand
             var left = Expression;
             if (IsNullableType)
                 left = Expression.Property(left, nameof(Nullable<int>.Value));
             left = ExpressionEx.ConvertIfNeeded(left, comparableType);
 
-            //Get right operand
             var right = Expression.Constant(value);
 
-            //Execute
             return BuildEquitableExpression(left, Operator, right)
                 ?? BuildComparableExpression(left, Operator, right);
         }
@@ -344,11 +425,7 @@ namespace Dynamix.PredicateBuilder
             else
             {
                 var stringValue = Value.ToString() as object;
-                if (Configuration.IsTrueString(Value))
-                    value = true;
-                else if (Configuration.IsFalseString(Value))
-                    value = false;
-                else
+                if (!TryParseBool(Value.ToString(), out value))
                     throw new InvalidOperationException($"Value {value} cannot be converted to boolean");
             }
 
@@ -401,84 +478,52 @@ namespace Dynamix.PredicateBuilder
 
         #region ExpressionBuilders
 
-        private static readonly char[] quoteCharacters = new [] { '"', '\'' };
 
-        private string StripQuotes(string s) => StripQuotes(s, quoteCharacters);
-        private string StripQuotes(string s, params char[] quoteChars)
-        {
-            if (s == null) return null;
-
-            foreach (var c in quoteChars)
-                if ((s.First() == c) && s.Last() == c)
-                    return s.Substring(0, s.Length - 2);
-
-            return s;
-        }
-        private IEnumerable ParseArray(string s)
-        {
-            if (string.IsNullOrWhiteSpace(s))
-                return s;
-
-            if (s.StartsWith("[") && s.EndsWith("]"))
-            {
-                var items = s
-                        .Substring(1, s.Length - 2)
-                        .Split(',')
-                        .Select(x => StripQuotes(s))
-                        //.Select(x =>
-                        //{
-                        //if date, bool, time => tryparse each
-                        //if enum/numeric to decimal
-                        //})
-                        ;
-
-                return items;
-            }
-
-            throw new InvalidOperationException($"Expression '{s}' is not a valid array");
-        }
 
         private Expression BuildIsContainedInPredicate()
         {
-            //TODO: fix
             if (Operator == ExpressionOperator.IsContainedIn || Operator == ExpressionOperator.IsNotContainedIn)
             {
                 if (Value != null)
                 {
                     var enumerableTypeDescriptor = EnumerableTypeDescriptor.Get(Value.GetType());
+                    var elementType = Type;
 
                     if (enumerableTypeDescriptor == null)
                     {
-                        var parsedValues = ParseArray(Value.ToString());
-                        //we only get element type, we can use out in parse
-                        //enumerableTypeDescriptor = EnumerableTypeDescriptor.Get(parsedValues);
-                    }
+                        if (!TryParseArray(Value.ToString(), out var array))
+                            throw new InvalidOperationException($"Expression '{Value}' is not a valid array");
 
-                    if (enumerableTypeDescriptor != null)
+                        return BuildIsContainedInValuesExpression(Expression, array);
+                    }
+                    else
                     {
-                        var elementType = enumerableTypeDescriptor.ElementType;
+                        if (DataType == PredicateDataType.String)
+                        {
+                            var data = (!elementType.Is<string>()) ?
+                                        ((IEnumerable)Value).Cast<object>().Select(x => x?.ToString()) :
+                                        (IEnumerable)Value;
+
+                            return BuildIsContainedInValuesExpression(Expression, data);
+                        }
+
+                        elementType = enumerableTypeDescriptor.ElementType;
 
                         if (elementType.Is<string>() || elementType.IsOrNullable<bool>() ||
                             elementType.IsOrNullable<DateTime>() || elementType.IsOrNullable<TimeSpan>())
                         {
-                            //types dont match
-                            if ((Nullable.GetUnderlyingType(elementType) ?? elementType) != EffectiveType)
-                                //or maybe error?
+                            if (elementType.StripNullable() != EffectiveType)
+                                //TODO: Configuration option strict type checking
                                 return ExpressionEx.Constants.Bool(Operator == ExpressionOperator.IsNotContainedIn);
 
-                            var data = (IEnumerable)Value;// ((IEnumerable)Value).DynamicToList(elementType);
+                            return BuildIsContainedInValuesExpression(Expression, (IEnumerable)Value);
+                        }
+                        else if (elementType.IsEnumOrNullableEnum() || elementType.IsNumericOrNullable())
+                        {
+                            if (DataType != PredicateDataType.Number && DataType != PredicateDataType.Enum)
+                                throw new InvalidOperationException($"An array of {elementType.Name} cannot be compared against a {DataType}");
 
-                            return BuildIsContainedInValuesExpression(Expression, data);
-                        }
-                        else if (elementType.IsEnumOrNullableEnum())
-                        {
-                            //left must be numeric or enum
-                            //cast both to common numeric type
-                        }
-                        else if (elementType.IsNumericOrNullable())
-                        {
-                            //left must be numeric
-                            //cast both to common numeric type
+                            return BuildIsContainedInValuesExpression(Expression, (IEnumerable)Value);
                         }
                     }
                 }
@@ -582,11 +627,55 @@ namespace Dynamix.PredicateBuilder
             }
         }
 
+        private static object AsNullable(object value)
+        {
+            if (value == null || value.GetType().IsNullable())
+                return value;
+
+            var valueType = value.GetType();
+                
+            return typeof(Nullable<>)
+                .MakeGenericTypeCached(valueType)
+                .GetConstructorEx(new[] { valueType })
+                .Invoke(value);
+        }
+
+        private static object AsNumericNullable(object value)
+        {
+            if (value == null) return null;
+
+            var valueType = value.GetType();
+
+            var nonNullableType = valueType.StripNullable();
+
+            if (valueType.IsEnumOrNullableEnum())
+            {
+                valueType = Enum.GetUnderlyingType(valueType);
+                value = Convert.ChangeType(Convert.ChangeType(value, nonNullableType), valueType);
+            }
+            else if(valueType.IsNullable())
+            {
+                return value;
+            }
+
+            return typeof(Nullable<>)
+                .MakeGenericTypeCached(valueType)
+                .GetConstructorEx(new[] { valueType })
+                .Invoke(value);
+        }
+
         private Expression BuildIsContainedInValuesExpression(Expression expression, IEnumerable values)
         {
+            var elementType = EnumerableTypeDescriptor.Get(values.GetType()).ElementType;
+            
             var castedValues = values.Cast<object>().ToArray();
 
             AssertCompatibleValues(castedValues, out var comparableType);
+
+            values =
+                (elementType.IsNullable() && elementType.IsEnumOrNullableEnum()) ?
+                castedValues.Select(AsNumericNullable).ToCastedList(comparableType) :
+                values.ToCastedList(comparableType);
 
             var left = ExpressionEx.ConvertIfNeeded(expression, comparableType);
 
@@ -595,12 +684,12 @@ namespace Dynamix.PredicateBuilder
             if (castedValues.Count() == 1)
                 return Expression.Equal(
                     left,
-                    Expression.Constant(Convert.ChangeType(castedValues.First(), comparableType)));
+                    Expression.Constant(values.DynamicFirst()));
             else
                 return Expression.Call(
                     null,
                     EnumerableExtensions.Methods.Contains.MakeGenericMethodCached(comparableType),
-                    Expression.Constant(values.DynamicCast(comparableType)),
+                    Expression.Constant(values),
                     left);
         }
 

@@ -128,6 +128,11 @@ namespace Dynamix.Reflection
             return type == typeof(T);
         }
 
+        public static bool IsNullable(this Type type)
+        {
+            return Nullable.GetUnderlyingType(type) != null;
+        }
+
         public static bool IsNullable<T>(this Type type) where T : struct
         {
             return type == typeof(T?);

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Dynamix.Reflection;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -121,9 +122,11 @@ namespace Dynamix
 
             var targetIsIntegral = leftDefinition.IsIntegral && rightDefinition.IsIntegral;
 
+            Type returnType;
+
             if (leftDefinition.IsIntegral && rightDefinition.IsIntegral)
             {
-                return
+                returnType =
                     leftDefinition.SizeBytes == rightDefinition.SizeBytes 
                         && leftDefinition.SizeBytes == maxIntegralSizeBytes
                         && leftDefinition.Signed != rightDefinition.Signed ?
@@ -133,15 +136,20 @@ namespace Dynamix
             }
             else if(!leftDefinition.IsIntegral && !rightDefinition.IsIntegral)
             {
-                return leftDefinition.SizeBytes > rightDefinition.SizeBytes ?
+                returnType = leftDefinition.SizeBytes > rightDefinition.SizeBytes ?
                        leftDefinition.EffectiveType : rightDefinition.EffectiveType;
             }
             else 
             {
-                return leftDefinition.IsIntegral ?
+                returnType = leftDefinition.IsIntegral ?
                        leftDefinition.EffectiveType : 
                        rightDefinition.EffectiveType;
             }
+
+            if (left.IsNullable() || right.IsNullable())
+                return typeof(Nullable<>).MakeGenericTypeCached(returnType);
+
+            return returnType;
         }
 
         public static void ConvertToComparableType(ref object left, ref object right, out Type comparableType)

@@ -175,9 +175,6 @@ namespace Dynamix
 
         static NumericValueParser()
         {
-            if (!NumericTypeHelper.IsNumericType(typeof(T)))
-                throw new InvalidOperationException($"Cannot use the {nameof(NumericValueParser<T>)} class with non numeric types");
-
             parseMethod1 = GetMethod<ParseDelegate1>(parseName);
             parseMethod2 = GetMethod<ParseDelegate2>(parseName);
             parseMethod3 = GetMethod<ParseDelegate3>(parseName);
@@ -198,6 +195,11 @@ namespace Dynamix
                     typeof(TDelegate).GetMethod("Invoke").GetParameters().Select(x => x.ParameterType).ToArray(), null));
         }
 
+        private void AssertType()
+        {
+            if (!NumericTypeHelper.IsNumericType(typeof(T)))
+                throw new InvalidOperationException($"Cannot use the {nameof(NumericValueParser<T>)} class with non numeric types");
+        }
 
         public T Parse(string s) => parseMethod1(s);
         public T Parse(string s, NumberStyles style, IFormatProvider provider) => parseMethod2(s, style, provider);
@@ -216,6 +218,8 @@ namespace Dynamix
 
         public bool TryParse(string s, NumberStyles style, IFormatProvider provider, out object result)
         {
+            AssertType();
+
             var check = tryParseMethod2(s, style, provider, out var t);
             result = t;
             return check;
@@ -235,34 +239,40 @@ namespace Dynamix
 
         public T? ParseNullable(string s)
         {
+            AssertType();
             if (CheckNull(s)) return null;
             return (T?)parseMethod1(s);
         }
         public T? ParseNullable(string s, NumberStyles style, IFormatProvider provider)
         {
+            AssertType();
             if (CheckNull(s)) return null;
             return (T?)parseMethod2(s, style, provider);
         }
 
         public T? ParseNullable(string s, IFormatProvider provider)
         {
+            AssertType();
             if (CheckNull(s)) return null;
             return (T?)parseMethod3(s, provider);
         }
         public T? ParseNullable(string s, NumberStyles style)
         {
+            AssertType();
             if (CheckNull(s)) return null;
             return (T?)parseMethod4(s, style);
         }
 
         public bool TryParseNullable(string s, out T? result)
         {
+            AssertType();
             var r = tryParseMethod1(s, out T tmp);
             result = (T?)tmp;
             return r;
         }
         public bool TryParseNullable(string s, NumberStyles style, IFormatProvider provider, out T? result)
         {
+            AssertType();
             var r = tryParseMethod2(s, style, provider, out var tmp);
             result = (T?)tmp;
             return r;
@@ -270,6 +280,7 @@ namespace Dynamix
 
         public bool TryParseNullable(string s, out object result)
         {
+            AssertType();
             var r = tryParseMethod1(s, out var tmp);
             result = (T?)tmp;
             return r;
@@ -277,6 +288,7 @@ namespace Dynamix
 
         public bool TryParseNullable(string s, NumberStyles style, IFormatProvider provider, out object result)
         {
+            AssertType();
             var r = tryParseMethod2(s, style, provider, out var tmp);
             result = (T?)tmp;
             return r;

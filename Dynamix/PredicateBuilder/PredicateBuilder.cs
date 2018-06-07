@@ -15,13 +15,10 @@ namespace Dynamix.PredicateBuilder
     {
         #region Fields and Properties
 
-        static readonly MethodInfoEx stringContainsMethod = typeof(string).GetMethodEx(nameof(string.Contains), new Type[] { typeof(string) });
-        static readonly MethodInfoEx stringStartsWithMethod = typeof(string).GetMethodEx(nameof(string.StartsWith), new Type[] { typeof(string) });
-        static readonly MethodInfoEx stringEndsWithMethod = typeof(string).GetMethodEx(nameof(string.EndsWith), new Type[] { typeof(string) });
-
-        EnumerableTypeDescriptor enumerableTypeDescriptor;
-        NumericTypeDescriptor numericTypeDescriptor;
-        Type enumUnderlyingType;
+        private Type enumUnderlyingType;
+        private EnumerableTypeDescriptor enumerableTypeDescriptor;
+        private NumericTypeDescriptor numericTypeDescriptor;
+        
 
         public Expression Expression { get; }
         public ExpressionOperator Operator { get; }
@@ -32,6 +29,7 @@ namespace Dynamix.PredicateBuilder
         public Type EffectiveType { get; }
         public PredicateDataType DataType { get; }
         public PredicateBuilderConfiguration Configuration { get; }
+        
 
         #endregion
 
@@ -131,7 +129,7 @@ namespace Dynamix.PredicateBuilder
         {
             d = false;
             if (Configuration.IsTrueString(s)) { d = true; return true; }
-            else if (Configuration.IsTrueString(s)) { d = true; return false; }
+            else if (Configuration.IsFalseString(s)) { d = true; return false; }
             else return false;
         }
 
@@ -263,12 +261,12 @@ namespace Dynamix.PredicateBuilder
                     case PredicateDataType.Enum:
                         if (valueType.IsEnumOrNullableEnum())
                         {
-                            comparableType = NumericTypeHelper.GetCommonTypeForConvertion(Enum.GetUnderlyingType(EffectiveType), Enum.GetUnderlyingType(valueType));
+                            comparableType = NumericTypeHelper.GetCommonTypeForConvertion(enumUnderlyingType, Enum.GetUnderlyingType(valueType));
                             return;
                         }
                         if (valueType.IsNumericOrNullable())
                         {
-                            comparableType = NumericTypeHelper.GetCommonTypeForConvertion(Enum.GetUnderlyingType(EffectiveType), valueType);
+                            comparableType = NumericTypeHelper.GetCommonTypeForConvertion(enumUnderlyingType, valueType);
                             return;
                         }
                         break;
@@ -329,7 +327,7 @@ namespace Dynamix.PredicateBuilder
 
                 return BuildIsNullOrEmptyExpression(Expression, @operator);
             }
-            else if (@operator == ExpressionOperator.IsNullOrEmpty || @operator == ExpressionOperator.IsNullOrEmpty)
+            else if (@operator == ExpressionOperator.IsNullOrEmpty || @operator == ExpressionOperator.IsNotNullOrEmpty)
             {
                 var not = @operator == ExpressionOperator.IsNotNullOrEmpty;
 
@@ -422,13 +420,9 @@ namespace Dynamix.PredicateBuilder
 
             if (Value is bool b)
                 value = b;
-            else
-            {
-                var stringValue = Value.ToString() as object;
-                if (!TryParseBool(Value.ToString(), out value))
-                    throw new InvalidOperationException($"Value {value} cannot be converted to boolean");
-            }
-
+            else if (!TryParseBool(Value.ToString(), out value))
+                 throw new InvalidOperationException($"Value {value} cannot be converted to boolean");
+            
             return BuildEquitableExpression(Expression, Operator, ExpressionEx.Constants.Bool(value));
         }
 
@@ -486,10 +480,9 @@ namespace Dynamix.PredicateBuilder
             {
                 if (Value != null)
                 {
-                    var enumerableTypeDescriptor = EnumerableTypeDescriptor.Get(Value.GetType());
-                    var elementType = Type;
+                    var elementType = EnumerableTypeDescriptor.Get(Value.GetType())?.ElementType;
 
-                    if (enumerableTypeDescriptor == null)
+                    if (elementType == null)
                     {
                         if (!TryParseArray(Value.ToString(), out var array))
                             throw new InvalidOperationException($"Expression '{Value}' is not a valid array");
@@ -506,8 +499,6 @@ namespace Dynamix.PredicateBuilder
 
                             return BuildIsContainedInValuesExpression(Expression, data);
                         }
-
-                        elementType = enumerableTypeDescriptor.ElementType;
 
                         if (elementType.Is<string>() || elementType.IsOrNullable<bool>() ||
                             elementType.IsOrNullable<DateTime>() || elementType.IsOrNullable<TimeSpan>())
@@ -572,17 +563,17 @@ namespace Dynamix.PredicateBuilder
             switch (expressionOperator)
             {
                 case ExpressionOperator.Contains:
-                    return Expression.Call(left, stringContainsMethod, right);
+                    return ExpressionEx.StringContains(left, right);
                 case ExpressionOperator.DoesNotContain:
-                    return Expression.Not(Expression.Call(left, stringContainsMethod, right));
+                    return Expression.Not(ExpressionEx.StringContains(left, right));
                 case ExpressionOperator.StartsWith:
-                    return Expression.Call(left, stringStartsWithMethod, right);
+                    return ExpressionEx.StringStartsWith(left, right);
                 case ExpressionOperator.EndsWith:
-                    return Expression.Call(left, stringEndsWithMethod, right);
+                    return ExpressionEx.StringEndsWith(left, right);
                 case ExpressionOperator.IsContainedIn:
-                    return Expression.Call(right, stringContainsMethod, left);
+                    return ExpressionEx.StringContains(right, left);
                 case ExpressionOperator.IsNotContainedIn:
-                    return Expression.Not(Expression.Call(right, stringContainsMethod, left));
+                    return Expression.Not(ExpressionEx.StringContains(right, left));
                 default:
                     return null;
             }

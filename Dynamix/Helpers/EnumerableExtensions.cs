@@ -13,11 +13,11 @@ namespace Dynamix
     {
         internal static class Methods
         {
-            internal static readonly MethodInfo Any = typeof(Enumerable).GetMethods().Where(x => x.Name == nameof(Enumerable.Any) && x.GetParameters().Length == 1).FirstOrDefault();
+            internal static readonly MethodInfo Any = typeof(Enumerable).GetMethods().FirstOrDefault(x => x.Name == nameof(Enumerable.Any) && x.GetParameters().Length == 1);
             internal static readonly MethodInfo Cast = typeof(Enumerable).GetMethod(nameof(Enumerable.Cast));
-            internal static readonly MethodInfo Contains = typeof(Enumerable).GetMethods().Where(x => x.Name == nameof(Enumerable.Contains) && x.GetParameters().Length == 2).FirstOrDefault();
-            internal static readonly MethodInfo Count = typeof(Enumerable).GetMethods().Where(x => x.Name == nameof(Enumerable.Count) && x.GetParameters().Length == 1).FirstOrDefault();
-            internal static readonly MethodInfo First = typeof(Enumerable).GetMethods().Where(x => x.Name == nameof(Enumerable.First) && x.GetParameters().Length == 0).FirstOrDefault();
+            internal static readonly MethodInfo Contains = typeof(Enumerable).GetMethods().FirstOrDefault(x => x.Name == nameof(Enumerable.Contains) && x.GetParameters().Length == 2);
+            internal static readonly MethodInfo Count = typeof(Enumerable).GetMethods().FirstOrDefault(x => x.Name == nameof(Enumerable.Count) && x.GetParameters().Length == 1);
+            internal static readonly MethodInfo First = typeof(Enumerable).GetMethods().FirstOrDefault(x => x.Name == nameof(Enumerable.First) && x.GetParameters().Length == 0);
             internal static readonly MethodInfo ToList = typeof(Enumerable).GetMethod(nameof(Enumerable.ToList));
         }
 

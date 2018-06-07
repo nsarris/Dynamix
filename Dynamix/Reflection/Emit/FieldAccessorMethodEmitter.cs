@@ -24,7 +24,7 @@ namespace Dynamix.Reflection.Emit
             var method = GetFieldSetterMethod(field, delegateType);
             if (delegateType == null)
                 delegateType = GenericTypeExtensions.GetFuncGenericType((field.IsStatic ? new[] { field.DeclaringType } : new Type[] { }).Concat(new[] { field.FieldType }));
-            return (Delegate)method.CreateDelegate(delegateType);
+            return method.CreateDelegate(delegateType);
         }
 
         public static DynamicMethod GetFieldSetterMethod(FieldInfo field, Type delegateType = null)
@@ -73,13 +73,13 @@ namespace Dynamix.Reflection.Emit
             var method = GetFieldSetterMethod(field, delegateType);
             if (delegateType == null)
                 delegateType = GenericTypeExtensions.GetFuncGenericType((field.IsStatic ? new[] { field.DeclaringType } : new Type[] { }).Concat(new[] { field.FieldType }));
-            return (Delegate)(method.CreateDelegate(delegateType));
+            return (method.CreateDelegate(delegateType));
         }
 
         public static DynamicMethod GetFieldGetterMethod(FieldInfo field, Type delegateType = null)
         {
             //TODO check delegate type compatibility, must be Func<castedT,castedTProp>
-            var delMethod = delegateType == null ? null : delegateType.GetMethod("Invoke");
+            var delMethod = delegateType?.GetMethod("Invoke");
 
             var paramTypes = delegateType == null ?
                 !field.IsStatic ? new Type[] { field.DeclaringType } : new Type[] { } :

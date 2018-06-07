@@ -10,7 +10,7 @@ namespace Dynamix.PredicateBuilder
 {
     public abstract class NodeBase
     {
-        public NodeBase(LogicalOperator logicalOperator)
+        protected NodeBase(LogicalOperator logicalOperator)
         {
             LogicalOperator = logicalOperator;
         }

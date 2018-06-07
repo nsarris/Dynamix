@@ -90,6 +90,5 @@ namespace Dynamix.Expressions.Extensions
                 Expression.NotEqual(expression, ExpressionEx.Constants.Null) :
                 Expression.Equal(expression, ExpressionEx.Constants.Null);
         }
-
     }
 }

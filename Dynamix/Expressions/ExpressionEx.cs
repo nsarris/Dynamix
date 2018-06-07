@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Dynamix.Reflection;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,8 +11,13 @@ namespace Dynamix.Expressions
 {
     public static class ExpressionEx
     {
+        private static readonly MethodInfoEx stringContainsMethod = typeof(string).GetMethodEx(nameof(string.Contains), new Type[] { typeof(string) });
+        private static readonly MethodInfoEx stringStartsWithMethod = typeof(string).GetMethodEx(nameof(string.StartsWith), new Type[] { typeof(string) });
+        private static readonly MethodInfoEx stringEndsWithMethod = typeof(string).GetMethodEx(nameof(string.EndsWith), new Type[] { typeof(string) });
+
         public static class Constants
         {
+            
             public static Expression Null { get; } = Expression.Constant(null);
             public static Expression EmptyString { get; } = Expression.Constant(string.Empty);
             public static Expression True { get; } = Expression.Constant(true);
@@ -23,9 +29,10 @@ namespace Dynamix.Expressions
 
             public static Expression Bool(bool? value)
             {
-                return value.HasValue ?
-                        value.Value ? True : False :
-                        null;
+                if (value.HasValue)
+                    return value.Value ? True : False;
+                else
+                    return null;
             }
         }
         /// <summary>
@@ -84,7 +91,7 @@ namespace Dynamix.Expressions
             if (left != null && right != null
                 && (left.NodeType == ExpressionType.Constant
                     || right.NodeType == ExpressionType.Constant))
-            { 
+            {
                 if (left is ConstantExpression leftConstantExpression)
                     return true.Equals(leftConstantExpression.Value) ? right : Constants.False;
                 else if (right is ConstantExpression rightConstantExpression)
@@ -103,7 +110,7 @@ namespace Dynamix.Expressions
         public static Expression OrElse(Expression left, Expression right)
         {
             if (left != null && right != null
-                && (left.NodeType == ExpressionType.Constant 
+                && (left.NodeType == ExpressionType.Constant
                     || right.NodeType == ExpressionType.Constant))
             {
                 if (left is ConstantExpression leftConstantExpression)
@@ -113,6 +120,21 @@ namespace Dynamix.Expressions
             }
 
             return Expression.OrElse(left, right);
+        }
+
+        internal static Expression StringContains(Expression instance, Expression text)
+        {
+            return Expression.Call(instance, stringContainsMethod, text);
+        }
+
+        internal static Expression StringStartsWith(Expression instance, Expression text)
+        {
+            return Expression.Call(instance, stringStartsWithMethod, text);
+        }
+
+        internal static Expression StringEndsWith(Expression instance, Expression text)
+        {
+            return Expression.Call(instance, stringEndsWithMethod, text);
         }
 
         public static Expression ForEach(Expression collection, ParameterExpression loopVar, Expression loopContent)
@@ -125,17 +147,16 @@ namespace Dynamix.Expressions
             var getEnumeratorCall = Expression.Call(collection, enumerableType.GetMethod("GetEnumerator"));
             var enumeratorAssign = Expression.Assign(enumeratorVar, getEnumeratorCall);
 
-            // The MoveNext method's actually on IEnumerator, not IEnumerator<T>
             var moveNextCall = Expression.Call(enumeratorVar, typeof(IEnumerator).GetMethod("MoveNext"));
 
             var breakLabel = Expression.Label("LoopBreak");
 
-            var loop = Expression.Block(new[] { enumeratorVar },
+            var loop = Expression.Block(enumeratorVar,
                 enumeratorAssign,
                 Expression.Loop(
                     Expression.IfThenElse(
                         Expression.Equal(moveNextCall, Expression.Constant(true)),
-                        Expression.Block(new[] { loopVar },
+                        Expression.Block(loopVar,
                             Expression.Assign(loopVar, Expression.Property(enumeratorVar, "Current")),
                             loopContent
                         ),
@@ -153,7 +174,7 @@ namespace Dynamix.Expressions
 
             var breakLabel = Expression.Label("LoopBreak");
 
-            var loop = Expression.Block(new[] { loopVar },
+            var loop = Expression.Block(loopVar,
                 initAssign,
                 Expression.Loop(
                     Expression.IfThenElse(

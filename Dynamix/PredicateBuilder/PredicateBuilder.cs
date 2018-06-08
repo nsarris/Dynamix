@@ -165,7 +165,9 @@ namespace Dynamix.PredicateBuilder
             }
             else if (DataType == PredicateDataType.Number)
             {
-                return TryParseNumber(s, Type, out value);
+                var r = TryParseNumber(s, typeof(decimal), out value);
+                value = NumericTypeHelper.NarrowNumber(value);
+                return r;
             }
             else if (DataType == PredicateDataType.Boolean)
             {
@@ -196,6 +198,7 @@ namespace Dynamix.PredicateBuilder
 
             return s;
         }
+
         private bool TryParseArray(string s, out IEnumerable<object> array)
         {
             array = new List<object>();
@@ -210,12 +213,12 @@ namespace Dynamix.PredicateBuilder
                     .Split(',')
                     .Select(x => StripQuotes(x)))
                 {
-                    //TODO: Parse to decimal then go cast to smallest possible type, 
                     // then find comparable type from smallest and predicate type and cast to it
                     if (!TryParseToPredicateType(x, out var value))
                         return false;
                     ((List<object>)array).Add(value);
                 }
+
             }
 
             return true;
@@ -229,7 +232,9 @@ namespace Dynamix.PredicateBuilder
             {
                 if (IsNullable)
                 {
-                    comparableType = typeof(Nullable<>).MakeGenericTypeCached(targetType);
+                    if(!targetType.IsNullable())
+                        comparableType = typeof(Nullable<>).MakeGenericTypeCached(targetType);
+
                     return;
                 }
             }
@@ -249,24 +254,25 @@ namespace Dynamix.PredicateBuilder
                     case PredicateDataType.Number:
                         if (valueType.IsEnumOrNullableEnum())
                         {
-                            comparableType = NumericTypeHelper.GetCommonTypeForConvertion(EffectiveType, Enum.GetUnderlyingType(valueType));
+                            comparableType = 
+                                NumericTypeHelper.GetCommonTypeForConvertion(comparableType, EffectiveType, Enum.GetUnderlyingType(valueType));
                             return;
                         }
                         if (valueType.IsNumericOrNullable())
                         {
-                            comparableType = NumericTypeHelper.GetCommonTypeForConvertion(EffectiveType, valueType);
+                            comparableType = NumericTypeHelper.GetCommonTypeForConvertion(comparableType, EffectiveType, valueType);
                             return;
                         }
                         break;
                     case PredicateDataType.Enum:
                         if (valueType.IsEnumOrNullableEnum())
                         {
-                            comparableType = NumericTypeHelper.GetCommonTypeForConvertion(enumUnderlyingType, Enum.GetUnderlyingType(valueType));
+                            comparableType = NumericTypeHelper.GetCommonTypeForConvertion(comparableType, enumUnderlyingType, Enum.GetUnderlyingType(valueType));
                             return;
                         }
                         if (valueType.IsNumericOrNullable())
                         {
-                            comparableType = NumericTypeHelper.GetCommonTypeForConvertion(enumUnderlyingType, valueType);
+                            comparableType = NumericTypeHelper.GetCommonTypeForConvertion(comparableType, enumUnderlyingType, valueType);
                             return;
                         }
                         break;
@@ -354,10 +360,22 @@ namespace Dynamix.PredicateBuilder
             if (DataType != PredicateDataType.Collection)
                 return null;
 
-            //TODO: Check element type is supported and try cast value to it
-            //If numeric types need be casted a where expression is needed
-            var right = Expression.Constant(Value);
-
+            Expression right;
+            if (Value != null)
+            {
+                var valuePredicateDataType = GetDataType(Value.GetType());
+                if (valuePredicateDataType == PredicateDataType.Collection
+                    || valuePredicateDataType == PredicateDataType.Unsupported)
+                    return null;
+            }
+            else if (IsNullable)
+            {
+                right = Expression.Constant(new object[] { null });
+            }
+            {
+                right = ExpressionEx.Constants.Bool(Operator == ExpressionOperator.DoesNotContain);
+            }
+            
             return BuildCollectionSpecificExpression(Expression, Operator, right);
         }
 
@@ -666,7 +684,7 @@ namespace Dynamix.PredicateBuilder
             values =
                 (elementType.IsNullable() && elementType.IsEnumOrNullableEnum()) ?
                 castedValues.Select(AsNumericNullable).ToCastedList(comparableType) :
-                values.ToCastedList(comparableType);
+                castedValues.Select(x => x == null ? null : Convert.ChangeType(x, comparableType.StripNullable())).ToCastedList(comparableType);
 
             var left = ExpressionEx.ConvertIfNeeded(expression, comparableType);
 

@@ -73,6 +73,9 @@ namespace Dynamix
         static readonly Dictionary<Type, NumericTypeDescriptor> numericTypes;
         static readonly byte maxIntegralSizeBytes;
         static readonly Type commonConvertibleType;
+
+        public static IEnumerable<Type> SupportedTypes => numericTypes.Keys;
+
         static NumericTypeHelper()
         {
             numericTypes = NumericTypeDescriptor.SupportedTypes
@@ -94,7 +97,7 @@ namespace Dynamix
         {
 
             if (numericTypes.TryGetValue(type, out var numericTypeDefinition))
-                return includeNullable || numericTypeDefinition.Nullable;
+                return includeNullable || !numericTypeDefinition.Nullable;
             else
                 return false;
         }
@@ -120,19 +123,23 @@ namespace Dynamix
             var leftDefinition = GetNumericTypeDefinition(left);
             var rightDefinition = GetNumericTypeDefinition(right);
 
-            var targetIsIntegral = leftDefinition.IsIntegral && rightDefinition.IsIntegral;
-
             Type returnType;
 
-            if (leftDefinition.IsIntegral && rightDefinition.IsIntegral)
+            if (leftDefinition.EffectiveType == rightDefinition.EffectiveType)
             {
-                returnType =
-                    leftDefinition.SizeBytes == rightDefinition.SizeBytes 
-                        && leftDefinition.SizeBytes == maxIntegralSizeBytes
-                        && leftDefinition.Signed != rightDefinition.Signed ?
-                        commonConvertibleType :
-                        leftDefinition.SizeBytes > rightDefinition.SizeBytes ?
-                            leftDefinition.EffectiveType : rightDefinition.EffectiveType;
+                returnType = leftDefinition.EffectiveType;
+            }
+            else if (leftDefinition.IsIntegral && rightDefinition.IsIntegral)
+            {
+                var maxSize = Math.Max(leftDefinition.SizeBytes, rightDefinition.SizeBytes);
+
+                if (leftDefinition.Signed == rightDefinition.Signed)
+                    returnType = leftDefinition.SizeBytes > rightDefinition.SizeBytes ?
+                        leftDefinition.EffectiveType : rightDefinition.EffectiveType;
+                else if (maxSize == maxIntegralSizeBytes)
+                    returnType = commonConvertibleType;
+                else
+                    returnType = numericTypes.Values.FirstOrDefault(x => x.Signed && x.SizeBytes == maxSize + 1).EffectiveType;
             }
             else if(!leftDefinition.IsIntegral && !rightDefinition.IsIntegral)
             {
@@ -150,6 +157,11 @@ namespace Dynamix
                 return typeof(Nullable<>).MakeGenericTypeCached(returnType);
 
             return returnType;
+        }
+
+        public static Type GetCommonTypeForConvertion(params Type[] types)
+        {
+            return types.Aggregate((current, next) => GetCommonTypeForConvertion(current, next));
         }
 
         public static void ConvertToComparableType(ref object left, ref object right, out Type comparableType)
@@ -306,6 +318,44 @@ namespace Dynamix
             return Convert.ChangeType(value, underlyingEnumType);
         }
 
-        public static IEnumerable<Type> SupportedTypes => numericTypes.Keys;
+        public static object NarrowNumber(object value)
+        {
+            if (value == null)
+                return null;
+
+            if (!value.GetType().IsNumeric())
+                throw new InvalidOperationException("Value is not a number");
+
+            var valueAsDecimal = (decimal)value;
+            decimal wholePart = Math.Truncate(valueAsDecimal);
+
+            if (wholePart == valueAsDecimal)
+            {
+                if (sbyte.MinValue <= wholePart && wholePart <= sbyte.MaxValue)
+                    return (sbyte)wholePart;
+                if (byte.MinValue <= wholePart && wholePart <= byte.MaxValue)
+                    return (byte)wholePart;
+                if (short.MinValue <= wholePart && wholePart <= short.MaxValue)
+                    return (short)wholePart;
+                if (ushort.MinValue <= wholePart && wholePart <= ushort.MaxValue)
+                    return (ushort)wholePart;
+                if (int.MinValue <= wholePart && wholePart <= int.MaxValue)
+                    return (int)wholePart;
+                if (uint.MinValue <= wholePart && wholePart <= uint.MaxValue)
+                    return (uint)wholePart;
+                if (long.MinValue <= wholePart && wholePart <= long.MaxValue)
+                    return (long)wholePart;
+                if (ulong.MinValue <= wholePart && wholePart <= ulong.MaxValue)
+                    return (ulong)wholePart;
+            }
+            else
+            {
+                if (new decimal(float.MinValue) <= valueAsDecimal && valueAsDecimal <= new decimal(float.MinValue))
+                    return (float)value;
+                if (new decimal(double.MinValue) <= valueAsDecimal && valueAsDecimal <= new decimal(double.MinValue))
+                    return (double)value;
+            }
+            return value;
+        }
     }
 }

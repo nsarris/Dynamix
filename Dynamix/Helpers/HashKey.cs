@@ -48,11 +48,11 @@ namespace Dynamix
 
             unchecked
             {
-                int hashCode = tmpvalues.First().GetHashCode();
+                int tmpHashCode = tmpvalues.First().GetHashCode();
                 foreach (var v in tmpvalues.Skip(1))
-                    hashCode = (hashCode * prime) ^ (v == null ? 0 : v.GetHashCode());
+                    tmpHashCode = (tmpHashCode * prime) ^ (v == null ? 0 : v.GetHashCode());
 
-                return hashCode;
+                return tmpHashCode;
             }
         }
     }

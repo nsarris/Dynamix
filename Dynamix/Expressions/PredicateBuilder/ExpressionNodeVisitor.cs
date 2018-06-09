@@ -6,23 +6,23 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Dynamix.PredicateBuilder
+namespace Dynamix.Expressions.PredicateBuilder
 {
 
     public class ExpressionNodeVisitor : INodeVisitor<Expression, ExpressionNodeVisitorInput>
     {
-        Expression INodeVisitor<Expression, ExpressionNodeVisitorInput>.VisitComplexNode(ComplexNode complexNode, ExpressionNodeVisitorInput input)
+        Expression INodeVisitor<Expression, ExpressionNodeVisitorInput>.VisitComplexNode(ComplexNode node, ExpressionNodeVisitorInput input)
         {
             Expression expression = null;
 
-            foreach (var node in complexNode.Nodes)
+            foreach (var childNode in node.Nodes)
             {
                 expression =
                     expression == null 
-                        ? node.Accept(this, input) 
-                        : node.LogicalOperator == LogicalOperator.And 
-                            ? ExpressionEx.AndAlso(expression, node.Accept(this, input))
-                            : ExpressionEx.OrElse(expression, node.Accept(this, input));
+                        ? childNode.Accept(this, input) 
+                        : childNode.LogicalOperator == LogicalOperator.And 
+                            ? ExpressionEx.AndAlso(expression, childNode.Accept(this, input))
+                            : ExpressionEx.OrElse(expression, childNode.Accept(this, input));
             }
 
             return expression;

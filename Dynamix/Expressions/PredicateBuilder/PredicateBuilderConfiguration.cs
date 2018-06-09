@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
-namespace Dynamix.PredicateBuilder
+namespace Dynamix.Expressions.PredicateBuilder
 {
     public class PredicateBuilderConfiguration
     {

@@ -212,7 +212,7 @@ namespace Dynamix
         {
             if ((value == null && !ignoreNull) ||
                 (value != null && !IsNumericType(value.GetType())))
-                throw new InvalidOperationException($"Type {value.GetType().Name} is not numeric");
+                throw new InvalidOperationException(value == null ? "Value cannot be null" : $"Type {value.GetType().Name} is not numeric");
         }
 
         private static void AssertNumericType(Type numericType)

@@ -29,6 +29,7 @@ namespace Dynamix.Expressions.LambdaBuilders
         }
 
         #endregion Ctor
+
         #region Cache
         private class CacheKey : HashKey
         {
@@ -96,8 +97,8 @@ namespace Dynamix.Expressions.LambdaBuilders
         {
             var getMethod = ValidatePropertyAndGetAccessorMethod(propertyInfo, null, true);
 
-            if (EnableCaching)
-                if (genericGetterCache.TryGetValue(propertyInfo, out var cachedLambda))
+            if (EnableCaching
+                && genericGetterCache.TryGetValue(propertyInfo, out var cachedLambda))
                     return (Expression < GenericPropertyGetter > )cachedLambda;
             
             var instanceParameter = Expression.Parameter(typeof(object), "instance");
@@ -127,8 +128,8 @@ namespace Dynamix.Expressions.LambdaBuilders
         {
             var setMethod = ValidatePropertyAndGetAccessorMethod(propertyInfo, null, false);
 
-            if (EnableCaching)
-                if (genericSetterCache.TryGetValue(propertyInfo, out var cachedLambda))
+            if (EnableCaching
+                && genericSetterCache.TryGetValue(propertyInfo, out var cachedLambda))
                     return (Expression < GenericPropertySetter > )cachedLambda;
             
             var instanceParameter = Expression.Parameter(typeof(object), "instance");
@@ -147,7 +148,6 @@ namespace Dynamix.Expressions.LambdaBuilders
                 setMethod,
                 methodCallParameters);
 
-            //var body = ExpressionEx.CastTypeSafe(invokerExpression, typeof(object));
             var lambda = Expression.Lambda<GenericPropertySetter>(invokerExpression, new[] { instanceParameter, valueParameter, inputParameters });
 
             if (EnableCaching)
@@ -229,8 +229,9 @@ namespace Dynamix.Expressions.LambdaBuilders
             var castedInstance = GetCastedInstanceExpression(instance, propertyInfo);
             var methodCallparameters = (indexerTypes == null ?
                 indexedParametersExpressions :
-                indexedParametersExpressions.Zip(indexedParameters, (p, i) => GetCastedValueExpression(p, i.ParameterType)))
-                .Cast<Expression>().Concat(new[] { GetCastedValueExpression(value, propertyInfo.PropertyType) });
+                indexedParametersExpressions
+                    .Zip(indexedParameters, (p, i) => GetCastedValueExpression(p, i.ParameterType)))
+                    .Concat(new[] { GetCastedValueExpression(value, propertyInfo.PropertyType) });
 
             var delegateType = GenericTypeExtensions.GetActionGenericType(new Type[] { instanceType }.Concat(expressionParameters.Skip(1).Select(x => x.Type)));
 
@@ -278,6 +279,8 @@ namespace Dynamix.Expressions.LambdaBuilders
         {
             var setMethod = ValidatePropertyAndGetAccessorMethod(propertyInfo, true, false);
 
+            valueType = valueType ?? propertyInfo.PropertyType;
+
             CacheKey cacheKey = null;
             if (EnableCaching)
             {
@@ -286,8 +289,8 @@ namespace Dynamix.Expressions.LambdaBuilders
                     return cachedLambda;
             }
 
-            var value = Expression.Parameter(valueType ?? propertyInfo.PropertyType, "value");
-            var delegateType = GenericTypeExtensions.GetActionGenericType(valueType ?? propertyInfo.PropertyType);
+            var value = Expression.Parameter(valueType, "value");
+            var delegateType = GenericTypeExtensions.GetActionGenericType(valueType);
 
             var lambda = Expression.Lambda(
                 delegateType,

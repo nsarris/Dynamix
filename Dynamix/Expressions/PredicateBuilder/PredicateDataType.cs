@@ -1,4 +1,4 @@
-﻿namespace Dynamix.PredicateBuilder
+﻿namespace Dynamix.Expressions.PredicateBuilder
 {
     public enum PredicateDataType
     {

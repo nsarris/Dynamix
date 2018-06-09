@@ -77,7 +77,7 @@ namespace Dynamix
                 //case Functions.Cast:
                 //case Functions.ToString:
                     Execute = true;
-                    if (parameters != null && parameters.Count() > 0 && parameters[0] != null)
+                    if (parameters != null && parameters.Any() && parameters[0] != null)
                         parameterExpressions = parameterExpressions.Concat(parameters).ToArray();
                     break;
                 case Functions.Select:
@@ -87,7 +87,7 @@ namespace Dynamix
                 case Functions.ThenBy:
                 case Functions.ThenByDescending:
                 case Functions.GroupBy:
-                    if (parameters != null && parameters.Count() > 0)
+                    if (parameters != null && parameters.Any())
                     {
                         var p = parameters.Where(x => x != null);
                         types = types.Concat(p.Cast<LambdaExpression>().Select(x => x.Body.Type)).ToArray();
@@ -95,7 +95,7 @@ namespace Dynamix
                     }
                     break;
                 default:
-                    throw new Exception("Unhandled function: " + function);
+                    throw new ArgumentException($"Unhandled function: {function})");
             }
 
             if (Execute)
@@ -113,8 +113,7 @@ namespace Dynamix
 
         public DynamicQueryable Where(LambdaExpression predicate)
         {
-            if (predicate == null) //throw new ArgumentNullException("predicate");
-                return this;
+            if (predicate == null) throw new ArgumentNullException(nameof(predicate));
             return new DynamicQueryable((IQueryable)Execute(Source, Functions.Where, predicate));
         }
 
@@ -136,27 +135,25 @@ namespace Dynamix
             return new DynamicOrderedQueryable((IOrderedQueryable)Execute(Source, Functions.OrderByDescending, ordering));
         }
 
-        public DynamicOrderedQueryable OrderBy(string ordering)
+        public DynamicOrderedQueryable OrderBy(string orderByExpression)
         {
-            if (string.IsNullOrWhiteSpace(ordering)) throw new ArgumentNullException("ordering");
-            DynamicOrderedQueryable res = null;
-            foreach (var order in ParseOrdering(Source.ElementType, ordering))
-            {
-                if (res == null)
-                    res = (order.Item2 ? OrderByDescending(order.Item1) : OrderBy(order.Item1));
-                else
-                    res = (order.Item2 ? res.ThenByDescending(order.Item1) : res.ThenBy(order.Item1));
-            }
-            return res;
+            return OrderBy(OrderByExpressionParser.Parse(orderByExpression));
         }
 
         public DynamicOrderedQueryable OrderBy(IEnumerable<OrderItem> orderItems)
         {
-            if (orderItems == null) throw new ArgumentNullException("Order items cannot be null");
+            if (orderItems == null) throw new ArgumentNullException(nameof(orderItems), "Order items cannot be null");
             DynamicOrderedQueryable res = null;
             foreach (var item in orderItems)
             {
-                var l = CreateMemberLambda(Source.ElementType, item.PropertyName);
+                var l =
+                    item.ParseExpressionAs == ParseExpressionAs.Property ?
+                        Expressions.MemberExpressionBuilder.GetPropertySelector(Source.ElementType, item.Expression) :
+                    item.ParseExpressionAs == ParseExpressionAs.NestedProperty ?
+                        Expressions.MemberExpressionBuilder.GetDeepPropertySelector(Source.ElementType, item.Expression)
+                        :
+                        Expressions.MemberExpressionBuilder.GetExpressionSelector(Source.ElementType, item.Expression);
+
                 if (res == null)
                     res = (item.IsDescending ? OrderByDescending(l) : OrderBy(l));
                 else
@@ -255,7 +252,6 @@ namespace Dynamix
 
         public override string ToString()
         {
-            //return (string)Execute(source, Functions.ToString);
             return Source.ToString();
         }
 
@@ -265,9 +261,9 @@ namespace Dynamix
                 ListType = typeof(object);
             
             var method = typeof(Queryable).GetMethod("Cast")
-                    .MakeGenericMethod(ListType);
+                    .MakeGenericMethodCached(ListType);
             var method2 = typeof(Enumerable).GetMethod("ToList")
-                .MakeGenericMethod(ListType);
+                .MakeGenericMethodCached(ListType);
 
             var castData = method.Invoke(null, new object[] { Source });
             var retData = method2.Invoke(null, new object[] { castData });
@@ -275,17 +271,17 @@ namespace Dynamix
             return retData;
         }
 
-        //public DynamicQueryable Cast(Type CastType = null)
-        //{
-        //    if (CastType == null)
-        //        CastType = typeof(object);
-            
-        //    return new DynamicQueryable(
-        //        (IQueryable) source.Provider.Execute(
-        //            Expression.Call(
-        //                typeof(Queryable), "Cast",
-        //                new Type [] { CastType },source.Expression)));
-        //}
+        public DynamicQueryable Cast(Type CastType = null)
+        {
+            if (CastType == null)
+                CastType = typeof(object);
+
+            return new DynamicQueryable(
+                (IQueryable)Source.Provider.Execute(
+                    Expression.Call(
+                        typeof(Queryable), "Cast",
+                        new Type[] { CastType }, Source.Expression)));
+        }
 
         //public List<T> ToList<T>()
         //{
@@ -305,39 +301,6 @@ namespace Dynamix
         public IQueryable AsQueryable()
         {
             return Source;
-        }
-
-        private List<Tuple<LambdaExpression, bool>> ParseOrdering(Type entityType, string ordering)
-        {
-            var res = new List<Tuple<LambdaExpression, bool>>();
-            
-            foreach (var item in ordering.Split(','))
-            {
-                var o = item.Trim().Split(' ');
-                if (o.Count() > 2 || o.Count() == 0)
-                    throw new ArgumentException("Invalid OrderBy Expression: [" + ordering +"]");
-
-                var propName = o[0].Trim();
-                if (!entityType.GetProperties().Any(x => x.Name == propName))
-                    throw new ArgumentException("Invalid Property [" + propName +"] in OrderBy Expression: [" + ordering +"]");
-
-                var l = CreateMemberLambda(entityType, o[0].Trim());
-
-                var order = false; //asc
-
-                if (o.Count() == 2)
-                {
-                    var orderStr = o[1].Trim().ToLower();
-
-                    if (orderStr == "desc")
-                        order = true;
-                    else if (orderStr != "asc")
-                        throw new ArgumentException("Invalid OrderBy Expression");
-                }
-
-                res.Add(new Tuple<LambdaExpression, bool>(l, order));
-            }
-            return res;
         }
 
         public Type ElementType
@@ -366,102 +329,5 @@ namespace Dynamix
             while (en.MoveNext())
                 yield return en.Current;
         }
-
-        internal static LambdaExpression CreateMemberLambda(Type EntityType, string propertyName)
-        {
-            var param = Expression.Parameter(EntityType, "x");
-            Expression body = param;
-            foreach (var member in propertyName.Split('.'))
-                body = Expression.PropertyOrField(body, member);
-            return Expression.Lambda(body, param);
-        }
-
-        private class EFMethods
-        {
-            public MethodInfo Set;
-            public MethodInfo SetOfT;
-            //public MethodInfo SetAsNoTracking;
-        }
-
-        static EFMethods efmethods;
-        static readonly object eflock = new object();
-        public static DynamicQueryable FromDbContextSet(object dbContext, Type entityType, bool StateTracking = false)
-        {
-            //TODO DbSet<T> not working properly, disabling StateTracking by default
-            if (efmethods == null)
-            {
-                lock (eflock)
-                {
-                    if (efmethods == null)
-                    {
-                        var setMethods = dbContext.GetType().GetMethods().Where(m => m.Name == "Set")
-                            .Select(m => new
-                            {
-                                Method = m,
-                                Params = m.GetParameters(),
-                                Args = m.GetGenericArguments()
-                            });
-                            //.Where(x => x.Params.Length == 1
-                            ////&& x.Args.Length == 1
-                            ////&& x.Params[0].ParameterType == x.Args[0])
-                            //    )
-                            //.FirstOrDefault();
-
-                        if (setMethods != null)
-                        {
-                            efmethods = new EFMethods
-                            {
-                                SetOfT = setMethods.Where(x => x.Args.Length == 1).Single().Method,
-                                Set = setMethods.Where(x => x.Args.Length == 0).Single().Method
-                            };
-                        }
-                    }
-                }
-            }
-
-            if (efmethods is null || efmethods.Set is null)
-                throw new Exception("DbSet method not found on DbContext");
-            else
-            {
-                if (StateTracking)
-                {
-                    return new DynamicQueryable((IQueryable)efmethods.SetOfT.MakeGenericMethod(entityType).Invoke(dbContext, null));
-                }
-                else
-                    return new DynamicQueryable((IQueryable)efmethods.Set.Invoke(dbContext, new[] { entityType }));
-            }
-        }
-
-        private class LinqToDBMethods
-        {
-            public MethodInfo GetTableT;
-        }
-
-        static LinqToDBMethods linqToDBMethods;
-        static object l2dblock = new object();
-        public static DynamicQueryable FromLinqToDBDataConnection(object dataConnection, Type modelType)
-        {
-            if (linqToDBMethods == null)
-            {
-                lock (l2dblock)
-                {
-                    if (linqToDBMethods == null)
-                    {
-                        linqToDBMethods = new LinqToDBMethods()
-                        {
-                            GetTableT = dataConnection.GetType().GetMethod("GetTable", new Type[] { })
-                        };
-                    }
-                }
-            }
-
-            if (linqToDBMethods.GetTableT == null)
-                throw new Exception("GetTable method not found on DataConnection");
-            else
-            {
-                return new DynamicQueryable((IQueryable)linqToDBMethods.GetTableT.MakeGenericMethodCached(modelType).Invoke(dataConnection, new object [0]));
-            }
-        }
     }
-
 }

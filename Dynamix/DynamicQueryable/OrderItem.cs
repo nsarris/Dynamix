@@ -1,23 +1,28 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 
 namespace Dynamix
 {
+    public enum ParseExpressionAs
+    {
+        Property,
+        NestedProperty,
+        DynamicLinqExpression
+    }
     public class OrderItem
     {
-        public OrderItem(string propertyName, bool isDescending)
+        public string Expression { get; }
+        public bool IsDescending { get; }
+        public ParseExpressionAs ParseExpressionAs { get; }
+
+        public OrderItem(string expression, bool isDescending, ParseExpressionAs parseExpressionAs = ParseExpressionAs.NestedProperty)
         {
-            PropertyName = propertyName;
+            Expression = expression;
             IsDescending = isDescending;
+            ParseExpressionAs = parseExpressionAs;
         }
-
-        public OrderItem(string propertyName, string direction)
-        {
-            PropertyName = propertyName;
-            IsDescending = (StringComparer.OrdinalIgnoreCase.Compare(direction, "DESC") == 0);
-        }
-
-        public string PropertyName { get; set; }
-        public bool IsDescending { get; set; }
     }
 
 }

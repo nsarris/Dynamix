@@ -47,8 +47,8 @@ namespace Dynamix
 
         private class ParameterReplacerVisitor : ExpressionVisitor
         {
-            private string _source;
-            private ParameterExpression _target;
+            private readonly string _source;
+            private readonly ParameterExpression _target;
 
             public ParameterReplacerVisitor
                   (string source, ParameterExpression target)

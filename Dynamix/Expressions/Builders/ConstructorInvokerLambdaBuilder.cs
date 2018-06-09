@@ -43,7 +43,6 @@ namespace Dynamix.Expressions.LambdaBuilders
 
         #endregion
 
-
         #region GenericBuild
 
         public Expression<GenericStaticInvoker> BuildGeneric(ConstructorInfo ctorInfo)
@@ -51,13 +50,9 @@ namespace Dynamix.Expressions.LambdaBuilders
             if (ctorInfo == null)
                 throw new ArgumentNullException(nameof(ctorInfo));
 
-            if (EnableCaching)
-            {
-                if (genericCache.TryGetValue(ctorInfo, out var cachedLambda))
-                    return (Expression<GenericStaticInvoker>)cachedLambda;
-            }
-
-            var instanceParameter = Expression.Parameter(typeof(object), "instance");
+            if (EnableCaching && genericCache.TryGetValue(ctorInfo, out var cachedLambda))
+                return (Expression<GenericStaticInvoker>)cachedLambda;
+            
             var inputParameters = Expression.Parameter(typeof(object[]), "parameters");
 
             var methodParameters = ctorInfo.GetParameters();
@@ -137,12 +132,9 @@ namespace Dynamix.Expressions.LambdaBuilders
             if (ctorInfo == null)
                 throw new ArgumentNullException(nameof(ctorInfo));
 
-            if (EnableCaching)
-            {
-                if (byDelegateTypeCache.TryGetValue(delegateType, out var cachedLambda))
-                    return cachedLambda;
-            }
-
+            if (EnableCaching && byDelegateTypeCache.TryGetValue(delegateType, out var cachedLambda))
+                return cachedLambda;
+            
             var parameterTypes = ctorInfo.GetParameters().Select(x => x.ParameterType);
             Type instanceType = ctorInfo.DeclaringType;
 

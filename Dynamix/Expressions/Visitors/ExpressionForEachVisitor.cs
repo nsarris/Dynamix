@@ -17,12 +17,12 @@ namespace Dynamix.Expressions
             _visitor = visitor;
         }
 
-        public override Expression Visit(Expression expression)
+        public override Expression Visit(Expression node)
         {
             if ( _visitor != null)
-                expression = _visitor(expression);
+                node = _visitor(node);
 
-            return base.Visit(expression);
+            return base.Visit(node);
         }
 
         public static Expression Visit(Expression expression, Func<Expression, Expression> visitor)

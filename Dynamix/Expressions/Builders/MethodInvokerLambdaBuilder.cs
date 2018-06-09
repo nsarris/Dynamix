@@ -35,9 +35,6 @@ namespace Dynamix.Expressions.LambdaBuilders
                 : base(new object[] { methodInfo, instanceType }.Concat(parameterTypes == null ? Enumerable.Empty<object>() : parameterTypes.Cast<object>()))
             { }
 
-            public CacheKey(Type delegateType) : base(new[] { delegateType })
-            { }
-
             public CacheKey(MethodInfo methodInfo, bool asExtension) : base(new object[] { methodInfo, asExtension })
             { }
         }
@@ -66,18 +63,12 @@ namespace Dynamix.Expressions.LambdaBuilders
             if (methodInfo == null)
                 throw new ArgumentNullException(nameof(methodInfo));
 
-            //if (methodInfo.IsStatic)
-            //    throw new ArgumentException("Method is not instance", nameof(methodInfo));
-
             return (Expression<GenericInstanceInvoker>)BuildGenericInvoker(methodInfo, true);
         }
 
 
         internal LambdaExpression BuildGenericInvoker(MethodInfo methodInfo, bool asInstance = false)
         {
-            //if (asExtension && !methodInfo.IsExtension())
-            //    throw new ArgumentException("Method is not an extension method", nameof(methodInfo));
-
             CacheKey cacheKey = null;
             if (EnableCaching)
             {
@@ -187,7 +178,7 @@ namespace Dynamix.Expressions.LambdaBuilders
                 .Concat(returnVariable != null ? new[] { returnVariable } : Enumerable.Empty<Expression>());
                
             if (!isFunc)
-                invokerBody.Concat(new Expression[] { Expression.Constant(null) });
+                invokerBody = invokerBody.Concat(new Expression[] { Expression.Constant(null) });
 
             //If is Action, return null as object
             //Else if is Func return actual type and cast to object
@@ -286,11 +277,9 @@ namespace Dynamix.Expressions.LambdaBuilders
             if (methodInfo == null)
                 throw new ArgumentNullException(nameof(methodInfo));
 
-            if (EnableCaching)
-            {
-                if (byDelegateTypeCache.TryGetValue(delegateType, out var cachedLambda))
-                    return cachedLambda;
-            }
+            if (EnableCaching
+                && byDelegateTypeCache.TryGetValue(delegateType, out var cachedLambda))
+                return cachedLambda;
 
             var instanceType = methodInfo.IsStatic ? null : methodInfo.DeclaringType;
             var parameterTypes = methodInfo.GetParameters().Select(x => x.ParameterType);

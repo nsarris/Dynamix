@@ -20,7 +20,7 @@ namespace Dynamix
         public DynamicOrderedQueryable ThenBy(LambdaExpression ordering)
         {
             if (ordering == null) throw new ArgumentNullException("ordering");
-            if (Source is IOrderedQueryable)
+            if (Source is IOrderedQueryable orderedQueryable)
                 return new DynamicOrderedQueryable((IOrderedQueryable)Execute(Source, Functions.ThenBy, ordering));
             else
                 return OrderBy(ordering);
@@ -29,7 +29,7 @@ namespace Dynamix
         public DynamicOrderedQueryable ThenByDescending(LambdaExpression ordering)
         {
             if (ordering == null) throw new ArgumentNullException("ordering");
-            if (Source is IOrderedQueryable)
+            if (Source is IOrderedQueryable orderedQueryable)
                 return new DynamicOrderedQueryable((IOrderedQueryable)Execute(Source, Functions.ThenByDescending, ordering));
             else
                 return OrderByDescending(ordering);
@@ -37,11 +37,14 @@ namespace Dynamix
 
         public DynamicOrderedQueryable ThenBy(IEnumerable<OrderItem> orderItems)
         {
-            if (orderItems == null || !orderItems.Any()) throw new ArgumentNullException("Order items cannot be null or empty");
+            if (orderItems == null || !orderItems.Any())
+                throw new ArgumentNullException(nameof(orderItems), "Order items cannot be null or empty");
+
             DynamicOrderedQueryable res = null;
             foreach (var item in orderItems)
             {
-                var l = CreateMemberLambda(Source.ElementType, item.PropertyName);
+                var l = Expressions.MemberExpressionBuilder.GetPropertySelector(Source.ElementType, item.Expression);
+
                 if (res != null)
                     res = (item.IsDescending ? res.ThenByDescending(l) : res.ThenBy(l));
                 else

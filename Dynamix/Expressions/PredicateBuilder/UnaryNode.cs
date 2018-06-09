@@ -4,7 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Web;
 
-namespace Dynamix.PredicateBuilder
+namespace Dynamix.Expressions.PredicateBuilder
 {
     public class UnaryNode : NodeBase
     {

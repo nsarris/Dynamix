@@ -8,7 +8,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Dynamix.PredicateBuilder
+namespace Dynamix.Expressions.PredicateBuilder
 {
 
     public class PredicateBuilder
@@ -54,9 +54,8 @@ namespace Dynamix.PredicateBuilder
         public static Expression GetPredicateExpression
             (ParameterExpression instanceParameter, string sourceExpression, ExpressionOperator @operator, object value, PredicateBuilderConfiguration configuration = null)
         {
-            var left = System.Linq.Dynamic.DynamicExpression.Parse(
-                                new[] { instanceParameter }, null, sourceExpression);
-
+            var left = MemberExpressionBuilder.GetExpressionSelector(instanceParameter, sourceExpression);
+                                
             return GetPredicateExpression(left, @operator, value, configuration);
         }
 
@@ -367,11 +366,14 @@ namespace Dynamix.PredicateBuilder
                 if (valuePredicateDataType == PredicateDataType.Collection
                     || valuePredicateDataType == PredicateDataType.Unsupported)
                     return null;
+
+                right = Expression.Constant(Value);
             }
             else if (IsNullable)
             {
                 right = Expression.Constant(new object[] { null });
             }
+            else
             {
                 right = ExpressionEx.Constants.Bool(Operator == ExpressionOperator.DoesNotContain);
             }

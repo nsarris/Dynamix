@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Dynamix.PredicateBuilder
+namespace Dynamix.Expressions.PredicateBuilder
 {
     public interface IPredicateTreeBuilderStart
     {

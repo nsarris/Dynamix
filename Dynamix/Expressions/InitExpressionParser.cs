@@ -38,12 +38,21 @@ namespace Dynamix.Expressions
         public Expression ValueExpression { get; set; }
         public LambdaExpression ValueLambdaExpression { get; set; }
         Delegate compiledLambdaExpression = null;
-        public Delegate CompiledLambdaExpression { get { if (compiledLambdaExpression == null) { if (ValueLambdaExpression != null) compiledLambdaExpression = ValueLambdaExpression.Compile(); } return compiledLambdaExpression; } }
+        public Delegate CompiledLambdaExpression
+        {
+            get
+            {
+                if (compiledLambdaExpression == null && ValueLambdaExpression != null)
+                        compiledLambdaExpression = ValueLambdaExpression.Compile();
+                
+                return compiledLambdaExpression;
+            }
+        }
         public InitMemberAssignmentType Type { get; set; }
         public PropertyInfo MappedProperty { get; set; }
     }
 
-    public static class ExpressionParser
+    public static class InitExpressionParser
     {
         #region Init Epression
         private static List<InitMemberAssignment> ParseInitExpression<T>(MemberInitExpression memberInitExpression)
@@ -53,10 +62,7 @@ namespace Dynamix.Expressions
 
             foreach (MemberBinding binding in memberInitExpression.Bindings)
             {
-                string propertyName = binding.Member.Name;
-
-                var memberAssignment = binding as MemberAssignment;
-                if (memberAssignment == null)
+                if (!(binding is MemberAssignment memberAssignment))
                     throw new ArgumentException("The init expression MemberBinding must only by type MemberAssignment.", "memberInitExpression");
 
                 var valueExpression = memberAssignment.Expression;
@@ -97,11 +103,8 @@ namespace Dynamix.Expressions
 
             foreach (MemberBinding binding in memberInitExpression.Bindings)
             {
-                string propertyName = binding.Member.Name;
-
-                var memberAssignment = binding as MemberAssignment;
-                if (memberAssignment == null)
-                    throw new ArgumentException("The init expression MemberBinding must only by type MemberAssignment.", "memberInitExpression");
+                if (!(binding is MemberAssignment memberAssignment))
+                    throw new ArgumentException("The init expression MemberBinding must only by type MemberAssignment.");
 
                 var valueExpression = memberAssignment.Expression;
                 var lambda = Expression.Lambda(valueExpression, inputParameter);
@@ -118,7 +121,7 @@ namespace Dynamix.Expressions
                     initMemberAssignment.Type = InitMemberAssignmentType.Constant;
                     initMemberAssignment.ConstantValue = constantExpression.Value;
                 }
-                else if (valueExpression.NodeType == ExpressionType.MemberAccess 
+                else if (valueExpression.NodeType == ExpressionType.MemberAccess
                     && valueExpression is MemberExpression memberExpression
                     && memberExpression.Expression == inputParameter)
                 {
@@ -189,9 +192,6 @@ namespace Dynamix.Expressions
             var i = 0;
             foreach (var member in body.Members)
             {
-                var propertyName = member.Name;
-                var property = member.DeclaringType.GetProperty(member.Name);
-
                 var argumentExpression = body.Arguments[i++];
                 var inputParameter = argumentExpression.GetFirstParameterOfType<Tin>();
 

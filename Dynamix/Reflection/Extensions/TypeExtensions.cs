@@ -80,10 +80,8 @@ namespace Dynamix.Reflection
         public static bool IsAssignableFromGenericType(this Type targetType, Type givenType)
         {
             if (givenType == null || targetType == null)
-            {
                 return false;
-            }
-
+            
             return givenType == targetType
               || givenType.MapsToGenericTypeDefinition(targetType)
               || givenType.HasInterfaceThatMapsToGenericTypeDefinition(targetType)
@@ -92,15 +90,7 @@ namespace Dynamix.Reflection
 
         public static bool IsAssignableToGenericType(this Type givenType, Type targetType)
         {
-            if (givenType == null || targetType == null)
-            {
-                return false;
-            }
-
-            return givenType == targetType
-              || givenType.MapsToGenericTypeDefinition(targetType)
-              || givenType.HasInterfaceThatMapsToGenericTypeDefinition(targetType)
-              || givenType.BaseType.IsAssignableToGenericType(targetType);
+            return targetType.IsAssignableFromGenericType(givenType);
         }
 
         private static bool HasInterfaceThatMapsToGenericTypeDefinition(this Type givenType, Type genericType)
@@ -118,7 +108,7 @@ namespace Dynamix.Reflection
               && givenType.GetGenericTypeDefinition() == genericType;
         }
 
-        private static bool IsDelegate(this Type type)
+        public static bool IsDelegate(this Type type)
         {
             return typeof(Delegate).IsAssignableFrom(type);
         }
@@ -212,7 +202,7 @@ namespace Dynamix.Reflection
 
         private static T DefaultOfInternal<T>()
         {
-            return default(T);
+            return default;
         }
 
         

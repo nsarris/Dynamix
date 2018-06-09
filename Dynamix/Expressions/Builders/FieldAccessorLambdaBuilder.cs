@@ -77,7 +77,7 @@ namespace Dynamix.Expressions.LambdaBuilders
                 throw new ArgumentNullException(nameof(fieldInfo));
 
             if (isStatic.HasValue && fieldInfo.IsStatic != isStatic)
-                throw new ArgumentException("Field is not " + ((isStatic == true) ? "static" : "instance"), nameof(FieldInfo));
+                throw new FieldAccessException("Field is not " + ((isStatic == true) ? "static" : "instance"));
         }
 
         #endregion Helpers
@@ -88,8 +88,8 @@ namespace Dynamix.Expressions.LambdaBuilders
         {
             ValidateField(fieldInfo, null);
 
-            if (EnableCaching)
-                if (genericGetterCache.TryGetValue(fieldInfo, out var cachedLambda))
+            if (EnableCaching
+                && genericGetterCache.TryGetValue(fieldInfo, out var cachedLambda))
                     return (Expression<Func<object, object>>)cachedLambda;
 
             var instanceParameter = Expression.Parameter(typeof(object), "instance");
@@ -112,8 +112,8 @@ namespace Dynamix.Expressions.LambdaBuilders
         {
             ValidateField(fieldInfo, null);
 
-            if (EnableCaching)
-                if (genericSetterCache.TryGetValue(fieldInfo, out var cachedLambda))
+            if (EnableCaching
+                && genericSetterCache.TryGetValue(fieldInfo, out var cachedLambda))
                     return (Expression<Action<object, object>>)cachedLambda;
 
             var instanceParameter = Expression.Parameter(typeof(object), "instance");

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq.Expressions;
 
-namespace Dynamix.PredicateBuilder
+namespace Dynamix.Expressions.PredicateBuilder
 {
     public class ExpressionNodeVisitorInput
     {

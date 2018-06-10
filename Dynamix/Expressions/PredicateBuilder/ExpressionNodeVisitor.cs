@@ -35,7 +35,10 @@ namespace Dynamix.Expressions.PredicateBuilder
 
         protected virtual Expression VisitUnaryNode(UnaryNode node, ExpressionNodeVisitorInput input)
         {
-            return PredicateBuilder.GetPredicateExpression(input.ItParameterExpression, node.Expression, node.Operator, node.Value, input.Configuration);
+            if (!input.Configurations.TryGetValue(node.Expression, out var configuration))
+                configuration = input.DefaultConfiguration;
+
+            return PredicateBuilder.GetPredicateExpression(input.ItParameterExpression, node.Expression, node.Operator, node.Value, configuration);
         }
 
         public Expression Visit(NodeBase root, ExpressionNodeVisitorInput input)

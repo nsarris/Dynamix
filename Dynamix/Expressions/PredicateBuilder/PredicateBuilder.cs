@@ -281,6 +281,19 @@ namespace Dynamix.Expressions.PredicateBuilder
             throw new InvalidOperationException($"Value '{value}' is not compatible with type {Type.Name}");
         }
 
+        private static object AsNullable(object value)
+        {
+            if (value == null || value.GetType().IsNullable())
+                return value;
+
+            var valueType = value.GetType();
+
+            return typeof(Nullable<>)
+                .MakeGenericTypeCached(valueType)
+                .GetConstructorEx(new[] { valueType })
+                .Invoke(value);
+        }
+
         #endregion
 
         #region Builders
@@ -492,8 +505,6 @@ namespace Dynamix.Expressions.PredicateBuilder
 
         #region ExpressionBuilders
 
-
-
         private Expression BuildIsContainedInPredicate()
         {
             if (Operator == ExpressionOperator.IsContainedIn || Operator == ExpressionOperator.IsNotContainedIn)
@@ -544,9 +555,6 @@ namespace Dynamix.Expressions.PredicateBuilder
 
             return null;
         }
-
-
-
 
         private Expression BuildEquitableExpression(Expression left, ExpressionOperator expressionOperator, Expression right)
         {
@@ -638,19 +646,6 @@ namespace Dynamix.Expressions.PredicateBuilder
             }
         }
 
-        private static object AsNullable(object value)
-        {
-            if (value == null || value.GetType().IsNullable())
-                return value;
-
-            var valueType = value.GetType();
-                
-            return typeof(Nullable<>)
-                .MakeGenericTypeCached(valueType)
-                .GetConstructorEx(new[] { valueType })
-                .Invoke(value);
-        }
-
         private static object AsNumericNullable(object value)
         {
             if (value == null) return null;
@@ -711,8 +706,6 @@ namespace Dynamix.Expressions.PredicateBuilder
                     BuildIsContainedInValuesExpression(expression, Configuration.GetEmptyValues(DataType)))
                     .ConditionalNot(not);
         }
-
-
 
         #endregion
     }

@@ -25,7 +25,7 @@ namespace Dynamix.Reflection
     {
         public string Name => ConstructorInfo.Name;
         public ConstructorInfo ConstructorInfo { get; private set; }
-        public IEnumerable<Type> Signature { get; private set; }
+        public IReadOnlyDictionary<string, Type> Signature { get; private set; }
         MemberInfo IMemberInfoEx.MemberInfo => ConstructorInfo;
 
         MemberInfoExKind IMemberInfoEx.Kind => MemberInfoExKind.Constructor;
@@ -34,8 +34,8 @@ namespace Dynamix.Reflection
 
         public ConstructorInfoEx(ConstructorInfo ctor, bool enableDelegateCaching = true)
         {
-            this.ConstructorInfo = ctor;
-            this.Signature = new ReadOnlyCollection<Type>(ctor.GetParameters().Select(x => x.ParameterType).ToList());
+            ConstructorInfo = ctor;
+            Signature = new ReadOnlyDictionary<string,Type>(ctor.GetParameters().ToDictionary(x => x.Name, x => x.ParameterType));
 
             if (enableDelegateCaching)
                 invoker = MemberAccessorDelegateBuilder.ConstructorBuilder.BuildGeneric(ctor);

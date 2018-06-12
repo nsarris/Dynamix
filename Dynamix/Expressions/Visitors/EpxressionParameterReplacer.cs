@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Dynamix
 {
-    public class EpxressionParameterReplacer
+    public class ExpressionParameterReplacer
     {
         // Produces an expression identical to 'expression'
         // except with 'source' parameter replaced with 'target' parameter.     

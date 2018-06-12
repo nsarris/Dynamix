@@ -13,13 +13,13 @@ namespace Dynamix.Expressions
     {
         #region MemberAccess
 
-        public static Expression MakeDeepMemberAccess(Expression expression, string memberPath, bool safe = false)
+        public static MemberExpression MakeDeepMemberAccess(Expression expression, string memberPath, bool safe = false)
         {
             return MakeDeepMemberAccess(expression, memberPath.Split('.'), safe);
         }
-        public static Expression MakeDeepMemberAccess(Expression expression, IEnumerable<string> members, bool safe = false)
+        public static MemberExpression MakeDeepMemberAccess(Expression expression, IEnumerable<string> members, bool safe = false)
         {
-            return members.Aggregate(expression, (aggregate, next) => MakeMemberAccess(aggregate, next, safe));
+            return (MemberExpression)members.Aggregate(expression, (aggregate, next) => MakeMemberAccess(aggregate, next, safe));
         }
 
         public static MemberExpression MakeMemberAccess(Expression expression, string memberName, bool safe = false)

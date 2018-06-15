@@ -54,7 +54,7 @@ namespace Dynamix.Expressions.PredicateBuilder
         public static Expression GetPredicateExpression
             (ParameterExpression instanceParameter, string sourceExpression, ExpressionOperator @operator, object value, PredicateBuilderConfiguration configuration = null)
         {
-            var left = MemberExpressionBuilder.GetExpressionSelector(instanceParameter, sourceExpression);
+            var left = MemberExpressionBuilder.GetExpressionSelector(instanceParameter, sourceExpression).Body;
                                 
             return GetPredicateExpression(left, @operator, value, configuration);
         }

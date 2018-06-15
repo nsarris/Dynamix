@@ -29,6 +29,15 @@ namespace Dynamix
                       .VisitAndConvert(expression));
         }
 
+        public static Expression Replace
+                     (Expression expression,
+                      ParameterExpression source,
+                      ParameterExpression target)
+        {
+            return new ParameterReplacerVisitor(source, target)
+                      .VisitAndConvert(expression);
+        }
+
         public static LambdaExpression ReplaceType
              (LambdaExpression expression,
               Type sourceType,
@@ -42,6 +51,15 @@ namespace Dynamix
                             .VisitAndConvert(expression));
             }
             return expression;
+        }
+
+        public static Expression ReplaceOfType
+             (Expression expression,
+              Type sourceType,
+              ParameterExpression parameterExpression)
+        {
+            return new ParameterReplacerOfTypeVisitor(sourceType, parameterExpression)
+                .VisitAndConvert(expression);
         }
 
 
@@ -67,6 +85,11 @@ namespace Dynamix
                 return Visit(root);
             }
 
+            internal Expression VisitAndConvert(Expression root)
+            {
+                return Visit(root);
+            }
+
             protected override Expression VisitLambda<T>(Expression<T> node)
             {
                 // Leave all parameters alone except the one we want to replace.
@@ -77,15 +100,16 @@ namespace Dynamix
 
             public override Expression Visit(Expression node)
             {
-                var l = node as LambdaExpression;
-                if (l != null)
+                if (node is LambdaExpression l)
                 {
                     var parameters = l.Parameters.Select
                                      (p => p == _source ? _target : p);
                     return Expression.Lambda(Visit(l.Body), parameters);
                 }
                 else
+                {
                     return base.Visit(node);
+                }
             }
 
             protected override Expression VisitParameter(ParameterExpression node)
@@ -95,6 +119,60 @@ namespace Dynamix
             }
         }
 
+        private class ParameterReplacerOfTypeVisitor : ExpressionVisitor
+        {
+            private readonly Type _sourceType;
+            private readonly ParameterExpression _target;
 
+            public ParameterReplacerOfTypeVisitor
+                  (Type source, ParameterExpression target)
+            {
+                _sourceType = source;
+                _target = target;
+            }
+
+            //internal Expression<T> VisitAndConvert<T>(Expression<T> root)
+            //{
+            //    return (Expression<T>)VisitLambda(root);
+            //}
+
+            //internal Expression VisitAndConvert(LambdaExpression root)
+            //{
+            //    return Visit(root);
+            //}
+
+            internal Expression VisitAndConvert(Expression root)
+            {
+                return Visit(root);
+            }
+
+            protected override Expression VisitLambda<T>(Expression<T> node)
+            {
+                // Leave all parameters alone except the one we want to replace.
+                var parameters = node.Parameters.Select
+                                 (p => p.Type == _sourceType ? _target : p);
+                return Expression.Lambda(Visit(node.Body), parameters);
+            }
+
+            public override Expression Visit(Expression node)
+            {
+                if (node is LambdaExpression l)
+                {
+                    var parameters = l.Parameters.Select
+                                     (p => p.Type == _sourceType ? _target : p);
+                    return Expression.Lambda(Visit(l.Body), parameters);
+                }
+                else
+                {
+                    return base.Visit(node);
+                }
+            }
+
+            protected override Expression VisitParameter(ParameterExpression node)
+            {
+                // Replace the source with the target, visit other params as usual.
+                return node.Type == _sourceType ? _target : base.VisitParameter(node);
+            }
+        }
     }
 }

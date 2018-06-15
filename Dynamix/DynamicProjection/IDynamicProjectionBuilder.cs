@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -48,9 +49,9 @@ namespace Dynamix.DynamicProjection
 
     public class MemberMap
     {
-        public MemberExpression Member { get; }
+        public MapMember Member { get; }
         public MapTarget MapTarget { get; }
-        public MemberMap(MemberExpression member, MapTarget mapTarget)
+        public MemberMap(MapMember member, MapTarget mapTarget)
         {
             Member = member;
             MapTarget = mapTarget;
@@ -68,65 +69,115 @@ namespace Dynamix.DynamicProjection
     {
         public Type SourceType { get; }
         public Type ProjectedType { get; }
-        public ParameterExpression ItParameter { get; }
+        //public ParameterExpression ItParameter { get; }
         public DefaultMemberTarget DefaultMemberTarget { get; internal set; }
         public Func<string, string, bool> DefaultMemberNameComparer { get; internal set; }
             = (string x, string y) => StringComparer.Ordinal.Compare(x, y) == 0;
 
         protected readonly List<MemberMap> mappedMembers = new List<MemberMap>();
         protected readonly List<CtorParameterMap> ctorParameters = new List<CtorParameterMap>();
-        protected readonly ConstructorInfoEx ctor;
+        //protected readonly ConstructorInfoEx ctor;
 
         protected ProjectionBuilderBase(Type sourceType, Type projectedType)
         {
             SourceType = sourceType;
             ProjectedType = projectedType;
-            ItParameter = Expression.Parameter(SourceType);
+            //ItParameter = Expression.Parameter(SourceType);
 
-            ctor = projectedType.GetConstructorsEx()
-                .OrderByDescending(x => x.Signature.Count())
-                .FirstOrDefault();
+            //ctor = projectedType.GetConstructorsEx()
+            //    .OrderByDescending(x => x.Signature.Count())
+            //    .FirstOrDefault();
         }
 
-        protected bool TryGetCtorParamter(string name, out string parameterName, out Type parameterType)
-        {
-            var item = ctor.Signature.FirstOrDefault(x => DefaultMemberNameComparer(x.Key, name));
-            parameterName = item.Key;
-            parameterType = item.Value;
-            return parameterName != null;
-        }
+        //protected bool TryGetCtorParamter(string name, out string parameterName, out Type parameterType)
+        //{
+        //    var item = ctor.Signature.FirstOrDefault(x => DefaultMemberNameComparer(x.Key, name));
+        //    parameterName = item.Key;
+        //    parameterType = item.Value;
+        //    return parameterName != null;
+        //}
 
-        protected bool TryGetMember(string name, out string memberName, out Type memberType)
-        {
-            memberName = null;
-            memberType = null;
+        //protected bool TryGetMember(string name, out string memberName, out Type memberType)
+        //{
+        //    memberName = null;
+        //    memberType = null;
 
-            var prop = ProjectedType.GetPropertiesEx().FirstOrDefault(x => DefaultMemberNameComparer(x.Name, name));
-            if (prop != null)
+        //    var prop = ProjectedType.GetPropertiesEx().FirstOrDefault(x => DefaultMemberNameComparer(x.Name, name));
+        //    if (prop != null)
+        //    {
+        //        memberName = prop.Name;
+        //        memberType = prop.Type;
+        //    }
+        //    else
+        //    {
+        //        var field = ProjectedType.GetFieldsEx().FirstOrDefault(x => DefaultMemberNameComparer(x.Name, name));
+        //        if (field != null)
+        //        {
+        //            memberName = field.Name;
+        //            memberType = field.Type;
+        //        }
+        //    }
+        //    return memberName != null;
+        //}
+
+        //protected MemberExpression GetMemberExpression(string member)
+        //{
+        //    return MemberExpressionBuilder.MakeDeepMemberAccess(ItParameter, member);
+        //}
+
+        //protected MemberExpression GetMemberExpression(LambdaExpression memberLambdaExpression)
+        //{
+        //    return LambdaParameterReplacer.Replace(memberLambdaExpression, memberLambdaExpression.Parameters.First(), ItParameter).Body as MemberExpression;
+        //}
+
+        public LambdaExpression Build(Type sourceType, Type projectedType)
+        //use ctor
+        {
+
+            var it = Expression.Parameter(sourceType, "");
+            var ctor = projectedType.GetConstructorsEx().OrderByDescending(x => x.Signature.Count).FirstOrDefault();
+            //if null error
+
+            var ctorParameterExpressions = new List<Expression>();
+            foreach (var p in ctor.Signature)
             {
-                memberName = prop.Name;
-                memberType = prop.Type;
+                var ctorParameter = ctorParameters.FirstOrDefault(x => x.ParameterName == p.Key);
+                ctorParameterExpressions.Add(ctorParameter.MapTarget.GetExpression(it));
             }
-            else
-            {
-                var field = ProjectedType.GetFieldsEx().FirstOrDefault(x => DefaultMemberNameComparer(x.Name, name));
-                if (field != null)
-                {
-                    memberName = field.Name;
-                    memberType = field.Type;
-                }
-            }
-            return memberName != null;
-        }
 
-        protected MemberExpression GetMemberExpression(string member)
-        {
-            return MemberExpressionBuilder.MakeDeepMemberAccess(ItParameter, member);
-        }
+            //IEnumerable<string> selectedProperties = null;
 
-        protected MemberExpression GetMemberExpression(LambdaExpression memberLambdaExpression)
-        {
-            return LambdaParameterReplacer.Replace(memberLambdaExpression, memberLambdaExpression.Parameters.First(), ItParameter).Body as MemberExpression;
+            var memberAssignments =
+                //(selectedProperties == null ? Properties : Properties.Where(x => selectedProperties.Contains(x.TargetProperty.Name)))
+                mappedMembers
+                    .Select(m =>
+                    {
+                        var member = m.Member.GetMember(projectedType);
+                        var mapTarget = m.MapTarget ?? new StringMapTarget(member.Name);
+                        var targetExpression = mapTarget.GetExpression(it);
+                        var memberType = member.MemberType == MemberTypes.Property ? ((PropertyInfo)member).PropertyType : ((FieldInfo)member).FieldType;
+
+                        return new
+                        {
+                            MemberInfo = member,
+                            MemberType = memberType,
+                            TargetExperssion = targetExpression, //ValueMap
+                        };
+                    })
+                    .Select(p => Expression.Bind(
+                            p.MemberInfo,
+                            ExpressionEx.ConvertIfNeeded(p.TargetExperssion, p.MemberType)))
+                            .ToList();
+
+            var l = Expression.Lambda(
+                    Expression.MemberInit(
+                        Expression.New(ctor.ConstructorInfo, ctorParameterExpressions),
+                        memberAssignments),
+                    it);
+
+
+
+            return l;
         }
     }
 
@@ -146,7 +197,7 @@ namespace Dynamix.DynamicProjection
         public ProjectionBuilder Member(string member, Func<MemberTargetBuilder, ConfiguredMemberTargetBuilder> map)
         {
             var mapTarget = map(new MemberTargetBuilder()).MappedMember;
-            mappedMembers.Add(new MemberMap(GetMemberExpression(member), mapTarget));
+            mappedMembers.Add(new MemberMap(new StringMapMember(member), mapTarget));
             return this;
         }
 
@@ -159,7 +210,7 @@ namespace Dynamix.DynamicProjection
 
         public ProjectionBuilder Auto(string member)
         {
-            mappedMembers.Add(new MemberMap(GetMemberExpression(member), null));
+            mappedMembers.Add(new MemberMap(new StringMapMember(member), null));
             return this;
         }
     }
@@ -174,7 +225,7 @@ namespace Dynamix.DynamicProjection
         public ProjectionBuilder<TSource> Member(string member, Func<MemberTargetBuilder<TSource>, ConfiguredMemberTargetBuilder> map)
         {
             var mapTarget = map(new MemberTargetBuilder<TSource>()).MappedMember;
-            mappedMembers.Add(new MemberMap(GetMemberExpression(member), mapTarget));
+            mappedMembers.Add(new MemberMap(new StringMapMember(member), mapTarget));
             return this;
         }
 
@@ -187,7 +238,7 @@ namespace Dynamix.DynamicProjection
 
         public ProjectionBuilder<TSource> Auto(string member)
         {
-            mappedMembers.Add(new MemberMap(GetMemberExpression(member), null));
+            mappedMembers.Add(new MemberMap(new StringMapMember(member), null));
             return this;
         }
     }
@@ -203,7 +254,7 @@ namespace Dynamix.DynamicProjection
         public ProjectionBuilder<TSource, TDestination> Member(string member, Func<MemberTargetBuilder<TSource>, ConfiguredMemberTargetBuilder> map)
         {
             var mapTarget = map(new MemberTargetBuilder<TSource>()).MappedMember;
-            mappedMembers.Add(new MemberMap(GetMemberExpression(member), mapTarget));
+            mappedMembers.Add(new MemberMap(new StringMapMember(member), mapTarget));
             return this;
         }
 
@@ -217,28 +268,61 @@ namespace Dynamix.DynamicProjection
         public ProjectionBuilder<TSource, TDestination> Member<TMember>(Expression<Func<TDestination, TMember>> memberLambdaExpression, Func<MemberTargetBuilder<TSource>, ConfiguredMemberTargetBuilder> map)
         {
             var mapTarget = map(new MemberTargetBuilder<TSource>()).MappedMember;
-            mappedMembers.Add(new MemberMap(GetMemberExpression(memberLambdaExpression), mapTarget));
+            mappedMembers.Add(new MemberMap(new LambdaExpressionMapMember(memberLambdaExpression), mapTarget));
             return this;
         }
 
         public ProjectionBuilder<TSource, TDestination> Auto(string member)
         {
-            mappedMembers.Add(new MemberMap(GetMemberExpression(member), null));
+            mappedMembers.Add(new MemberMap(new StringMapMember(member), null));
             return this;
         }
 
         public ProjectionBuilder<TSource, TDestination> Auto<TMember>(Expression<Func<TDestination, TMember>> memberLambdaExpression)
         {
-            mappedMembers.Add(new MemberMap(GetMemberExpression(memberLambdaExpression), null));
+            mappedMembers.Add(new MemberMap(new LambdaExpressionMapMember(memberLambdaExpression), null));
             return this;
         }
     }
 
     #region MapTargets
 
-    public class MapTarget
+    public abstract class MapMember
     {
+        public abstract MemberInfo GetMember(Type sourceType);
+    }
+    public class StringMapMember : MapMember
+    {
+        public string PropertyName { get; }
+        public StringMapMember(string propertyName)
+        {
+            PropertyName = propertyName;
+        }
+        public override MemberInfo GetMember(Type sourceType)
+        {
+            return sourceType.GetMember(PropertyName).First();
+        }
+    }
 
+    public class LambdaExpressionMapMember : MapMember
+    {
+        public LambdaExpression PropertyExpression { get; }
+        public LambdaExpressionMapMember(LambdaExpression propertyExpression)
+        {
+            PropertyExpression = propertyExpression;
+        }
+        public override MemberInfo GetMember(Type sourceType)
+        {
+            if (PropertyExpression.Body is MemberExpression memberExpression)
+                return memberExpression.Member;
+            else
+                throw new InvalidOperationException("The expession give is not a valid member expression");
+        }
+    }
+
+    public abstract class MapTarget
+    {
+        public abstract Expression GetExpression(ParameterExpression itParameter);
     }
 
     public class StringMapTarget : MapTarget
@@ -247,6 +331,12 @@ namespace Dynamix.DynamicProjection
         internal StringMapTarget(string sourceExpression)
         {
             SourceExpression = sourceExpression;
+        }
+
+        public override Expression GetExpression(ParameterExpression itParameter)
+        {
+            return System.Linq.Dynamic.DynamicExpression.Parse(new[] { itParameter }, null, SourceExpression);
+            //return MemberExpressionBuilder.GetExpressionSelector(itParameter, SourceExpression).Body;
         }
     }
 
@@ -257,6 +347,11 @@ namespace Dynamix.DynamicProjection
         {
             SourceExpression = sourceExpression;
         }
+
+        public override Expression GetExpression(ParameterExpression itParameter)
+        {
+            return LambdaParameterReplacer.ReplaceOfType(SourceExpression, itParameter.Type, itParameter);
+        }
     }
 
     public class LambdaExpressionMapTarget : MapTarget
@@ -265,6 +360,11 @@ namespace Dynamix.DynamicProjection
         internal LambdaExpressionMapTarget(LambdaExpression sourceExpression)
         {
             SourceExpression = sourceExpression;
+        }
+
+        public override Expression GetExpression(ParameterExpression itParameter)
+        {
+            return LambdaParameterReplacer.Replace(SourceExpression, SourceExpression.Parameters.First(), itParameter);
         }
     }
 
@@ -275,115 +375,48 @@ namespace Dynamix.DynamicProjection
         {
             Value = value;
         }
-    }
 
-    public class ConstantDictionaryMapTarget : MapTarget
-    {
-        public Dictionary<object, object> Values { get; }
-        public bool HasDefaultValue { get; }
-        public object DefaultValue { get; }
-        internal ConstantDictionaryMapTarget(Dictionary<object, object> values, bool hasDefaultValue, object defaultValue)
+        public override Expression GetExpression(ParameterExpression itParameter)
         {
-            Values = values;
-            DefaultValue = defaultValue;
-            HasDefaultValue = hasDefaultValue;
+            return Expression.Constant(Value);
         }
     }
 
     #endregion
 
-    //public static class MapTargetBuilderExtensions
-    //{
-    //    public static T FromExpression<T>(this T mapTarget, string expression)
-    //        where T : MapTargetBuilder
-    //    {
-    //        mapTarget.MappedMember = new StringMapTarget(expression);
-    //        //var e = System.Linq.Dynamic.DynamicExpression.Parse(new[] { itParameter }, memberType, expression);
-    //        return mapTarget;
-    //    }
 
-    //    public static T FromExpression<T>(this T mapTarget, Expression expression)
-    //        where T : MapTargetBuilder
-    //    {
-    //        mapTarget.MappedMember = new ExpressionMapTarget(expression);
-    //        //var e = System.Linq.Dynamic.DynamicExpression.Parse(new[] { itParameter }, memberType, expression);
-    //        return mapTarget;
-    //    }
-
-    //    public static T MapsToKeyExpression<T>(this T mapTarget, string expression)
-    //        where T : MapTargetBuilder
-    //    {
-    //        mapTarget.MappedKey = new StringMapTarget(expression);
-    //        //var e = System.Linq.Dynamic.DynamicExpression.Parse(new[] { itParameter }, memberType, expression);
-    //        return mapTarget;
-    //    }
-
-    //    public static T MapsToKeyExpression<T>(this T mapTarget, Expression expression)
-    //        where T : MapTargetBuilder
-    //    {
-    //        mapTarget.MappedKey = new ExpressionMapTarget(expression);
-    //        //var e = System.Linq.Dynamic.DynamicExpression.Parse(new[] { itParameter }, memberType, expression);
-    //        return mapTarget;
-    //    }
-
-    //    public static T FromValue<T>(this T mapTarget, object value)
-    //        where T : MapTargetBuilder
-    //    {
-    //        mapTarget.MappedMember = new ConstantMapTarget(value);
-    //        //var e = System.Linq.Dynamic.DynamicExpression.Parse(new[] { itParameter }, memberType, expression);
-    //        return mapTarget;
-    //    }
-
-    //    public static T FromValueMap<T>(this T mapTarget, Dictionary<object, object> values, object defaultValue)
-    //            where T : MapTargetBuilder
-    //    {
-    //        mapTarget.MappedMember = new ConstantDictionaryMapTarget(values, true, defaultValue);
-    //        //var e = System.Linq.Dynamic.DynamicExpression.Parse(new[] { itParameter }, memberType, expression);
-    //        return mapTarget;
-    //    }
-
-    //    public static T FromValueMap<T>(this T mapTarget, Dictionary<object, object> values)
-    //            where T : MapTargetBuilder
-    //    {
-    //        mapTarget.MappedMember = new ConstantDictionaryMapTarget(values, false, null);
-    //        //var e = System.Linq.Dynamic.DynamicExpression.Parse(new[] { itParameter }, memberType, expression);
-    //        return mapTarget;
-    //    }
-
-    //    //public static T FromExpression<T, TSource>(this T mapTarget, Expression<Func<TSource, object>> expression)
-    //    //    where T : MemberTargetBuilder<TSource>
-    //    //{
-    //    //    mapTarget.MappedMember = new ExpressionMapTarget(expression);
-    //    //    //var e = System.Linq.Dynamic.DynamicExpression.Parse(new[] { itParameter }, memberType, expression);
-    //    //    return mapTarget;
-    //    //}
-
-    //    public static T UsingCtorParameter<T>(this T memberTargetBuilder, string parameterName)
-    //        where T : MemberTargetBuilder
-    //    {
-    //        memberTargetBuilder.ParameterName = parameterName;
-    //        memberTargetBuilder.DefaultMemberTarget = DefaultMemberTarget.CtorParameter;
-    //        return memberTargetBuilder;
-    //    }
-
-    //    public static T UsingCtorParameter<T>(this T memberTargetBuilder)
-    //        where T : MemberTargetBuilder
-    //    {
-    //        memberTargetBuilder.ParameterName = null;
-    //        memberTargetBuilder.DefaultMemberTarget = DefaultMemberTarget.CtorParameter;
-    //        return memberTargetBuilder;
-    //    }
-
-    //}
 
     #region Member Target Builder
 
-    public class MemberTargetBuilder
+    public class ValueMap
+    {
+        public Dictionary<object, object> Values { get; }
+        public UnmappedValueType UnmappedValueType { get; }
+        public object UnmappedValue { get; }
+        internal ValueMap(Dictionary<object, object> values, UnmappedValueType unmappedValueType, object unmappedValue)
+        {
+            Values = values;
+            UnmappedValueType = unmappedValueType;
+            UnmappedValue = unmappedValue;
+        }
+    }
+
+    public enum UnmappedValueType
+    {
+        TypeDefault,
+        SetValue,
+        OriginalValue
+    }
+
+    public abstract class MemberTargetBuilderBase
     {
         internal string ParameterName { get; set; }
-        internal MapTarget MappedMember { get; set; }
         internal DefaultMemberTarget DefaultMemberTarget { get; set; } = DefaultMemberTarget.Member;
+    }
 
+
+    public class MemberTargetBuilder : MemberTargetBuilderBase
+    {
         public MemberTargetBuilder()
         {
         }
@@ -401,68 +434,74 @@ namespace Dynamix.DynamicProjection
             DefaultMemberTarget = DefaultMemberTarget.CtorParameter;
             return this;
         }
-    
+
         public ExpressionMemberTargetBuilder FromExpression(string expression)
         {
-            MappedMember = new StringMapTarget(expression);
-            return new ExpressionMemberTargetBuilder();
+            return new ExpressionMemberTargetBuilder(this, new StringMapTarget(expression));
         }
 
         public ExpressionMemberTargetBuilder FromExpression(Expression expression)
         {
-            MappedMember = new ExpressionMapTarget(expression);
-            return new ExpressionMemberTargetBuilder();
+            return new ExpressionMemberTargetBuilder(this, new ExpressionMapTarget(expression));
         }
 
         public ConstantMemberTargetBuilder FromValue(object value)
         {
-            MappedMember = new ConstantMapTarget(value);
-            return new ConstantMemberTargetBuilder();
+            return new ConstantMemberTargetBuilder(this, new ConstantMapTarget(value));
         }
-
-        public ConstantMemberTargetBuilder FromValueMap(Dictionary<object, object> values, object defaultValue)
-        {
-            MappedMember = new ConstantDictionaryMapTarget(values, true, defaultValue);
-            return new ConstantMemberTargetBuilder();
-        }
-
-        public ConstantMemberTargetBuilder FromValueMap(Dictionary<object, object> values)
-        {
-            MappedMember = new ConstantDictionaryMapTarget(values, false, null);
-            return new ConstantMemberTargetBuilder();
-        }
-
-
     }
 
-    public class ConfiguredMemberTargetBuilder
+    public abstract class ConfiguredMemberTargetBuilder
     {
-        internal MapTarget MappedMember { get; set; }
-        internal MapTarget MappedKey { get; set; }
+        internal MemberTargetBuilderBase TargetBuilder { get; }
+        internal MapTarget MappedMember { get; }
+        internal MapTarget MappedKey { get; private set; }
+
+        protected ConfiguredMemberTargetBuilder(MemberTargetBuilderBase memberTargetBuilder, MapTarget mappedMember)
+        {
+            TargetBuilder = memberTargetBuilder;
+            MappedMember = mappedMember;
+        }
+
+        protected void SetMappedKey(MapTarget mappedKey)
+        {
+            MappedKey = mappedKey;
+        }
     }
 
     public class ExpressionMemberTargetBuilder : ConfiguredMemberTargetBuilder
     {
-        public ExpressionMemberTargetBuilder()
+        internal ValueMap ValueMap { get; private set; }
+
+        public ExpressionMemberTargetBuilder(MemberTargetBuilderBase memberTargetBuilder, MapTarget mappedMember)
+            : base(memberTargetBuilder, mappedMember)
         {
+
         }
 
         public ExpressionMemberTargetBuilder MapsToKeyExpression(string expression)
         {
-            MappedKey = new StringMapTarget(expression);
+            SetMappedKey(new StringMapTarget(expression));
             return this;
         }
 
         public ExpressionMemberTargetBuilder MapsToKeyExpression(Expression expression)
         {
-            MappedKey = new ExpressionMapTarget(expression);
+            SetMappedKey(new ExpressionMapTarget(expression));
+            return this;
+        }
+
+        public ExpressionMemberTargetBuilder HasValueMap(Dictionary<object, object> values, UnmappedValueType unmappedValueType = UnmappedValueType.TypeDefault, object unmappedValue = null)
+        {
+            ValueMap = new ValueMap(values, unmappedValueType, unmappedValue);
             return this;
         }
     }
 
     public class ConstantMemberTargetBuilder : ConfiguredMemberTargetBuilder
     {
-        public ConstantMemberTargetBuilder()
+        public ConstantMemberTargetBuilder(MemberTargetBuilderBase memberTargetBuilder, MapTarget mappedMember)
+            : base(memberTargetBuilder, mappedMember)
         {
         }
     }
@@ -471,11 +510,8 @@ namespace Dynamix.DynamicProjection
 
     #region Member Target Builder <TSource>
 
-    public class MemberTargetBuilder<TSource>
+    public class MemberTargetBuilder<TSource> : MemberTargetBuilderBase
     {
-        internal string ParameterName { get; set; }
-        internal DefaultMemberTarget DefaultMemberTarget { get; set; } = DefaultMemberTarget.Member;
-
         public MemberTargetBuilder()
         {
         }
@@ -496,40 +532,23 @@ namespace Dynamix.DynamicProjection
 
         public ExpressionMemberTargetBuilder<TSource> FromExpression(string expression)
         {
-            //MappedMember = new StringMapTarget(expression);
-            return new ExpressionMemberTargetBuilder<TSource>();
+            return new ExpressionMemberTargetBuilder<TSource>(this, new StringMapTarget(expression));
         }
 
         public ExpressionMemberTargetBuilder<TSource> FromExpression(Expression expression)
         {
-            //MappedMember = new ExpressionMapTarget(expression);
-            return new ExpressionMemberTargetBuilder<TSource>();
+            return new ExpressionMemberTargetBuilder<TSource>(this, new ExpressionMapTarget(expression));
         }
 
         public ExpressionMemberTargetBuilder<TSource> FromExpression<T>(Expression<Func<TSource, T>> expression)
         {
-            //MappedMember = new LambdaExpressionMapTarget(expression);
-            return new ExpressionMemberTargetBuilder<TSource>();
+            return new ExpressionMemberTargetBuilder<TSource>(this, new LambdaExpressionMapTarget(expression));
         }
 
         public ConstantMemberTargetBuilder<TSource> FromValue(object value)
         {
-            //MappedMember = new ConstantMapTarget(value);
-            return new ConstantMemberTargetBuilder<TSource>();
+            return new ConstantMemberTargetBuilder<TSource>(this, new ConstantMapTarget(value));
         }
-
-        public ConstantMemberTargetBuilder<TSource> FromValueMap(Dictionary<object, object> values, object defaultValue)
-        {
-            //MappedMember = new ConstantDictionaryMapTarget(values, true, defaultValue);
-            return new ConstantMemberTargetBuilder<TSource>();
-        }
-
-        public ConstantMemberTargetBuilder<TSource> FromValueMap(Dictionary<object, object> values)
-        {
-            //MappedMember = new ConstantDictionaryMapTarget(values, false, null);
-            return new ConstantMemberTargetBuilder<TSource>();
-        }
-
 
     }
 
@@ -538,33 +557,42 @@ namespace Dynamix.DynamicProjection
 
     public class ExpressionMemberTargetBuilder<TSource> : ConfiguredMemberTargetBuilder
     {
-        
-        public ExpressionMemberTargetBuilder()
+        internal ValueMap ValueMap { get; set; }
+
+        public ExpressionMemberTargetBuilder(MemberTargetBuilderBase memberTargetBuilder, MapTarget mappedMember)
+            : base(memberTargetBuilder, mappedMember)
         {
         }
 
         public ExpressionMemberTargetBuilder<TSource> MapsToKeyExpression(string expression)
         {
-            MappedKey = new StringMapTarget(expression);
+            SetMappedKey(new StringMapTarget(expression));
             return this;
         }
 
         public ExpressionMemberTargetBuilder<TSource> MapsToKeyExpression(Expression expression)
         {
-            MappedKey = new ExpressionMapTarget(expression);
+            SetMappedKey(new ExpressionMapTarget(expression));
             return this;
         }
 
         public ExpressionMemberTargetBuilder<TSource> MapsToKeyExpression<T>(Expression<Func<TSource, T>> expression)
         {
-            MappedKey = new LambdaExpressionMapTarget(expression);
+            SetMappedKey(new LambdaExpressionMapTarget(expression));
+            return this;
+        }
+
+        public ExpressionMemberTargetBuilder<TSource> HasValueMap(Dictionary<object, object> values, UnmappedValueType unmappedValueType = UnmappedValueType.TypeDefault, object unmappedValue = null)
+        {
+            ValueMap = new ValueMap(values, unmappedValueType, unmappedValue);
             return this;
         }
     }
 
     public class ConstantMemberTargetBuilder<TSource> : ConfiguredMemberTargetBuilder
     {
-        public ConstantMemberTargetBuilder()
+        public ConstantMemberTargetBuilder(MemberTargetBuilderBase memberTargetBuilder, MapTarget mappedMember)
+            : base(memberTargetBuilder, mappedMember)
         {
         }
     }
@@ -574,77 +602,85 @@ namespace Dynamix.DynamicProjection
 
     #region Ctor Target Builder
 
-    public class CtorParamTargetBuilder
+    public class CtorParamTargetBuilderBase
     {
-        //internal MapTarget MappedMember { get; set; }
-        
+
+    }
+
+    public class CtorParamTargetBuilder : CtorParamTargetBuilderBase
+    {
         public CtorParamTargetBuilder()
         {
         }
 
         public ExpressionCtorParamTargetBuilder FromExpression(string expression)
         {
-            //MappedMember = new StringMapTarget(expression);
-            return new ExpressionCtorParamTargetBuilder();
+            return new ExpressionCtorParamTargetBuilder(this, new StringMapTarget(expression));
         }
 
-        public ConstantCtorParamTargetBuilder FromExpression(Expression expression)
+        public ExpressionCtorParamTargetBuilder FromExpression(Expression expression)
         {
-            //MappedMember = new ExpressionMapTarget(expression);
-            return new ConstantCtorParamTargetBuilder();
+            return new ExpressionCtorParamTargetBuilder(this, new ExpressionMapTarget(expression));
         }
 
         public ConstantCtorParamTargetBuilder FromValue(object value)
         {
-            //MappedMember = new ConstantMapTarget(value);
-            return new ConstantCtorParamTargetBuilder();
+            return new ConstantCtorParamTargetBuilder(this, new ConstantMapTarget(value));
         }
-
-        public ConstantCtorParamTargetBuilder FromValueMap(Dictionary<object, object> values, object defaultValue)
-        {
-            //MappedMember = new ConstantDictionaryMapTarget(values, true, defaultValue);
-            return new ConstantCtorParamTargetBuilder();
-        }
-
-        public ConstantCtorParamTargetBuilder FromValueMap(Dictionary<object, object> values)
-        {
-           // MappedMember = new ConstantDictionaryMapTarget(values, false, null);
-            return new ConstantCtorParamTargetBuilder();
-        }
-
 
     }
 
-    public class  ConfiguredCtorParamTargetBuilder
+    public abstract class ConfiguredCtorParamTargetBuilder
     {
-        internal MapTarget MappedMember { get; set; }
-        internal MapTarget MappedKey { get; set; }
+        internal CtorParamTargetBuilderBase TargetBuilder { get; }
+        internal MapTarget MappedMember { get; }
+        internal MapTarget MappedKey { get; private set; }
+
+        protected ConfiguredCtorParamTargetBuilder(CtorParamTargetBuilderBase targetBuilder, MapTarget mappedMember)
+        {
+            TargetBuilder = targetBuilder;
+            MappedMember = mappedMember;
+        }
+
+        protected void SetMappedKey(MapTarget mappedKey)
+        {
+            MappedKey = mappedKey;
+        }
     }
 
     public class ExpressionCtorParamTargetBuilder : ConfiguredCtorParamTargetBuilder
     {
-        
+        internal ValueMap ValueMap { get; private set; }
 
-        public ExpressionCtorParamTargetBuilder()
+        public ExpressionCtorParamTargetBuilder(CtorParamTargetBuilderBase targetBuilder, MapTarget mappedMember)
+            : base(targetBuilder, mappedMember)
         {
+
         }
 
         public ExpressionCtorParamTargetBuilder MapsToKeyExpression(string expression)
         {
-            MappedKey = new StringMapTarget(expression);
+            SetMappedKey(new StringMapTarget(expression));
             return this;
         }
 
         public ExpressionCtorParamTargetBuilder MapsToKeyExpression(Expression expression)
         {
-            MappedKey = new ExpressionMapTarget(expression);
+            SetMappedKey(new ExpressionMapTarget(expression));
+            return this;
+        }
+
+        public ExpressionCtorParamTargetBuilder HasValueMap(Dictionary<object, object> values, UnmappedValueType unmappedValueType = UnmappedValueType.TypeDefault, object unmappedValue = null)
+        {
+            ValueMap = new ValueMap(values, unmappedValueType, unmappedValue);
             return this;
         }
     }
 
     public class ConstantCtorParamTargetBuilder : ConfiguredCtorParamTargetBuilder
     {
-        public ConstantCtorParamTargetBuilder()
+        public ConstantCtorParamTargetBuilder(CtorParamTargetBuilderBase targetBuilder, MapTarget mappedMember)
+            : base(targetBuilder, mappedMember)
         {
         }
     }
@@ -653,81 +689,74 @@ namespace Dynamix.DynamicProjection
 
     #region Ctor Target Builder <TSource>
 
-    public class CtorParamTargetBuilder<TSource>
+    public class CtorParamTargetBuilder<TSource> : CtorParamTargetBuilderBase
     {
-        //internal MapTarget MappedMember { get; set; }
-        
         public CtorParamTargetBuilder()
         {
         }
 
         public ExpressionCtorParamTargetBuilder<TSource> FromExpression(string expression)
         {
-            //MappedMember = new StringMapTarget(expression);
-            return new ExpressionCtorParamTargetBuilder<TSource>();
+            return new ExpressionCtorParamTargetBuilder<TSource>(this, new StringMapTarget(expression));
         }
 
         public ExpressionCtorParamTargetBuilder<TSource> FromExpression(Expression expression)
         {
-            //MappedMember = new ExpressionMapTarget(expression);
-            return new ExpressionCtorParamTargetBuilder<TSource>();
+            return new ExpressionCtorParamTargetBuilder<TSource>(this, new ExpressionMapTarget(expression));
         }
 
         public ExpressionCtorParamTargetBuilder<TSource> FromExpression<T>(Expression<Func<TSource, T>> expression)
         {
-            //MappedMember = new LambdaExpressionMapTarget(expression);
-            return new ExpressionCtorParamTargetBuilder<TSource>();
+            return new ExpressionCtorParamTargetBuilder<TSource>(this, new LambdaExpressionMapTarget(expression));
         }
 
         public ConstantCtorParamTargetBuilder<TSource> FromValue(object value)
         {
-            //MappedMember = new ConstantMapTarget(value);
-            return new ConstantCtorParamTargetBuilder<TSource>();
+            return new ConstantCtorParamTargetBuilder<TSource>(this, new ConstantMapTarget(value));
         }
-
-        public ConstantCtorParamTargetBuilder<TSource> FromValueMap(Dictionary<object, object> values, object defaultValue)
-        {
-            //MappedMember = new ConstantDictionaryMapTarget(values, true, defaultValue);
-            return new ConstantCtorParamTargetBuilder<TSource>();
-        }
-
-        public ConstantCtorParamTargetBuilder<TSource> FromValueMap(Dictionary<object, object> values)
-        {
-            //MappedMember = new ConstantDictionaryMapTarget(values, false, null);
-            return new ConstantCtorParamTargetBuilder<TSource>();
-        }
-
-
     }
+
+
+
 
     public class ExpressionCtorParamTargetBuilder<TSource> : ConfiguredCtorParamTargetBuilder
     {
-        public ExpressionCtorParamTargetBuilder()
+        internal ValueMap ValueMap { get; set; }
+
+        public ExpressionCtorParamTargetBuilder(CtorParamTargetBuilderBase targetBuilder, MapTarget mappedMember)
+            : base(targetBuilder, mappedMember)
         {
         }
 
         public ExpressionCtorParamTargetBuilder<TSource> MapsToKeyExpression(string expression)
         {
-            MappedKey = new StringMapTarget(expression);
+            SetMappedKey(new StringMapTarget(expression));
             return this;
         }
 
         public ExpressionCtorParamTargetBuilder<TSource> MapsToKeyExpression(Expression expression)
         {
-            MappedKey = new ExpressionMapTarget(expression);
+            SetMappedKey(new ExpressionMapTarget(expression));
             return this;
         }
 
         public ExpressionCtorParamTargetBuilder<TSource> MapsToKeyExpression<T>(Expression<Func<TSource, T>> expression)
         {
-            MappedKey = new LambdaExpressionMapTarget(expression);
+            SetMappedKey(new LambdaExpressionMapTarget(expression));
+            return this;
+        }
+
+        public ExpressionCtorParamTargetBuilder<TSource> HasValueMap(Dictionary<object, object> values, UnmappedValueType unmappedValueType = UnmappedValueType.TypeDefault, object unmappedValue = null)
+        {
+            ValueMap = new ValueMap(values, unmappedValueType, unmappedValue);
             return this;
         }
     }
 
     public class ConstantCtorParamTargetBuilder<TSource> : ConfiguredCtorParamTargetBuilder
     {
-        public ConstantCtorParamTargetBuilder()
+        public ConstantCtorParamTargetBuilder(CtorParamTargetBuilderBase memberTargetBuilder, MapTarget mappedMember)
+            : base(memberTargetBuilder, mappedMember)
         {
         }
     }
@@ -736,48 +765,6 @@ namespace Dynamix.DynamicProjection
 
 
 
-    class Test
-    {
-        public void Test1()
-        {
-            var pb1 = new ProjectionBuilder<Decoder>(typeof(Encoder))
-                .Auto("dsda")
-                .CtorParameter("dsda",
-                    map => map
-                    .FromExpression(x => x.Fallback)
-                    )
-                .CtorParameter("dsda",
-                    map => map
-                    .FromExpression(x => x.Fallback))
-                //.CtorParameter("dsda", map => map.FromExpression()
-                .Member("dsda",
-                    map => map
-                    .UsingCtorParameter("ds")
-                    .FromValue(5)
-
-                    );
-
-
-            var pb = new ProjectionBuilder<Decoder, Encoder>()
-                .Auto("dsda")
-                .Auto(x => x.FallbackBuffer)
-                .CtorParameter("dsda",
-                    map => map.FromExpression(x => x.Fallback))
-                .CtorParameter("dsda",
-                    map => map
-                    .FromExpression(x => x.Fallback)
-                    .MapsToKeyExpression(x => x.Fallback))
-                .Member(x => x.Fallback,
-                    map => map
-                    .UsingCtorParameter("Dsa")
-                    .FromExpression(x => x.FallbackBuffer)
-                    .MapsToKeyExpression(x => x.Fallback))
-                //.CtorParameter("dsda", map => map.FromExpression()
-                .Member("dsda",
-                    map => map.FromValue(5))
-               ;
-        }
-    }
 
 
 }

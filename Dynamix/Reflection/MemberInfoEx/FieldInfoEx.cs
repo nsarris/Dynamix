@@ -59,8 +59,8 @@ namespace Dynamix.Reflection
             
             if (enableDelegateCaching)
             {
-                this.Getter = MemberAccessorDelegateBuilder.FieldBuilder.BuildGenericGetter(this.FieldInfo);
-                this.Setter = MemberAccessorDelegateBuilder.FieldBuilder.BuildGenericSetter(this.FieldInfo);
+                this.Getter = MemberAccessorDelegateBuilder.CachedFieldBuilder.BuildGenericGetter(this.FieldInfo);
+                this.Setter = MemberAccessorDelegateBuilder.CachedFieldBuilder.BuildGenericSetter(this.FieldInfo);
             }
             else
             {

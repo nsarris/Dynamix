@@ -42,9 +42,9 @@ namespace Dynamix.Reflection
 
             if (enableDelegateCaching)
             {
-                instanceInvoker = MemberAccessorDelegateBuilder.MethodBuilder.BuildGenericInstance(method);
+                instanceInvoker = MemberAccessorDelegateBuilder.CachedMethodBuilder.BuildGenericInstance(method);
                 if (method.IsStatic)
-                    staticInvoker = MemberAccessorDelegateBuilder.MethodBuilder.BuildGenericStatic(method);
+                    staticInvoker = MemberAccessorDelegateBuilder.CachedMethodBuilder.BuildGenericStatic(method);
             }
             else
             {

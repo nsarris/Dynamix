@@ -81,7 +81,7 @@ namespace Dynamix.Reflection
             this.PublicSet = setMethod.IsPublic;
             
             if (enableDelegateCaching)
-                this.Setter = MemberAccessorDelegateBuilder.PropertyBuilder.BuildGenericSetter(this.PropertyInfo);
+                this.Setter = MemberAccessorDelegateBuilder.CachedPropertyBuilder.BuildGenericSetter(this.PropertyInfo);
             else
             {
                 var builder = new PropertyAccessorLambdaBuilder(false);
@@ -101,7 +101,7 @@ namespace Dynamix.Reflection
             this.PublicGet = getMethod.IsPublic;
 
             if (enableDelegateCaching)
-                this.Getter = MemberAccessorDelegateBuilder.PropertyBuilder.BuildGenericGetter(this.PropertyInfo);
+                this.Getter = MemberAccessorDelegateBuilder.CachedPropertyBuilder.BuildGenericGetter(this.PropertyInfo);
             else
             {
                 var builder = new PropertyAccessorLambdaBuilder(false);

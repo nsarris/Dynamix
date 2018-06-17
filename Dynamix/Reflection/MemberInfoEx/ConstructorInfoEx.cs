@@ -38,7 +38,7 @@ namespace Dynamix.Reflection
             Signature = new ReadOnlyDictionary<string,Type>(ctor.GetParameters().ToDictionary(x => x.Name, x => x.ParameterType));
 
             if (enableDelegateCaching)
-                invoker = MemberAccessorDelegateBuilder.ConstructorBuilder.BuildGeneric(ctor);
+                invoker = MemberAccessorDelegateBuilder.CachedConstructorBuilder.BuildGeneric(ctor);
             else
             {
                 var builder = new ConstructorInvokerLambdaBuilder(false);
@@ -46,9 +46,9 @@ namespace Dynamix.Reflection
             }
         }
         
-        public object Invoke(object instance, params object[] arguments)
+        public object Invoke(params object[] arguments)
         {
-            return invoker(instance, arguments);
+            return invoker(arguments);
         }
 
         public static implicit operator ConstructorInfo(ConstructorInfoEx constructorInfoEx)

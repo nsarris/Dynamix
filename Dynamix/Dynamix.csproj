@@ -49,8 +49,18 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DynamicProjection\DynamicProjection1.cs" />
+    <Compile Include="DynamicProjection\CtorParamTargetConfiguration.cs" />
     <Compile Include="DynamicProjection\DynamicProjection.cs" />
-    <Compile Include="DynamicProjection\IDynamicProjectionBuilder.cs" />
+    <Compile Include="DynamicProjection\TargetBuilders.cs" />
+    <Compile Include="DynamicProjection\MemberTargetConfiguration.cs" />
+    <Compile Include="DynamicProjection\ProjectedMember.cs" />
+    <Compile Include="DynamicProjection\ProjectionBuilder.cs" />
+    <Compile Include="DynamicProjection\ProjectionBuilder_TSource.cs" />
+    <Compile Include="DynamicProjection\ProjectionBuilder_TSource_TDestination.cs" />
+    <Compile Include="DynamicProjection\ProjectionBuilderBase.cs" />
+    <Compile Include="DynamicProjection\ProjectionSource.cs" />
+    <Compile Include="DynamicProjection\ValueMap.cs" />
     <Compile Include="DynamicQueryable\DynamicEnumerable.cs" />
     <Compile Include="DynamicQueryable\DynamicOrderedEnumerable.cs" />
     <Compile Include="DynamicQueryable\DynamicOrderedQueryable.cs" />
@@ -85,6 +95,7 @@
     <Compile Include="Helpers\EnumParser.cs" />
     <Compile Include="Helpers\NumericValueParser.cs" />
     <Compile Include="Helpers\NumericTypeHelper.cs" />
+    <Compile Include="Helpers\StringExtensions.cs" />
     <Compile Include="QyeryableExtensions\QyerableExtensions.cs" />
     <Compile Include="QyeryableExtensions\SingleQueryable.cs" />
     <Compile Include="Reflection\Assembly\AssemblyArchitectureResolver.cs" />

@@ -123,7 +123,7 @@ namespace Dynamix.DynamicProjection
         public IEnumerable<DynamicProjectionProperty> Properties { get; set; }
     }
 
-    public class DynamicProjection
+    public class DynamicProjection2
     {
         readonly ParameterExpression sourceParameter;
         readonly ConvertibleLazy<LambdaExpression> defaultSelector;
@@ -133,7 +133,7 @@ namespace Dynamix.DynamicProjection
 
         
 
-        internal DynamicProjection(Type projectedType, DynamicProjectionProperties properties)
+        internal DynamicProjection2(Type projectedType, DynamicProjectionProperties properties)
         {
             ProjectedType = projectedType;
             Properties = properties.Properties.ToList();
@@ -384,7 +384,7 @@ namespace Dynamix.DynamicProjection
             return this;
         }
 
-        public DynamicProjection Build(Type sourceType = null)
+        public DynamicProjection2 Build(Type sourceType = null)
         {
             sourceType = sourceType ?? this.sourceType;
             if (sourceType == null)
@@ -396,7 +396,7 @@ namespace Dynamix.DynamicProjection
             var projectionProperties = BuildProjectionProperties(sourceParameter, projectedType).ToList();
 
 
-            return new DynamicProjection(projectedType, new DynamicProjectionProperties() { SourceParameter = sourceParameter, Properties = projectionProperties });
+            return new DynamicProjection2(projectedType, new DynamicProjectionProperties() { SourceParameter = sourceParameter, Properties = projectionProperties });
         }
 
         static readonly string sourceParameterName = "source";

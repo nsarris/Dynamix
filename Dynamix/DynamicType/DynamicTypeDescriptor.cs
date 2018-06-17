@@ -17,14 +17,14 @@ namespace Dynamix
             if (props == null)
                 this.Properties = new List<DynamicTypeProperty>();
             else
-                this.Properties = props.Select(x => new DynamicTypeProperty() { Type = x.Type, Name = x.Name }).ToList();
+                this.Properties = props.Select(x => new DynamicTypeProperty(x.Name, x.Type)).ToList();
         }
         public string Name { get; set; }
         public Type BaseType { get; set; }
         public List<DynamicTypeProperty> Properties { get; set; }
         public IReadOnlyList<CustomAttributeBuilder> AttributeBuilders => attributeBuilders;
 
-        private List<CustomAttributeBuilder> attributeBuilders = new List<CustomAttributeBuilder>();
+        private readonly List<CustomAttributeBuilder> attributeBuilders = new List<CustomAttributeBuilder>();
 
         public DynamicTypeDescriptor AddProperty(DynamicTypeProperty property)
         {
@@ -34,7 +34,7 @@ namespace Dynamix
 
         public DynamicTypeDescriptor AddProperty(string Name, Type Type, bool AsNullable = false)
         {
-            this.Properties.Add(new DynamicTypeProperty() { Name = Name, Type = (AsNullable ? ToNullable(Type) : Type) });
+            this.Properties.Add(new DynamicTypeProperty(Name, AsNullable ? ToNullable(Type) : Type));
             return this;
         }
 

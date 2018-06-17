@@ -77,6 +77,11 @@ namespace Dynamix.Expressions
             return GetPropertySelector(typeof(T), propertyName, safe);
         }
 
+        public static Expression GetPropertyExpression(ParameterExpression instanceExpression, string propertyName, bool safe = false)
+        {
+            return MakeMemberAccess(instanceExpression, propertyName, safe);
+        }
+
         #endregion
 
         #region DeepPropertySelector
@@ -112,6 +117,11 @@ namespace Dynamix.Expressions
             return GetDeepPropertySelector(typeof(T), propertyName, safe);
         }
 
+        public static Expression GetDeepPropertyExpression(ParameterExpression instanceExpression, string propertyName, bool safe = false)
+        {
+            return MakeDeepMemberAccess(instanceExpression, propertyName, safe);
+        }
+
         #endregion
 
         #region DynamicLinq Expression Selector
@@ -145,6 +155,11 @@ namespace Dynamix.Expressions
         public static LambdaExpression GetExpressionSelector<T>(string expression, bool safe = false)
         {
             return GetExpressionSelector(typeof(T), expression, safe);
+        }
+
+        public static Expression GetExpression(ParameterExpression instanceExpression, string expression, bool safe = false)
+        {
+            return System.Linq.Dynamic.DynamicExpression.Parse(new[] { instanceExpression }, null, expression);
         }
 
         #endregion

@@ -190,7 +190,7 @@ namespace Dynamix
             where TDelegate : class
         {
             return
-                MemberAccessorDelegateBuilder.MethodBuilder.BuildFromDelegate<TDelegate>(
+                MemberAccessorDelegateBuilder.CachedMethodBuilder.BuildFromDelegate<TDelegate>(
                 typeof(T).GetMethod(name, BindingFlags.Public | BindingFlags.Static, null,
                     typeof(TDelegate).GetMethod("Invoke").GetParameters().Select(x => x.ParameterType).ToArray(), null));
         }

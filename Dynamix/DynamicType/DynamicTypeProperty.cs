@@ -8,11 +8,12 @@ namespace Dynamix
 {
     public class DynamicTypeProperty
     {
-        public string Name { get; set; }
-        public Type Type { get; set; }
+        public string Name { get; }
+        public Type Type { get; }
+
         public IReadOnlyList<CustomAttributeBuilder> AttributeBuilders => attributeBuilders;
 
-        private List<CustomAttributeBuilder> attributeBuilders = new List<CustomAttributeBuilder>();
+        private readonly List<CustomAttributeBuilder> attributeBuilders = new List<CustomAttributeBuilder>();
         public DynamicTypeProperty()
         {
 

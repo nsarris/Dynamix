@@ -11,18 +11,6 @@ namespace Dynamix
 {
     public class DynamicTypeBuilder
     {
-        private class PropertyDescriptor
-        {
-            public DynamicTypeProperty Property { get; set; }
-            public PropertyBuilder PropertyBuilder { get; set; }
-        }
-
-        private class FieldDescriptor
-        {
-            public DynamicTypeField Field { get; set; }
-            public FieldBuilder FieldBuilder { get; set; }
-        }
-
         ModuleBuilder moduleBuilder;
         readonly Dictionary<string, DynamicTypeCachedDescriptor> cache = new Dictionary<string, DynamicTypeCachedDescriptor>(StringComparer.OrdinalIgnoreCase);
 
@@ -141,8 +129,8 @@ namespace Dynamix
                     GetTypeBuilder(assembly, module, TypeName, BaseType) :
                     GetTypeBuilder(assembly, module, "DynamicType_" + (++id).ToString(), BaseType);
 
-                var propertyBuilders = properties.Select(x => new PropertyDescriptor { PropertyBuilder = CreateProperty(tb, x), Property = x }).ToList();
-                var fieldBuilders = fields.Select(x => new FieldDescriptor { FieldBuilder = CreateField(tb, x), Field = x }).ToList();
+                var propertyBuilders = properties.Select(x => (x , CreateProperty(tb, x))).ToList();
+                var fieldBuilders = fields.Select(x => (x, CreateField(tb, x))).ToList();
 
                 var defaultConstructor = tb.DefineDefaultConstructor(MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
 
@@ -160,7 +148,10 @@ namespace Dynamix
 
         }
 
-        private void CreateConstructor(TypeBuilder tb, IEnumerable<PropertyDescriptor> propertyBuilders, IEnumerable<FieldDescriptor> fieldBuilders, ConstructorBuilder defaultConstructor)
+        private void CreateConstructor(TypeBuilder tb, 
+            IEnumerable<(DynamicTypeProperty Property , PropertyBuilder PropertyBuilder)> propertyBuilders, 
+            IEnumerable<(DynamicTypeField Field, FieldBuilder FieldBuilder)> fieldBuilders, 
+            ConstructorBuilder defaultConstructor)
         {
             var fields = fieldBuilders.Where(x => x.Field.InitializeInConstructor).ToList();
             var properties = propertyBuilders.Where(x => x.Property.InitializeInConstructor).ToList();

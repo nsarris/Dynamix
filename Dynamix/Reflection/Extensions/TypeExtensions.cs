@@ -137,6 +137,15 @@ namespace Dynamix.Reflection
         {
             return Nullable.GetUnderlyingType(type) ?? type;
         }
+        public static Type ToNullable(this Type type)
+        {
+            if (type.IsNullable())
+                return type;
+            else if (type.IsValueType)
+                return typeof(Nullable<>).MakeGenericTypeCached(type);
+            else
+                return type;
+        }
 
         public static bool IsNumeric(this Type type)
         {

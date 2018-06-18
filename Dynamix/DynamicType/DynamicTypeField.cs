@@ -5,22 +5,21 @@ using System.Reflection.Emit;
 
 namespace Dynamix
 {
-
-    public sealed class DynamicTypeProperty
+    public sealed class DynamicTypeField
     {
         public string Name { get; internal set; }
         public Type Type { get; internal set; }
-        public bool  AsNullable { get; internal set; }
+        public bool AsNullable { get; internal set; }
         public string CtorParameterName { get; internal set; }
         public object ConstructorDefaultValue { get; internal set; }
         public bool HasConstructorDefaultValue { get; internal set; }
         public bool InitializeInConstructor { get; internal set; }
-        public GetSetAccessModifier GetAccessModifier { get; internal set; } = GetSetAccessModifier.Public;
-        public GetSetAccessModifier SetAccessModifier { get; internal set; } = GetSetAccessModifier.Public;
+        public MemberAccessModifier AccessModifier { get; internal set; } = MemberAccessModifier.Public;
+
         public IReadOnlyList<CustomAttributeBuilder> AttributeBuilders => attributeBuilders;
 
         private readonly List<CustomAttributeBuilder> attributeBuilders = new List<CustomAttributeBuilder>();
-        internal DynamicTypeProperty(string name, Type type, IEnumerable<CustomAttributeBuilder> attributeBuilders = null)
+        internal DynamicTypeField(string name, Type type, IEnumerable<CustomAttributeBuilder> attributeBuilders = null)
         {
             Name = name;
             Type = type;
@@ -34,17 +33,16 @@ namespace Dynamix
             attributeBuilders.Add(attributeBuilder);
         }
 
-        internal DynamicTypeProperty Clone()
+        internal DynamicTypeField Clone()
         {
-            return new DynamicTypeProperty(Name, Type, attributeBuilders)
+            return new DynamicTypeField(Name, Type, attributeBuilders)
             {
                 AsNullable = AsNullable,
                 CtorParameterName = CtorParameterName,
                 ConstructorDefaultValue = ConstructorDefaultValue,
                 HasConstructorDefaultValue = HasConstructorDefaultValue,
                 InitializeInConstructor = InitializeInConstructor,
-                GetAccessModifier = GetAccessModifier,
-                SetAccessModifier = SetAccessModifier
+                AccessModifier = AccessModifier,
             };
         }
     }

@@ -35,6 +35,18 @@ namespace Dynamix.DynamicProjection
             return this;
         }
 
+        public MemberTargetBuilder AsType(Type type)
+        {
+            configuration.AsType = type;
+            return this;
+        }
+
+        public MemberTargetBuilder AsNullable(bool nullable = true)
+        {
+            configuration.AsNullable = nullable;
+            return this;
+        }
+
         public ExpressionMemberTargetBuilder FromExpression(string expression)
         {
             configuration.Source = new StringProjectionSource(expression);
@@ -126,6 +138,12 @@ namespace Dynamix.DynamicProjection
             return this;
         }
 
+        public MemberTargetBuilder<TSource> AsNullable(bool nullable = true)
+        {
+            configuration.AsNullable = nullable;
+            return this;
+        }
+
         public ExpressionMemberTargetBuilder<TSource> FromExpression(string expression)
         {
             configuration.Source = new StringProjectionSource(expression);
@@ -199,6 +217,7 @@ namespace Dynamix.DynamicProjection
     }
 
     #endregion
+
     #region Ctor Target Builder
 
     public sealed class CtorParamTargetBuilder 
@@ -331,9 +350,5 @@ namespace Dynamix.DynamicProjection
     }
 
     #endregion
-
-
-
-
 
 }

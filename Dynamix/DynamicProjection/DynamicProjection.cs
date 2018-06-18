@@ -482,15 +482,15 @@ namespace Dynamix.DynamicProjection
 
         private Type BuildProjectedType()
         {
-            var typeDescriptor = new DynamicTypeDescriptor()
+            var typeDescriptorBuilder = new DynamicTypeDescriptorBuilder()
                 .HasName(dtoTypeName);
 
             foreach (var p in properties)
             {
-                typeDescriptor.AddProperty(p.PropertyName, p.PropertyType, p.AsNullable);
+                typeDescriptorBuilder.AddProperty(p.PropertyName, p.PropertyType, prop => prop.AsNullable(p.AsNullable));
             }
 
-            return DynamicTypeBuilder.Instance.CreateType(typeDescriptor);
+            return DynamicTypeBuilder.Instance.CreateType(typeDescriptorBuilder);
         }
 
 

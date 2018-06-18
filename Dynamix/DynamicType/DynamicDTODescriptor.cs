@@ -9,23 +9,23 @@ using System.Threading.Tasks;
 
 namespace Dynamix
 {
-    public class DynamicDTODescriptor
+    public class DynamicDtoDescriptor
     {
-        public class DynamicDTOPropertyConfig
+        public class DynamicDtoPropertyConfig
         {
-            public string PropertyName;
-            public LambdaExpression SourceExpression;
-            public string TargetProperty;
-            public Type TargetType;
-            public bool AsNullable;
-            public string PropertyPath;
+            public string PropertyName { get; internal set; }
+            public LambdaExpression SourceExpression { get; internal set; }
+            public string TargetProperty { get; internal set; }
+            public Type TargetType { get; internal set; }
+            public bool AsNullable { get; internal set; }
+            public string PropertyPath { get; internal set; }
         }
         
         static Random random = new Random();
-        List<DynamicDTOPropertyConfig> props = new List<DynamicDTOPropertyConfig>();
+        readonly List<DynamicDtoPropertyConfig> props = new List<DynamicDtoPropertyConfig>();
         int unnamedpropcount = 1;
 
-        public IReadOnlyCollection<DynamicDTOPropertyConfig> Properties
+        public IReadOnlyCollection<DynamicDtoPropertyConfig> Properties
         {
             get
             {
@@ -33,17 +33,17 @@ namespace Dynamix
             }
         }
 
-        public DynamicDTODescriptor AddProperty(
+        public DynamicDtoDescriptor AddProperty(
             string PropertyName, Type PropertyType, string source
             , string TargetProperty = null, bool AsNullable = false)
         {
             if (string.IsNullOrEmpty(PropertyName))
-                throw new ArgumentNullException("SourcePropertyName");
+                throw new ArgumentNullException(nameof(PropertyName));
 
             if (string.IsNullOrEmpty(TargetProperty))
                 TargetProperty = PropertyName;
 
-            props.Add(new DynamicDTOPropertyConfig()
+            props.Add(new DynamicDtoPropertyConfig()
             {
                 PropertyName = PropertyName,
                 PropertyPath = source,
@@ -56,13 +56,13 @@ namespace Dynamix
             return this;
         }
 
-        public DynamicDTODescriptor AddProperty<TProp>(
+        public DynamicDtoDescriptor AddProperty<TProp>(
             string PropertyName, string path
             , string TargetProperty = null)
         {
             return AddProperty(PropertyName, typeof(TProp), path, TargetProperty);
         }
-        public DynamicDTODescriptor AddProperty(
+        public DynamicDtoDescriptor AddProperty(
             LambdaExpression sourceExpression, string path, string TargetProperty = null,
             string PropertyName = null, Type OverrideType = null, bool AsNullable = false)
         {
@@ -84,7 +84,7 @@ namespace Dynamix
 
             if (string.IsNullOrEmpty(TargetProperty))
                 TargetProperty = PropertyName;
-            props.Add(new DynamicDTOPropertyConfig()
+            props.Add(new DynamicDtoPropertyConfig()
             {
                 PropertyName = PropertyName,
                 PropertyPath = path,
@@ -97,21 +97,21 @@ namespace Dynamix
             return this;
         }
 
-        public DynamicDTODescriptor AddProperty<T>(
+        public DynamicDtoDescriptor AddProperty<T>(
             string PropertyName, string path = null, string TargetProperty = null,
             Type OverrideType = null, bool AsNullable = false)
         {
             return AddProperty(PropertyName, OverrideType ?? typeof(T), path, TargetProperty, AsNullable);
         }
 
-        public DynamicDTODescriptor AddProperty<T>(
+        public DynamicDtoDescriptor AddProperty<T>(
             Expression<Func<T, object>> sourceExpression, string path = null, string TargetProperty = null
             , string PropertyName = null, Type OverrideType = null, bool AsNullable = false)
         {
             return AddProperty<T, object>(sourceExpression, path, TargetProperty, PropertyName, OverrideType, AsNullable);
         }
 
-        public DynamicDTODescriptor AddProperty<T, TProp>(
+        public DynamicDtoDescriptor AddProperty<T, TProp>(
             Expression<Func<T, TProp>> sourceExpression, string path = null, string TargetProperty = null
             , string PropertyName = null, Type OverrideType = null, bool AsNullable = false)
         {
@@ -124,17 +124,17 @@ namespace Dynamix
         {
             Type returnType;
 
-            var d = new DynamicTypeDescriptor()
+            var d = new DynamicTypeDescriptorBuilder()
                 .HasName(TypeName)
                 .HasBaseType(BaseType ?? typeof(DynamicType));
 
             foreach (var p in props)
-                d.AddProperty(p.TargetProperty, p.TargetType, p.AsNullable);
+                d.AddProperty(p.TargetProperty, p.TargetType, prop => prop.AsNullable(p.AsNullable));
 
             if (CacheType)
                 returnType = DynamicTypeBuilder.Instance.CreateAndRegisterType(d, true);
             else
-                returnType = DynamicTypeBuilder.Instance.CreateType(d.Properties, TypeName, BaseType);
+                returnType = DynamicTypeBuilder.Instance.CreateType(d);
 
             return returnType;
         }

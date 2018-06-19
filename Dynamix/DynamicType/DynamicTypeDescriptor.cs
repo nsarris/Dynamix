@@ -11,15 +11,17 @@ namespace Dynamix
     {
         public string Name { get; internal set; }
         public Type BaseType { get; internal set; }
+        public IReadOnlyList<Type> Interfaces => interfaces;
         public IReadOnlyList<DynamicTypeField> Fields => fields;
         public IReadOnlyList<DynamicTypeProperty> Properties => properties;
         public IReadOnlyList<CustomAttributeBuilder> AttributeBuilders => attributeBuilders;
 
         private readonly List<CustomAttributeBuilder> attributeBuilders;
+        private readonly List<Type> interfaces;
         private readonly List<DynamicTypeField> fields;
         private readonly List<DynamicTypeProperty> properties;
 
-        internal DynamicTypeDescriptor(string name = null, IEnumerable<DynamicTypeProperty> properties = null, IEnumerable<DynamicTypeField> fields = null, Type baseType = null, IEnumerable<CustomAttributeBuilder> customAttributeBuilders = null)
+        internal DynamicTypeDescriptor(string name = null, IEnumerable<DynamicTypeProperty> properties = null, IEnumerable<DynamicTypeField> fields = null, IEnumerable<Type> interfaces = null, Type baseType = null, IEnumerable<CustomAttributeBuilder> customAttributeBuilders = null)
         {
             Name = name;
             BaseType = baseType;
@@ -31,6 +33,10 @@ namespace Dynamix
             this.fields = fields == null ?
                 new List<DynamicTypeField>() :
                 fields.ToList();
+
+            this.interfaces = interfaces == null ?
+                new List<Type>() :
+                interfaces.ToList();
 
             this.attributeBuilders = customAttributeBuilders == null ?
                 new List<CustomAttributeBuilder>() :
@@ -57,9 +63,14 @@ namespace Dynamix
             fields.Add(field);
         }
 
+        internal void AddInterface(Type @interface)
+        {
+            interfaces.Add(@interface);
+        }
+
         internal DynamicTypeDescriptor Clone()
         {
-            return new DynamicTypeDescriptor(Name, properties, fields, BaseType, attributeBuilders);
+            return new DynamicTypeDescriptor(Name, properties, fields, interfaces, BaseType, attributeBuilders);
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Dynamix.Reflection;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace Dynamix
@@ -9,9 +10,9 @@ namespace Dynamix
     {
         private readonly DynamicTypeDescriptor dynamicTypeDescriptor;
 
-        public DynamicTypeDescriptorBuilder(string name = null, IEnumerable<DynamicTypeProperty> properties = null, IEnumerable<DynamicTypeField> fields = null, Type baseType = null)
+        public DynamicTypeDescriptorBuilder(string name = null, IEnumerable<DynamicTypeProperty> properties = null, IEnumerable<DynamicTypeField> fields = null, IEnumerable<Type> interfaces = null, Type baseType = null)
         {
-            dynamicTypeDescriptor = new DynamicTypeDescriptor(name, properties, fields, baseType);
+            dynamicTypeDescriptor = new DynamicTypeDescriptor(name, properties, fields, interfaces, baseType);
         }
 
         
@@ -89,6 +90,27 @@ namespace Dynamix
         public DynamicTypeDescriptorBuilder HasAttribute(Expression<Func<Attribute>> builderExpression)
         {
             dynamicTypeDescriptor.AddCustomAttributeBuilder(CustomAttributeBuilderFactory.FromExpression(builderExpression));
+            return this;
+        }
+
+
+        public DynamicTypeDescriptorBuilder ImplementsInterfaces(params Type[] interfaceTypes)
+        {
+            return ImplementsInterfaces(interfaceTypes.AsEnumerable());
+        }
+        public DynamicTypeDescriptorBuilder ImplementsInterfaces(IEnumerable<Type> interfaceTypes)
+        {
+            foreach (var t in interfaceTypes)
+                ImplementsInterface(t);
+            return this;
+        }
+        public DynamicTypeDescriptorBuilder ImplementsInterface(Type interfaceType)
+        {
+            if (!interfaceType.IsInterface)
+                throw new InvalidOperationException($"Type {interfaceType.Name} is not an interface");
+
+            dynamicTypeDescriptor.AddInterface(interfaceType);
+
             return this;
         }
 

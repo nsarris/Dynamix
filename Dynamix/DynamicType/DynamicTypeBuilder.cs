@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
+using Dynamix.Reflection;
 
 namespace Dynamix
 {
@@ -37,7 +38,7 @@ namespace Dynamix
 
         public Type CreateAndRegisterType(DynamicTypeDescriptor descr, bool overwrite = true)
         {
-            return CreateAndRegisterType(descr.Name, descr.Properties, descr.Fields, overwrite, descr.BaseType, descr.AttributeBuilders);
+            return CreateAndRegisterType(descr.Name, descr.Properties, descr.Fields, descr.Interfaces, overwrite, descr.BaseType, descr.AttributeBuilders);
         }
 
         public Type CreateAndRegisterType(DynamicTypeDescriptorBuilder descriptorBuilder, bool overwrite = true)
@@ -45,7 +46,7 @@ namespace Dynamix
             return CreateAndRegisterType(descriptorBuilder.Build(), overwrite);
         }
 
-        public Type CreateAndRegisterType(string typeName, IEnumerable<DynamicTypeProperty> properties, IEnumerable<DynamicTypeField> fields, bool overwrite = true, Type baseType = null, IEnumerable<CustomAttributeBuilder> customAttributeBuilders = null)
+        public Type CreateAndRegisterType(string typeName, IEnumerable<DynamicTypeProperty> properties, IEnumerable<DynamicTypeField> fields, IEnumerable<Type> interfaces = null, bool overwrite = true, Type baseType = null, IEnumerable<CustomAttributeBuilder> customAttributeBuilders = null)
         {
             if (string.IsNullOrWhiteSpace(typeName))
                 throw new ArgumentException("TypeName cannot be null or whitespace");
@@ -63,19 +64,19 @@ namespace Dynamix
                             return td.Type;
                         else
                         {
-                            t = CreateType(properties, fields, typeName, baseType, customAttributeBuilders);
+                            t = CreateType(properties, fields, interfaces, typeName, baseType, customAttributeBuilders);
                             cache[typeName] = new DynamicTypeCachedDescriptor(t, properties);
                         }
                     }
                     else
                     {
-                        t = CreateType(properties, fields, typeName, baseType, customAttributeBuilders);
+                        t = CreateType(properties, fields, interfaces, typeName, baseType, customAttributeBuilders);
                         cache[typeName] = new DynamicTypeCachedDescriptor(t, properties);
                     }
                 }
                 else
                 {
-                    t = CreateType(properties, fields, typeName, baseType, customAttributeBuilders);
+                    t = CreateType(properties, fields, interfaces, typeName, baseType, customAttributeBuilders);
                     cache.Add(typeName, new DynamicTypeCachedDescriptor(t, properties));
                 }
             }
@@ -112,7 +113,7 @@ namespace Dynamix
 
         public Type CreateType(DynamicTypeDescriptor descriptor, string typeName = null)
         {
-            return CreateType(descriptor.Properties, descriptor.Fields, typeName ?? descriptor.Name, descriptor.BaseType, descriptor.AttributeBuilders);
+            return CreateType(descriptor.Properties, descriptor.Fields, descriptor.Interfaces, typeName ?? descriptor.Name, descriptor.BaseType, descriptor.AttributeBuilders);
         }
 
         public Type CreateType(DynamicTypeDescriptorBuilder descriptorBuilder, string typeName = null)
@@ -120,7 +121,7 @@ namespace Dynamix
             return CreateType(descriptorBuilder.Build(), typeName);
         }
 
-        public Type CreateType(IEnumerable<DynamicTypeProperty> properties, IEnumerable<DynamicTypeField> fields, string TypeName = null, Type BaseType = null, IEnumerable<CustomAttributeBuilder> customAttributeBuilders = null)
+        public Type CreateType(IEnumerable<DynamicTypeProperty> properties, IEnumerable<DynamicTypeField> fields, IEnumerable<Type> interfaces = null, string TypeName = null, Type BaseType = null, IEnumerable<CustomAttributeBuilder> customAttributeBuilders = null)
         {
             lock (o)
             {
@@ -129,7 +130,10 @@ namespace Dynamix
                     GetTypeBuilder(assembly, module, TypeName, BaseType) :
                     GetTypeBuilder(assembly, module, "DynamicType_" + (++id).ToString(), BaseType);
 
-                var propertyBuilders = properties.Select(x => (x , CreateProperty(tb, x))).ToList();
+                foreach (var iface in interfaces)
+                    tb.AddInterfaceImplementation(iface);
+
+                var propertyBuilders = properties.Select(x => (x , CreateProperty(tb, x, interfaces))).ToList();
                 var fieldBuilders = fields.Select(x => (x, CreateField(tb, x))).ToList();
 
                 var defaultConstructor = tb.DefineDefaultConstructor(MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
@@ -225,7 +229,7 @@ namespace Dynamix
             return tb;
         }
 
-        private static PropertyBuilder CreateProperty(TypeBuilder tb, DynamicTypeProperty property)
+        private static PropertyBuilder CreateProperty(TypeBuilder tb, DynamicTypeProperty property, IEnumerable<Type> interfaces)
         {
             var fieldBuilder = tb.DefineField("_" + property.Name, property.Type, FieldAttributes.Private);
 
@@ -241,7 +245,8 @@ namespace Dynamix
                         MethodAttributes.Family :
                         MethodAttributes.Public) |
                     MethodAttributes.SpecialName |
-                    MethodAttributes.HideBySig,
+                    MethodAttributes.HideBySig |
+                    MethodAttributes.Virtual,
                     property.Type, Type.EmptyTypes);
 
                 var getterIlGenerator = getPropMthdBldr.GetILGenerator();
@@ -251,6 +256,17 @@ namespace Dynamix
                 getterIlGenerator.Emit(OpCodes.Ret);
 
                 propertyBuilder.SetGetMethod(getPropMthdBldr);
+
+                var ifaceMethods = interfaces
+                    .SelectMany(x => x.GetMethods())
+                    .Where(x => x.Name == getPropMthdBldr.Name
+                        && x.ReturnType == getPropMthdBldr.ReturnType)
+                    .ToList();
+
+                foreach (var ifaceMethod in ifaceMethods)
+                {
+                    tb.DefineMethodOverride(getPropMthdBldr, ifaceMethod);
+                }
             }
 
 

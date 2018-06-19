@@ -28,7 +28,7 @@ namespace Dynamix.Reflection
             get
             {
                 if (fields == null)
-                    fields = wrappedObject.GetType().GetFieldsExDic(enableCaching: caching);
+                    fields = wrappedObject.GetType().GetFieldsExDic(BindingFlags.Instance | BindingFlags.NonPublic, enableCaching: caching);
 
                 return fields;
             }

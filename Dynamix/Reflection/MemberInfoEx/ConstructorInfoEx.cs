@@ -50,12 +50,27 @@ namespace Dynamix.Reflection
         
         public object Invoke(params object[] arguments)
         {
-            return invoker(arguments);
+            if (arguments != null && arguments.Count() == 1
+                && arguments[0] != null &&
+                arguments[0].GetType().Namespace == null)
+                return InvokeAnonymous(arguments[0]);
+            else
+                return invoker(arguments);
+        }
+
+        private object InvokeAnonymous(object anonymousTypeArguments, bool defaultValueForMissing = false)
+        {
+            return Invoke(InvocationHelper.GetInvocationParameters(anonymousTypeArguments), defaultValueForMissing);
         }
 
         public object Invoke(params (string parameterName, object value)[] namedParameters)
         {
-            return Invoke(namedParameters.AsEnumerable());
+            return Invoke(namedParameters.AsEnumerable(), false);
+        }
+
+        public object Invoke(IEnumerable<(string parameterName, object value)> namedParameters)
+        {
+            return Invoke(namedParameters, false);
         }
 
         private object Invoke(IEnumerable<(string parameterName, object value)> namedParameters, bool defaultValueForMissing = false)
@@ -71,6 +86,11 @@ namespace Dynamix.Reflection
         public object InvokeWithDefaults()
         {
             return Invoke(null, true);
+        }
+
+        public object InvokeWithDefaults(object anonymousTypeArguments)
+        {
+            return InvokeAnonymous(anonymousTypeArguments, true);
         }
 
         public static implicit operator ConstructorInfo(ConstructorInfoEx constructorInfoEx)

@@ -69,7 +69,18 @@ namespace Dynamix.Reflection
         public object InvokeStatic(params object[] arguments)
         {
             AssertStatic();
-            return staticInvoker(arguments);
+
+            if (arguments != null && arguments.Count() == 1
+                && arguments[0] != null &&
+                arguments[0].GetType().Namespace == null)
+                return InvokeAnonymousStatic(arguments[0]);
+            else
+                return staticInvoker(arguments);
+        }
+
+        private object InvokeAnonymousStatic(object anonymousTypeArguments, bool defaultValueForMissing = false)
+        {
+            return InvokeStatic(InvocationHelper.GetInvocationParameters(anonymousTypeArguments), defaultValueForMissing);
         }
 
         private object InvokeStatic(IEnumerable<(string parameterName, object value)> namedParameters, bool defaultValueForMissing = false)
@@ -84,6 +95,11 @@ namespace Dynamix.Reflection
             return InvokeStatic(namedParameters.AsEnumerable());
         }
 
+        public object InvokeStatic(IEnumerable<(string parameterName, object value)> namedParameters)
+        {
+            return InvokeStatic(namedParameters, false);
+        }
+
         public object InvokeStaticWithDefaults(IEnumerable<(string parameterName, object value)> namedParameters)
         {
             return InvokeStatic(namedParameters, true);
@@ -94,19 +110,40 @@ namespace Dynamix.Reflection
             return InvokeStatic(null, true);
         }
 
+        public object InvokeStaticWithDefaults(object anonymousTypeArguments)
+        {
+            return InvokeAnonymousStatic(anonymousTypeArguments, true);
+        }
+
         #endregion
 
         #region Instance Invokers
 
         public object Invoke(object instance, params object[] arguments)
         {
-            return instanceInvoker(instance, arguments);
+            if (arguments != null && arguments.Count() == 1
+                && arguments[0] != null &&
+                arguments[0].GetType().Namespace == null)
+                return InvokeAnonymous(instance, arguments[0]);
+            else
+                return instanceInvoker(instance, arguments);
+
+        }
+
+        private object InvokeAnonymous(object instance, object anonymousTypeArguments, bool defaultValueForMissing = false)
+        {
+            return Invoke(instance, InvocationHelper.GetInvocationParameters(anonymousTypeArguments), defaultValueForMissing);
         }
 
         private object Invoke(object instance, IEnumerable<(string parameterName, object value)> namedParameters, bool defaultValueForMissing = false)
         {
             var invocationParameters = InvocationHelper.GetInvocationParameters(parameters.Values.Skip(1), namedParameters, defaultValueForMissing);
             return instanceInvoker(instance, invocationParameters);
+        }
+
+        public object Invoke(object instance, IEnumerable<(string parameterName, object value)> namedParameters)
+        {
+            return Invoke(instance, namedParameters, false);
         }
 
         public object Invoke(object instance, params (string parameterName, object value)[] namedParameters)
@@ -122,6 +159,11 @@ namespace Dynamix.Reflection
         public object InvokeWithDefaults(object instance)
         {
             return Invoke(instance, null, true);
+        }
+
+        public object InvokeWithDefaults(object instance, object anonymousTypeArguments)
+        {
+            return InvokeAnonymous(instance, anonymousTypeArguments, true);
         }
 
         #endregion

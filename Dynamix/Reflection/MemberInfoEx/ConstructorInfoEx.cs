@@ -30,12 +30,14 @@ namespace Dynamix.Reflection
 
         MemberInfoExKind IMemberInfoEx.Kind => MemberInfoExKind.Constructor;
 
+        readonly Dictionary<string, ParameterInfo> parameters;
         readonly GenericStaticInvoker invoker;
 
         public ConstructorInfoEx(ConstructorInfo ctor, bool enableDelegateCaching = true)
         {
             ConstructorInfo = ctor;
-            Signature = new ReadOnlyDictionary<string,Type>(ctor.GetParameters().ToDictionary(x => x.Name, x => x.ParameterType));
+            parameters = ctor.GetParameters().ToDictionary(x => x.Name);
+            Signature = new ReadOnlyDictionary<string,Type>(parameters.ToDictionary(x => x.Key, x => x.Value.ParameterType));
 
             if (enableDelegateCaching)
                 invoker = MemberAccessorDelegateBuilder.CachedConstructorBuilder.BuildGeneric(ctor);
@@ -49,6 +51,26 @@ namespace Dynamix.Reflection
         public object Invoke(params object[] arguments)
         {
             return invoker(arguments);
+        }
+
+        public object Invoke(params (string parameterName, object value)[] namedParameters)
+        {
+            return Invoke(namedParameters.AsEnumerable());
+        }
+
+        private object Invoke(IEnumerable<(string parameterName, object value)> namedParameters, bool defaultValueForMissing = false)
+        {
+            var invocationParameters = InvocationHelper.GetInvocationParameters(parameters.Values, namedParameters, defaultValueForMissing);
+            return invoker(invocationParameters);
+        }
+
+        public object InvokeWithDefaults(IEnumerable<(string parameterName, object value)> namedParameters)
+        {
+            return Invoke(namedParameters, true);
+        }
+        public object InvokeWithDefaults()
+        {
+            return Invoke(null, true);
         }
 
         public static implicit operator ConstructorInfo(ConstructorInfoEx constructorInfoEx)

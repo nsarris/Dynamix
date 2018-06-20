@@ -22,7 +22,7 @@ namespace Dynamix.DynamicProjection
 
         public CompiledDynamicProjectionConfiguration GetCompiledConfiguration() => compiledConfigurationLazy.Value;
 
-        private CompiledMemberTargetConfiguration CompileMember(MemberTargetConfiguration memberConfiguration)
+        private CompiledMemberTargetConfiguration.CompiledMemberConfiguration CompileMember(MemberTargetConfiguration memberConfiguration)
         {
             var memberInfo = GetMemberInfo(configuration.SourceType, configuration.ProjectedType, memberConfiguration.ProjectedMember);
 
@@ -33,27 +33,34 @@ namespace Dynamix.DynamicProjection
                         GetCtorParameter(memberConfiguration.CtorParameterName) :
                     null;
 
-            var source = memberConfiguration.Source ?? new StringProjectionSource(GetSourceMemberNameFromMemberName(memberInfo.Name));
-            var sourceExpression = source.GetExpression(configuration.It);
-
             if (memberConfiguration.ValueMap != null)
             {
                 //var reverse = configuration.ValueMap.Values.ToLookup(x => x.Value, x => x.Key);
             }
             //apply valuemap
 
-            return new CompiledMemberTargetConfiguration()
+            return new CompiledMemberTargetConfiguration.CompiledMemberConfiguration()
             {
                 MemberInfo = memberInfo,
                 MemberType = GetMemberInfoType(memberInfo),
-                ProjectedMember = memberConfiguration.ProjectedMember,
+                CtorParameterName = parameter?.Name,
+                CtorParameterType = parameter?.ParameterType,
+                ProjectionTarget = memberConfiguration.ProjectionTarget
+            };
+        }
+
+        public CompiledMemberTargetConfiguration.CompiledSourceConfiguration CompileMemberSource(
+            CompiledMemberTargetConfiguration.CompiledMemberConfiguration member, MemberTargetConfiguration memberConfiguration)
+        {
+            var source = memberConfiguration.Source ?? new StringProjectionSource(GetSourceMemberNameFromMemberName(member.MemberInfo.Name));
+            var sourceExpression = source.GetExpression(configuration.It);
+
+            return new CompiledMemberTargetConfiguration.CompiledSourceConfiguration()
+            {
                 SourceExpression = sourceExpression,
                 Source = source,
                 SourceKey = memberConfiguration.SourceKey,
                 ValueMap = memberConfiguration.ValueMap,
-                CtorParameterName = parameter?.Name,
-                CtorParameterType = parameter?.ParameterType,
-                ProjectionTarget = memberConfiguration.ProjectionTarget
             };
         }
 
@@ -76,6 +83,9 @@ namespace Dynamix.DynamicProjection
 
         private CompiledDynamicProjectionConfiguration Compile()
         {
+            var compiledMembers = configuration.Members.Select(x => (Configuration: x, CompiledMember: CompileMember(x))).ToList();
+            var compiledCtorParams = configuration.CtorParameters.Select(x => (Configuration: x, CompiledCtorParam: CompileCtorParameter(x))).ToList();
+
             configuration.ProjectedType =
                 configuration.ProjectedType ?? BuildProjectedType();
 
@@ -86,20 +96,20 @@ namespace Dynamix.DynamicProjection
             if (configuration.Ctor == null)
                 throw new InvalidOperationException($"No constructor found for type {configuration.ProjectedType.Name}");
 
-            var compiledMembers = configuration.Members.Select(x => CompileMember(x)).ToList();
-            var compiledCtorParams = configuration.CtorParameters.Select(x => CompileCtorParameter(x)).ToList();
+            var compiledMemberTargets = compiledMembers.Select(x => new CompiledMemberTargetConfiguration(x.CompiledMember, CompileMemberSource(x.CompiledMember, x.Configuration))).ToList();
+            var compiledCtorParamTargets = compiledCtorParams.Select(x => CompileCtorParameter(x.Configuration)).ToList();
 
             var ctorParameterAssignments =
                 configuration.Ctor.GetParameters().Select(p =>
                 {
                     var ctorExpression =
-                        compiledCtorParams
+                        compiledCtorParamTargets
                             .Where(x => x.ParameterName == p.Name)
                             .Select(x => new CtorParameterAssignment(null, x.SourceExpression))
                             .FirstOrDefault() ??
-                        compiledMembers
-                            .Where(x => x.ProjectionTarget == ProjectionTarget.CtorParameter && x.CtorParameterName == p.Name)
-                            .Select(x => new CtorParameterAssignment(x.MemberInfo.Name, x.SourceExpression))
+                        compiledMemberTargets
+                            .Where(x => x.Member.ProjectionTarget == ProjectionTarget.CtorParameter && x.Member.CtorParameterName == p.Name)
+                            .Select(x => new CtorParameterAssignment(x.Member.MemberInfo.Name, x.Source.SourceExpression))
                             .FirstOrDefault();
 
                     if (ctorExpression == null && !p.IsOptional)
@@ -110,15 +120,15 @@ namespace Dynamix.DynamicProjection
                 .ToList();
 
             var memberInitAssignments =
-                compiledMembers
-                .Where(x => x.ProjectionTarget == ProjectionTarget.Member)
+                compiledMemberTargets
+                .Where(x => x.Member.ProjectionTarget == ProjectionTarget.Member)
                 .Select(p => new MemberInitAssignment(
                         memberName:
-                            p.MemberInfo.Name,
+                            p.Member.MemberInfo.Name,
                         memberAssignement:
                             Expression.Bind(
-                            p.MemberInfo,
-                            ExpressionEx.ConvertIfNeeded(p.SourceExpression, p.MemberType))))
+                            p.Member.MemberInfo,
+                            ExpressionEx.ConvertIfNeeded(p.Source.SourceExpression, p.Member.MemberType))))
                         .ToList();
 
             var defaultProjection = Expression.Lambda(
@@ -128,8 +138,9 @@ namespace Dynamix.DynamicProjection
                     configuration.It);
 
             return new CompiledDynamicProjectionConfiguration(
-                configuration, 
-                compiledCtorParams, compiledMembers, memberInitAssignments, ctorParameterAssignments, defaultProjection);
+                configuration,
+                compiledCtorParamTargets,
+                compiledMemberTargets, memberInitAssignments, ctorParameterAssignments, defaultProjection);
         }
 
         public Type BuildProjectedType()

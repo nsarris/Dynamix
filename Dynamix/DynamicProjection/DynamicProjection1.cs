@@ -11,17 +11,45 @@ namespace Dynamix.DynamicProjection
 
     internal class CompiledMemberTargetConfiguration
     {
-        public MemberInfo MemberInfo { get; set; }
-        public Type MemberType { get; set; }
-        public string CtorParameterName { get; set; }
-        public Type CtorParameterType { get; set; }
-        public ProjectionTarget ProjectionTarget { get; set; }
-        public ProjectedMember ProjectedMember { get; set; }
-        public ProjectionSource Source { get; set; }
-        public ProjectionSource SourceKey { get; set; }
-        public ValueMap ValueMap { get; set; }
-        //public ValueMap ReverseValueMap { get; set; }
-        public Expression SourceExpression { get; set; }
+        internal class CompiledMemberConfiguration
+        {
+            public MemberInfo MemberInfo { get; set; }
+            public Type MemberType { get; set; }
+            public string CtorParameterName { get; set; }
+            public Type CtorParameterType { get; set; }
+            public ProjectionTarget ProjectionTarget { get; set; }
+            //public ProjectedMember ProjectedMember { get; set; }
+        }
+
+        internal class CompiledSourceConfiguration
+        {
+            public ProjectionSource Source { get; set; }
+            public ProjectionSource SourceKey { get; set; }
+            public ValueMap ValueMap { get; set; }
+            //public ValueMap ReverseValueMap { get; set; }
+            public Expression SourceExpression { get; set; }
+        }
+
+        internal CompiledMemberConfiguration Member { get; }
+        internal CompiledSourceConfiguration Source { get; }
+
+        public CompiledMemberTargetConfiguration(CompiledMemberConfiguration member, CompiledSourceConfiguration source)
+        {
+            Member = member;
+            Source = source;
+        }
+
+        //public MemberInfo MemberInfo { get; set; }
+        //public Type MemberType { get; set; }
+        //public string CtorParameterName { get; set; }
+        //public Type CtorParameterType { get; set; }
+        //public ProjectionTarget ProjectionTarget { get; set; }
+        //public ProjectedMember ProjectedMember { get; set; }
+        //public ProjectionSource Source { get; set; }
+        //public ProjectionSource SourceKey { get; set; }
+        //public ValueMap ValueMap { get; set; }
+        ////public ValueMap ReverseValueMap { get; set; }
+        //public Expression SourceExpression { get; set; }
     }
 
     internal class CompiledCtorParamTargetConfiguration

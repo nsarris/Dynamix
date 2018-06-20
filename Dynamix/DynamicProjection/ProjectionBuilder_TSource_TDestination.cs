@@ -14,13 +14,13 @@ namespace Dynamix.DynamicProjection
         public ProjectionBuilder<TSource, TDestination> Member<TMember>(Expression<Func<TDestination, TMember>> memberLambdaExpression, Func<MemberTargetBuilder<TSource>, ConfiguredMemberTargetBuilder> map)
         {
             var mapTarget = map(GetMemberTargetBuilder(new MemberTargetConfiguration(new LambdaExpressionProjectedMember(memberLambdaExpression))));
-            members.Add(mapTarget.Configuration);
+            Configuration.Members.Add(mapTarget.Configuration);
             return this;
         }
 
         public ProjectionBuilder<TSource, TDestination> Auto<TMember>(Expression<Func<TDestination, TMember>> memberLambdaExpression)
         {
-            members.Add(new MemberTargetConfiguration(new LambdaExpressionProjectedMember(memberLambdaExpression)));
+            Configuration.Members.Add(new MemberTargetConfiguration(new LambdaExpressionProjectedMember(memberLambdaExpression)));
             return this;
         }
     }

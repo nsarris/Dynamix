@@ -20,24 +20,42 @@ namespace Dynamix.DynamicProjection
         readonly static ConstructorInfoEx memberTargetBuilderCtor = typeof(TMemberTargetBuilder).GetConstructorEx(new Type[] { typeof(MemberTargetConfiguration) }, BindingFlagsEx.All);
         readonly static ConstructorInfoEx ctorParamTargetBuilderCtor = typeof(TCtorParamTargetBuilder).GetConstructorEx(new Type[] { typeof(CtorParamTargetConfiguration) }, BindingFlagsEx.All);
 
-        public Type SourceType { get; }
-        public Type ProjectedType { get; }
+        internal DynamicProjectionConfiguration Configuration { get; }
 
-        public ProjectionTarget DefaultMemberTarget { get; protected set; }
-        public IMemberNameMatchStrategy MemberNameMatchStrategy { get; internal set; } = new DefaultMemberNameMatchStrategy();
+        //public Type SourceType { get; }
+        //public Type ProjectedType { get; }
 
-        internal readonly List<MemberTargetConfiguration> members = new List<MemberTargetConfiguration>();
-        internal readonly List<CtorParamTargetConfiguration> ctorParameters = new List<CtorParamTargetConfiguration>();
+        internal ProjectionTarget DefaultMemberTarget { get; set; }
+        //public IMemberNameMatchStrategy MemberNameMatchStrategy { get; internal set; } = new DefaultMemberNameMatchStrategy();
+
+        //internal readonly List<MemberTargetConfiguration> members = new List<MemberTargetConfiguration>();
+        //internal readonly List<CtorParamTargetConfiguration> ctorParameters = new List<CtorParamTargetConfiguration>();
         
         protected ProjectionBuilderBase(Type sourceType, Type projectedType)
         {
-            SourceType = sourceType;
-            ProjectedType = projectedType;
+            Configuration = new DynamicProjectionConfiguration(sourceType, projectedType);
+            //SourceType = sourceType;
+            //ProjectedType = projectedType;
         }
 
         public DynamicProjection Build(Type sourceType, Type projectedType)
         {
-            return new DynamicProjection(SourceType, ProjectedType, MemberNameMatchStrategy, members, ctorParameters);
+            return new DynamicProjection(Configuration.Clone(sourceType, projectedType, false));
+        }
+
+        public DynamicProjection Build(Type sourceType)
+        {
+            return new DynamicProjection(Configuration.Clone(sourceType, null, false));
+        }
+
+        public DynamicProjection Build()
+        {
+            return new DynamicProjection(Configuration.Clone(null, null, false));
+        }
+
+        public DynamicProjection BuildWithDynamicType()
+        {
+            return new DynamicProjection(Configuration.Clone(null, null, true));
         }
 
 
@@ -49,31 +67,33 @@ namespace Dynamix.DynamicProjection
 
         public T WithDefaultMemberTargetComparer(IMemberNameMatchStrategy memberNameMatchStrategy)
         {
-            MemberNameMatchStrategy = memberNameMatchStrategy;
+            Configuration.MemberNameMatchStrategy = memberNameMatchStrategy;
             return (T)this;
         }
 
         public T Member(string member, Func<TMemberTargetBuilder, ConfiguredMemberTargetBuilder> map)
         {
             var mapTarget = map(GetMemberTargetBuilder(new MemberTargetConfiguration(new StringProjectedMember(member))));
-            members.Add(mapTarget.Configuration);
+            Configuration.Members.Add(mapTarget.Configuration);
             return (T)this;
         }
 
         public T CtorParameter(string parameterName, Func<TCtorParamTargetBuilder, ConfiguredCtorParamTargetBuilder> map)
         {
-            ctorParameters.Add(map(GetCtorTargetBuilder(new CtorParamTargetConfiguration(parameterName))).Configuration);
+            Configuration.CtorParameters.Add(map(GetCtorTargetBuilder(new CtorParamTargetConfiguration(parameterName))).Configuration);
             return (T)this;
         }
 
         public T Auto(string member)
         {
-            members.Add(new MemberTargetConfiguration(new StringProjectedMember(member))
+            Configuration.Members.Add(new MemberTargetConfiguration(new StringProjectedMember(member))
             {
                 ProjectionTarget = DefaultMemberTarget
             });
             return (T)this;
         }
+
+        //TODO: Using Ctor
 
         internal TMemberTargetBuilder GetMemberTargetBuilder(MemberTargetConfiguration configuration) 
             => (TMemberTargetBuilder)memberTargetBuilderCtor.Invoke(configuration);

@@ -160,6 +160,9 @@ namespace Dynamix
             var fields = fieldBuilders.Where(x => x.Field.InitializeInConstructor).ToList();
             var properties = propertyBuilders.Where(x => x.Property.InitializeInConstructor).ToList();
 
+            if (!fields.Any() && !properties.Any())
+                return;
+
             var constructor = 
                 tb.DefineConstructor(
                     MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName, 

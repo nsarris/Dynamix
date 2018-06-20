@@ -52,9 +52,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DynamicProjection\DefaultMemberNameMatchStrategy.cs" />
     <Compile Include="DynamicProjection\DynamicProjection1.cs" />
     <Compile Include="DynamicProjection\CtorParamTargetConfiguration.cs" />
     <Compile Include="DynamicProjection\DynamicProjection.cs" />
+    <Compile Include="DynamicProjection\CompiledDynamicProjectionConfiguration.cs" />
+    <Compile Include="DynamicProjection\DynamicProjectionCompiler.cs" />
+    <Compile Include="DynamicProjection\DynamicProjectionConfiguration.cs" />
+    <Compile Include="DynamicProjection\IMemberNameMatchStrategy.cs" />
     <Compile Include="DynamicProjection\TargetBuilders.cs" />
     <Compile Include="DynamicProjection\MemberTargetConfiguration.cs" />
     <Compile Include="DynamicProjection\ProjectedMember.cs" />

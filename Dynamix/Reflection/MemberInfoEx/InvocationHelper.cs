@@ -18,10 +18,12 @@ namespace Dynamix.Reflection
             {
                 var (parameterName, value) = namedParameters.FirstOrDefault(x => x.parameterName == p.Name);
 
-                if (parameterName.IsNullOrEmpty() && !(p.IsOptional || p.HasDefaultValue))
+                if (parameterName.IsNullOrEmpty())
                 {
-                    if (defaultValueForMissing)
+                    if (p.IsOptional || defaultValueForMissing)
                         invocationParameters.Add(p.ParameterType.DefaultOf());
+                    else if (p.HasDefaultValue)
+                        invocationParameters.Add(p.DefaultValue);
                     else
                         throw new InvalidOperationException($"Non optional parameter '{p.Name}' missing");
                 }

@@ -1,4 +1,5 @@
 ﻿using Dynamix.Expressions;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -7,6 +8,7 @@ namespace Dynamix.DynamicProjection
     internal abstract class ProjectionSource
     {
         internal abstract Expression GetExpression(ParameterExpression itParameter);
+        internal abstract Type GetExpressionType();
     }
 
     internal class StringProjectionSource : ProjectionSource
@@ -20,6 +22,11 @@ namespace Dynamix.DynamicProjection
         internal override Expression GetExpression(ParameterExpression itParameter)
         {
             return MemberExpressionBuilder.GetExpression(itParameter, SourceExpression);
+        }
+
+        internal override Type GetExpressionType()
+        {
+            return null;
         }
     }
 
@@ -35,6 +42,11 @@ namespace Dynamix.DynamicProjection
         {
             return LambdaParameterReplacer.ReplaceOfType(SourceExpression, itParameter.Type, itParameter);
         }
+
+        internal override Type GetExpressionType()
+        {
+            return SourceExpression.Type;
+        }
     }
 
     internal class LambdaExpressionProjectionSource : ProjectionSource
@@ -49,6 +61,11 @@ namespace Dynamix.DynamicProjection
         {
             return LambdaParameterReplacer.Replace(SourceExpression, SourceExpression.Parameters.First(), itParameter);
         }
+
+        internal override Type GetExpressionType()
+        {
+            return SourceExpression.Type;
+        }
     }
 
     internal class ConstantProjectionSource : ProjectionSource
@@ -62,6 +79,11 @@ namespace Dynamix.DynamicProjection
         internal override Expression GetExpression(ParameterExpression itParameter)
         {
             return Expression.Constant(Value);
+        }
+
+        internal override Type GetExpressionType()
+        {
+            return Value?.GetType();
         }
     }
 }

@@ -12,149 +12,118 @@ namespace Dynamix
 {
     public class DynamicTypeBuilder
     {
-        ModuleBuilder moduleBuilder;
-        readonly Dictionary<string, DynamicTypeCachedDescriptor> cache = new Dictionary<string, DynamicTypeCachedDescriptor>(StringComparer.OrdinalIgnoreCase);
+        #region Const and Static
+
+        private const string defaultInstanceAssemblyName = "DynamicTypeBuilderAssembly";
+        private const string defaultInstanceModuleName = "DynamicTypeBuilderModule";
+
+        static Lazy<DynamicTypeBuilder> instance = new Lazy<DynamicTypeBuilder>(() => new DynamicTypeBuilder(defaultInstanceAssemblyName, defaultInstanceModuleName));
+        public static DynamicTypeBuilder Instance => instance.Value;
+
+        #endregion
+
+        #region Fields and Properties
+
+        readonly Lazy<ModuleBuilder> moduleBuilder;
+        readonly Dictionary<string, Type> typeCache = new Dictionary<string, Type>();
 
         int id;
-        readonly object o = new object();
-        readonly object or = new object();
-        readonly string assembly;
-        readonly string module;
+        readonly object olock = new object();
 
-        static DynamicTypeBuilder instance;
-        public static DynamicTypeBuilder Instance { get { if (instance == null) instance = new DynamicTypeBuilder("DynamicTypeBuilderStaticInsance", "DynamicTypeBuilderStaticInsance"); return instance; } }
+        #endregion
 
-        public DynamicTypeBuilder()
-        {
-            assembly = Assembly.GetExecutingAssembly().FullName;
-            module = Assembly.GetExecutingAssembly().GetLoadedModules()[0].Name;
-        }
+        #region Ctor
 
         public DynamicTypeBuilder(string assemblyName, string moduleName)
         {
-            assembly = assemblyName;
-            module = moduleName;
+            moduleBuilder = new Lazy<ModuleBuilder>(() =>
+            {
+                var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Run);
+                return assemblyBuilder.DefineDynamicModule(moduleName);
+            });
         }
 
-        public Type CreateAndRegisterType(DynamicTypeDescriptor descr, bool overwrite = true)
+        #endregion
+
+        #region Type Creation and Registy Public API
+
+        public Type CreateType(DynamicTypeDescriptorBuilder descriptorBuilder)
         {
-            return CreateAndRegisterType(descr.Name, descr.Properties, descr.Fields, descr.Interfaces, overwrite, descr.BaseType, descr.AttributeBuilders);
+            return CreateType(descriptorBuilder.Build());
         }
 
-        public Type CreateAndRegisterType(DynamicTypeDescriptorBuilder descriptorBuilder, bool overwrite = true)
+        public Type CreateType(DynamicTypeDescriptor descriptor)
         {
-            return CreateAndRegisterType(descriptorBuilder.Build(), overwrite);
+            lock (olock)
+            {
+                if (!typeCache.TryGetValue(descriptor.Name, out Type type))
+                {
+                    type = CreateTypeInternal(descriptor);
+                    typeCache.Add(descriptor.Name, type);
+                }
+
+                return type;
+            }
         }
 
-        public Type CreateAndRegisterType(string typeName, IEnumerable<DynamicTypeProperty> properties, IEnumerable<DynamicTypeField> fields, IEnumerable<Type> interfaces = null, bool overwrite = true, Type baseType = null, IEnumerable<CustomAttributeBuilder> customAttributeBuilders = null)
+        public Type GetRegisteredTypeOrNull(string typeName)
         {
             if (string.IsNullOrWhiteSpace(typeName))
                 throw new ArgumentException("TypeName cannot be null or whitespace");
 
-            Type t = null;
-            lock (or)
-            {
-                if (overwrite)
-                {
-                    if (cache.TryGetValue(typeName, out DynamicTypeCachedDescriptor td))
-                    {
-                        if (td.Fields.Count == properties.Count()
-                        && td.Fields.Count(x => properties.Any(
-                            y => y.Name == x.Name && y.Type == x.Type)) == properties.Count())
-                            return td.Type;
-                        else
-                        {
-                            t = CreateType(properties, fields, interfaces, typeName, baseType, customAttributeBuilders);
-                            cache[typeName] = new DynamicTypeCachedDescriptor(t, properties);
-                        }
-                    }
-                    else
-                    {
-                        t = CreateType(properties, fields, interfaces, typeName, baseType, customAttributeBuilders);
-                        cache[typeName] = new DynamicTypeCachedDescriptor(t, properties);
-                    }
-                }
-                else
-                {
-                    t = CreateType(properties, fields, interfaces, typeName, baseType, customAttributeBuilders);
-                    cache.Add(typeName, new DynamicTypeCachedDescriptor(t, properties));
-                }
-            }
-            return t;
+            return (typeCache.TryGetValue(typeName, out Type type)) ? type : null;
         }
 
-        public Type TryGetRegisteredTypeOrNull(string TypeName)
+        public bool TryGetRegisteredType(string typeName, out Type type)
         {
-            if (string.IsNullOrWhiteSpace(TypeName))
+            if (string.IsNullOrWhiteSpace(typeName))
                 throw new ArgumentException("TypeName cannot be null or whitespace");
 
-            if (cache.TryGetValue(TypeName, out DynamicTypeCachedDescriptor t))
-                return t.Type;
-            else
-                return null;
+            return typeCache.TryGetValue(typeName, out type);
         }
 
-        public Type GetRegisteredType(string TypeName)
+        public Type GetRegisteredType(string typeName)
         {
-            if (string.IsNullOrWhiteSpace(TypeName))
+            if (string.IsNullOrWhiteSpace(typeName))
                 throw new ArgumentException("TypeName cannot be null or whitespace");
 
-            return cache[TypeName].Type;
+            return typeCache[typeName];
         }
 
+        #endregion
 
+        #region Builder Implementation
 
-        public object CreateNewObject(IEnumerable<DynamicTypeProperty> properties, IEnumerable<DynamicTypeField> fields)
+        private Type CreateTypeInternal(DynamicTypeDescriptor typeDescriptor)
         {
-            var myType = CreateType(properties, fields);
-            var myObject = Activator.CreateInstance(myType);
-            return myObject;
+            var tb =
+             !typeDescriptor.Name.IsNullOrWhiteSpace() ?
+                GetTypeBuilder(typeDescriptor.Name, typeDescriptor.BaseType) :
+                GetTypeBuilder("DynamicType_" + (++id).ToString(), typeDescriptor.BaseType);
+
+            foreach (var iface in typeDescriptor.Interfaces)
+                tb.AddInterfaceImplementation(iface);
+
+            var propertyBuilders = typeDescriptor.Properties.Select(x => (x, CreateProperty(tb, x, typeDescriptor.Interfaces))).ToList();
+            var fieldBuilders = typeDescriptor.Fields.Select(x => (x, CreateField(tb, x))).ToList();
+
+            var defaultConstructor = tb.DefineDefaultConstructor(MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
+
+            CreateConstructor(tb,
+                propertyBuilders,
+                fieldBuilders,
+                defaultConstructor);
+
+            if (typeDescriptor.AttributeBuilders != null)
+                foreach (var a in typeDescriptor.AttributeBuilders)
+                    tb.SetCustomAttribute(a);
+
+            return tb.CreateType();
         }
 
-        public Type CreateType(DynamicTypeDescriptor descriptor, string typeName = null)
-        {
-            return CreateType(descriptor.Properties, descriptor.Fields, descriptor.Interfaces, typeName ?? descriptor.Name, descriptor.BaseType, descriptor.AttributeBuilders);
-        }
-
-        public Type CreateType(DynamicTypeDescriptorBuilder descriptorBuilder, string typeName = null)
-        {
-            return CreateType(descriptorBuilder.Build(), typeName);
-        }
-
-        public Type CreateType(IEnumerable<DynamicTypeProperty> properties, IEnumerable<DynamicTypeField> fields, IEnumerable<Type> interfaces = null, string TypeName = null, Type BaseType = null, IEnumerable<CustomAttributeBuilder> customAttributeBuilders = null)
-        {
-            lock (o)
-            {
-                var tb =
-                 !TypeName.IsNullOrWhiteSpace() ?
-                    GetTypeBuilder(assembly, module, TypeName, BaseType) :
-                    GetTypeBuilder(assembly, module, "DynamicType_" + (++id).ToString(), BaseType);
-
-                foreach (var iface in interfaces)
-                    tb.AddInterfaceImplementation(iface);
-
-                var propertyBuilders = properties.Select(x => (x , CreateProperty(tb, x, interfaces))).ToList();
-                var fieldBuilders = fields.Select(x => (x, CreateField(tb, x))).ToList();
-
-                var defaultConstructor = tb.DefineDefaultConstructor(MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
-
-                CreateConstructor(tb, 
-                    propertyBuilders,
-                    fieldBuilders,
-                    defaultConstructor);
-
-                if (customAttributeBuilders != null)
-                    foreach (var a in customAttributeBuilders)
-                        tb.SetCustomAttribute(a);
-
-                return tb.CreateType();
-            }
-
-        }
-
-        private void CreateConstructor(TypeBuilder tb, 
-            IEnumerable<(DynamicTypeProperty Property , PropertyBuilder PropertyBuilder)> propertyBuilders, 
-            IEnumerable<(DynamicTypeField Field, FieldBuilder FieldBuilder)> fieldBuilders, 
+        private void CreateConstructor(TypeBuilder tb,
+            IEnumerable<(DynamicTypeProperty Property, PropertyBuilder PropertyBuilder)> propertyBuilders,
+            IEnumerable<(DynamicTypeField Field, FieldBuilder FieldBuilder)> fieldBuilders,
             ConstructorBuilder defaultConstructor)
         {
             var fields = fieldBuilders.Where(x => x.Field.InitializeInConstructor).ToList();
@@ -163,16 +132,16 @@ namespace Dynamix
             if (!fields.Any() && !properties.Any())
                 return;
 
-            var constructor = 
+            var constructor =
                 tb.DefineConstructor(
-                    MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName, 
-                    CallingConventions.Standard, 
+                    MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
+                    CallingConventions.Standard,
                         fields.Select(x => x.FieldBuilder.FieldType).Concat(
                         properties.Select(x => x.PropertyBuilder.PropertyType))
                         .ToArray());
 
             var generator = constructor.GetILGenerator();
-            generator.Emit(OpCodes.Ldarg_0); 
+            generator.Emit(OpCodes.Ldarg_0);
             generator.Emit(OpCodes.Call, defaultConstructor);
 
             var i = 1;
@@ -197,7 +166,7 @@ namespace Dynamix
                 generator.Emit(OpCodes.Ldarg_0);
                 generator.Emit(OpCodes.Ldarg, i);
                 generator.Emit(OpCodes.Call, p.PropertyBuilder.SetMethod);
-                
+
                 if (p.Property.HasConstructorDefaultValue)
                     constructor
                         .DefineParameter(i, ParameterAttributes.Optional | ParameterAttributes.HasDefault, p.Property.CtorParameterName)
@@ -212,22 +181,16 @@ namespace Dynamix
             generator.Emit(OpCodes.Ret);
         }
 
-        private TypeBuilder GetTypeBuilder(string AssemblyName, string ModuleName, string TypeName, Type BaseType = null)
+        private TypeBuilder GetTypeBuilder(string typeName, Type baseType = null)
         {
-            if (moduleBuilder == null)
-            {
-                var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(AssemblyName), AssemblyBuilderAccess.Run);
-                moduleBuilder = assemblyBuilder.DefineDynamicModule(ModuleName);
-            }
-
-            var tb = moduleBuilder.DefineType(TypeName
+            var tb = moduleBuilder.Value.DefineType(typeName
                                 , TypeAttributes.Public |
                                 TypeAttributes.Class |
                                 TypeAttributes.AutoClass |
                                 TypeAttributes.AnsiClass |
                                 TypeAttributes.BeforeFieldInit |
                                 TypeAttributes.AutoLayout
-                                , BaseType);
+                                , baseType);
 
             return tb;
         }
@@ -242,7 +205,7 @@ namespace Dynamix
             {
                 var getPropMthdBldr =
                     tb.DefineMethod("get_" + property.Name,
-                    (property.GetAccessModifier == GetSetAccessModifier.Private ? 
+                    (property.GetAccessModifier == GetSetAccessModifier.Private ?
                         MethodAttributes.Private :
                     property.GetAccessModifier == GetSetAccessModifier.Protected ?
                         MethodAttributes.Family :
@@ -324,5 +287,7 @@ namespace Dynamix
 
             return fieldBuilder;
         }
+
+        #endregion
     }
 }

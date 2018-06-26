@@ -77,7 +77,6 @@
     <Compile Include="DynamicQueryable\LinqToDBHelper.cs" />
     <Compile Include="DynamicQueryable\OrderByExpressionParser.cs" />
     <Compile Include="DynamicQueryable\OrderItem.cs" />
-    <Compile Include="DynamicType\DynamicTypeCachedDescriptor.cs" />
     <Compile Include="DynamicType\DynamicTypeDescriptorBuilder.cs" />
     <Compile Include="DynamicType\DynamicTypeField.cs" />
     <Compile Include="DynamicType\DynamicTypeFieldBuilder.cs" />

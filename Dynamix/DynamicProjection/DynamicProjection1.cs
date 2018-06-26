@@ -23,8 +23,8 @@ namespace Dynamix.DynamicProjection
 
         internal class CompiledSourceConfiguration
         {
-            public ProjectionSource Source { get; set; }
-            public ProjectionSource SourceKey { get; set; }
+            public IProjectionSource Source { get; set; }
+            public IProjectionSource SourceKey { get; set; }
             public ValueMap ValueMap { get; set; }
             //public ValueMap ReverseValueMap { get; set; }
             public Expression SourceExpression { get; set; }
@@ -54,12 +54,29 @@ namespace Dynamix.DynamicProjection
 
     internal class CompiledCtorParamTargetConfiguration
     {
-        public string ParameterName { get; set; }
-        public Type ParameterType { get; set; }
-        public ProjectionSource Source { get; set; }
-        public ValueMap ValueMap { get; set; }
-        //public ValueMap ReverseValueMap { get; set; }
-        public Expression SourceExpression { get; set; }
+        internal class CompiledCtorParamConfiguration
+        {
+            public ParameterInfo ParameterInfo { get; set; }
+            //public string ParameterName { get; set; }
+            //public Type ParameterType { get; set; }
+        }
+
+        internal class CompiledSourceConfiguration
+        {
+            public IProjectionSource Source { get; set; }
+            public ValueMap ValueMap { get; set; }
+            //public ValueMap ReverseValueMap { get; set; }
+            public Expression SourceExpression { get; set; }
+        }
+
+        internal CompiledCtorParamConfiguration CtorParameter { get; }
+        internal CompiledSourceConfiguration Source { get; }
+
+        public CompiledCtorParamTargetConfiguration(CompiledCtorParamConfiguration ctorParam, CompiledSourceConfiguration source)
+        {
+            CtorParameter = ctorParam;
+            Source = source;
+        }
     }
 
     internal class CompiledValueMap

@@ -116,6 +116,7 @@ namespace Dynamix
 
         public DynamicTypeDescriptor Build()
         {
+            dynamicTypeDescriptor.Validate();
             return dynamicTypeDescriptor.Clone();
         }
     }

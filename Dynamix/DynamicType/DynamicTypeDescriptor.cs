@@ -68,6 +68,24 @@ namespace Dynamix
             interfaces.Add(@interface);
         }
 
+        internal void Validate()
+        {
+            if (string.IsNullOrWhiteSpace(Name))
+                throw new InvalidOperationException("Type Name cannot be null or whitespace");
+
+            if (!Properties.Any() && !Fields.Any())
+                throw new InvalidOperationException("Type must have at least one property or field");
+
+            if (Properties.GroupBy(x => x.Name).Count() < Properties.Count())
+                throw new InvalidOperationException("Duplicate property name found in type descriptor");
+
+            if (Fields.GroupBy(x => x.Name).Count() < Fields.Count())
+                throw new InvalidOperationException("Duplicate field name found in type descriptor");
+
+            if (Properties.Select(x => x.Name).Intersect(Fields.Select(x => x.Name)).Any())
+                throw new InvalidOperationException("Properties and Fields with the same name found in type descriptor");
+        }
+
         internal DynamicTypeDescriptor Clone()
         {
             return new DynamicTypeDescriptor(Name, properties, fields, interfaces, BaseType, attributeBuilders);

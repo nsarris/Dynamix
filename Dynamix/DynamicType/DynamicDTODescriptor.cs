@@ -117,10 +117,10 @@ namespace Dynamix
         {
             return AddProperty((LambdaExpression)sourceExpression,
                 path, TargetProperty, PropertyName,
-                OverrideType == null ? typeof(TProp) : OverrideType, AsNullable);
+                OverrideType ?? typeof(TProp), AsNullable);
         }
 
-        public Type GetReturnType(string TypeName, bool CacheType = true, Type BaseType = null)
+        public Type GetReturnType(string TypeName, Type BaseType = null)
         {
             Type returnType;
 
@@ -131,10 +131,7 @@ namespace Dynamix
             foreach (var p in props)
                 d.AddProperty(p.TargetProperty, p.TargetType, prop => prop.AsNullable(p.AsNullable));
 
-            if (CacheType)
-                returnType = DynamicTypeBuilder.Instance.CreateAndRegisterType(d, true);
-            else
-                returnType = DynamicTypeBuilder.Instance.CreateType(d);
+            returnType = DynamicTypeBuilder.Instance.CreateType(d);
 
             return returnType;
         }

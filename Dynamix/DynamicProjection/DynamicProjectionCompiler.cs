@@ -49,7 +49,7 @@ namespace Dynamix.DynamicProjection
             };
         }
 
-        public CompiledMemberTargetConfiguration.CompiledSourceConfiguration CompileMemberSource(
+        private CompiledMemberTargetConfiguration.CompiledSourceConfiguration CompileMemberSource(
             CompiledMemberTargetConfiguration.CompiledMemberConfiguration member, MemberTargetConfiguration memberConfiguration)
         {
             var source = memberConfiguration.Source ?? new StringProjectionSource(GetSourceMemberNameFromMemberName(member.MemberInfo.Name));
@@ -151,12 +151,12 @@ namespace Dynamix.DynamicProjection
                 compiledMemberTargets, memberInitAssignments, ctorParameterAssignments, defaultProjection);
         }
 
-        public Type BuildProjectedType()
+        private Type BuildProjectedType()
         {
             if (configuration.CtorParameters.Any())
                 throw new InvalidOperationException("Cannot build projected type with explicit constructor parameter mapping");
 
-            var typeBuilder = new DynamicTypeDescriptorBuilder("SomeDynamicType");
+            var typeBuilder = new DynamicTypeDescriptorBuilder(configuration.ProjectedTypeName);
 
             foreach (var member in configuration.Members)
                 typeBuilder.AddProperty(
@@ -172,8 +172,7 @@ namespace Dynamix.DynamicProjection
                     return config;
                 });
 
-            //TODO: fix type registration
-            return DynamicTypeBuilder.Instance.CreateType(typeBuilder.Build());
+            return DynamicTypeBuilder.Instance.CreateType(typeBuilder);
         }
 
 

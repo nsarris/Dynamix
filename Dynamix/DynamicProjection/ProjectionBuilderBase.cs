@@ -40,22 +40,22 @@ namespace Dynamix.DynamicProjection
 
         public DynamicProjection Build(Type sourceType, Type projectedType)
         {
-            return new DynamicProjection(Configuration.Clone(sourceType, projectedType, false));
+            return new DynamicProjection(Configuration.Clone(sourceType, projectedType, false, null));
         }
 
         public DynamicProjection Build(Type sourceType)
         {
-            return new DynamicProjection(Configuration.Clone(sourceType, null, false));
+            return new DynamicProjection(Configuration.Clone(sourceType, null, false, null));
         }
 
         public DynamicProjection Build()
         {
-            return new DynamicProjection(Configuration.Clone(null, null, false));
+            return new DynamicProjection(Configuration.Clone(null, null, false, null));
         }
 
-        public DynamicProjection BuildWithDynamicType()
+        public DynamicProjection BuildWithDynamicType(string dynamicTypeName)
         {
-            return new DynamicProjection(Configuration.Clone(null, null, true));
+            return new DynamicProjection(Configuration.Clone(null, null, true, dynamicTypeName));
         }
 
 
@@ -93,7 +93,7 @@ namespace Dynamix.DynamicProjection
             return (T)this;
         }
 
-        //TODO: Using Ctor
+        //TODO: Using specific Ctor
 
         internal TMemberTargetBuilder GetMemberTargetBuilder(MemberTargetConfiguration configuration) 
             => (TMemberTargetBuilder)memberTargetBuilderCtor.Invoke(configuration);

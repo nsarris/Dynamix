@@ -12,6 +12,7 @@ namespace Dynamix.DynamicProjection
     {
         public Type SourceType { get; }
         public Type ProjectedType { get; set; }
+        public string ProjectedTypeName { get; set; }
         public ParameterExpression It { get; }
         public List<MemberTargetConfiguration> Members { get; set; } = new List<MemberTargetConfiguration>();
         public List<CtorParamTargetConfiguration> CtorParameters { get; set; } = new List<CtorParamTargetConfiguration>();
@@ -27,11 +28,12 @@ namespace Dynamix.DynamicProjection
             It = Expression.Parameter(SourceType);
         }
 
-        public DynamicProjectionConfiguration Clone(Type sourceType, Type projectedType, bool dynamicProjectedType)
+        public DynamicProjectionConfiguration Clone(Type sourceType, Type projectedType, bool dynamicProjectedType,string dynamicTypeName)
         {
-            return new DynamicProjectionConfiguration(sourceType ?? SourceType, dynamicProjectedType == true ? null : projectedType ?? ProjectedType)
+            return new DynamicProjectionConfiguration(sourceType ?? SourceType, dynamicProjectedType ? null : projectedType ?? ProjectedType)
             {
                 Members = Members.ToList(),
+                ProjectedTypeName = dynamicTypeName,
                 CtorParameters = CtorParameters.ToList(),
                 MemberNameMatchStrategy = MemberNameMatchStrategy,
                 Ctor = Ctor

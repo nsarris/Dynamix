@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Dynamix.Reflection;
 
@@ -18,7 +19,13 @@ namespace Dynamix
         private const string defaultInstanceModuleName = "DynamicTypeBuilderModule";
 
         static Lazy<DynamicTypeBuilder> instance = new Lazy<DynamicTypeBuilder>(() => new DynamicTypeBuilder(defaultInstanceAssemblyName, defaultInstanceModuleName));
+        static long autoIncrement;
         public static DynamicTypeBuilder Instance => instance.Value;
+
+        private static long NextIncrement()
+        {
+            return ++autoIncrement;
+        }
 
         #endregion
 
@@ -27,7 +34,6 @@ namespace Dynamix
         readonly Lazy<ModuleBuilder> moduleBuilder;
         readonly Dictionary<string, Type> typeCache = new Dictionary<string, Type>();
 
-        int id;
         readonly object olock = new object();
 
         #endregion
@@ -56,6 +62,9 @@ namespace Dynamix
         {
             lock (olock)
             {
+                if (descriptor.Name.IsNullOrEmpty())
+                    descriptor.Name = "DynamicType_" + NextIncrement();
+
                 if (!typeCache.TryGetValue(descriptor.Name, out Type type))
                 {
                     type = CreateTypeInternal(descriptor);
@@ -96,11 +105,8 @@ namespace Dynamix
 
         private Type CreateTypeInternal(DynamicTypeDescriptor typeDescriptor)
         {
-            var tb =
-             !typeDescriptor.Name.IsNullOrWhiteSpace() ?
-                GetTypeBuilder(typeDescriptor.Name, typeDescriptor.BaseType) :
-                GetTypeBuilder("DynamicType_" + (++id).ToString(), typeDescriptor.BaseType);
-
+            var tb = GetTypeBuilder(typeDescriptor.Name, typeDescriptor.BaseType);
+             
             foreach (var iface in typeDescriptor.Interfaces)
                 tb.AddInterfaceImplementation(iface);
 

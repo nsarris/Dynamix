@@ -10,7 +10,6 @@ namespace Dynamix.Expressions.PredicateBuilder
     {
         private static readonly string defaultItParameterName = string.Empty;
 
-        public Type ItParameterType  => ItParameterExpression.Type;
         public PredicateBuilderConfiguration DefaultConfiguration { get; }
         public IReadOnlyDictionary<string, PredicateBuilderConfiguration> Configurations { get; }
         public ParameterExpression ItParameterExpression { get; }

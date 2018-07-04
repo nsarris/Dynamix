@@ -59,6 +59,7 @@
     <Compile Include="DynamicProjection\CompiledDynamicProjectionConfiguration.cs" />
     <Compile Include="DynamicProjection\DynamicProjectionCompiler.cs" />
     <Compile Include="DynamicProjection\DynamicProjectionConfiguration.cs" />
+    <Compile Include="DynamicProjection\DynamicProjectionPredicateVisitor.cs" />
     <Compile Include="DynamicProjection\IMemberNameMatchStrategy.cs" />
     <Compile Include="DynamicProjection\TargetBuilders.cs" />
     <Compile Include="DynamicProjection\MemberTargetConfiguration.cs" />
@@ -91,6 +92,10 @@
     <Compile Include="DynamicType\MemberAccessModifier.cs" />
     <Compile Include="Expressions\Builders\ConstructorInvokerLambdaBuilder.cs" />
     <Compile Include="Expressions\Builders\MethodInvokerLambdaBuilder.cs" />
+    <Compile Include="Expressions\EqualityComparison\EqualityExpressionVisitor.cs" />
+    <Compile Include="Expressions\EqualityComparison\ExpressionComparisonVisitor.cs" />
+    <Compile Include="Expressions\EqualityComparison\ExpressionEqualityComparer.cs" />
+    <Compile Include="Expressions\EqualityComparison\ExpressionHashCodeCalculationVisitor.cs" />
     <Compile Include="Expressions\PredicateBuilder\ComplexNode.cs" />
     <Compile Include="Expressions\PredicateBuilder\ExpressionNodeVisitor.cs" />
     <Compile Include="Expressions\PredicateBuilder\ExpressionNodeVisitorInput.cs" />
@@ -103,6 +108,7 @@
     <Compile Include="Expressions\PredicateBuilder\PredicateDataType.cs" />
     <Compile Include="Expressions\PredicateBuilder\PredicateTreeBuilder.cs" />
     <Compile Include="Expressions\PredicateBuilder\UnaryNode.cs" />
+    <Compile Include="Expressions\EqualityComparison\ExpressionEnumaration.cs" />
     <Compile Include="Expressions\Visitors\ExpressionForEachOfTypeVisitor.cs" />
     <Compile Include="Helpers\EnumerableExtensions.cs" />
     <Compile Include="Helpers\EnumParser.cs" />
@@ -170,6 +176,7 @@
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

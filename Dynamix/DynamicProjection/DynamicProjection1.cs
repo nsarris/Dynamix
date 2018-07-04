@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Dynamix.Expressions.PredicateBuilder;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -108,36 +109,67 @@ namespace Dynamix.DynamicProjection
         }
     }
 
-
     public sealed class DynamicProjection
     {
         readonly DynamicProjectionConfiguration configuration;
         readonly DynamicProjectionCompiler compiler;
-        CompiledDynamicProjectionConfiguration compiledConfiguration;
-        
+        internal CompiledDynamicProjectionConfiguration CompiledConfiguration { get; }
+
         internal DynamicProjection(DynamicProjectionConfiguration configuration)
         {
             this.configuration = configuration;
             compiler = new DynamicProjectionCompiler(configuration);
 
-            Compile();
-        }
-
-        internal void Compile()
-        {
-            compiledConfiguration = compiler.GetCompiledConfiguration();
+            //Compile();
+            CompiledConfiguration = compiler.GetCompiledConfiguration();
         }
 
 
         public DynamicQueryable BuildQuery(
             IQueryable queryable,
-            IEnumerable<string> selectedColumns = null
+            IEnumerable<string> columns = null,
+            NodeBase filter = null,
+            IEnumerable<OrderItem> sort = null
             )
         {
-            var d = new DynamicQueryable(queryable)
-                .Select(compiler.BuildSelector(selectedColumns));
+            var query = new DynamicQueryable(queryable);
 
-            return d;
+            var predicates = filter != null ? new DynamicProjectionPredicateVisitor(this).VisitLambda(filter, null, null) : null;
+            var orderItems = 
+                (sort ?? Enumerable.Empty<OrderItem>())
+                .Select(x => new
+                {
+                    SourceExpression = CompiledConfiguration.CompiledMembers.TryGetValue(x.Expression, out var memberMap) 
+                                ? Expression.Lambda(memberMap.Source.SourceExpression, CompiledConfiguration.It)
+                                : null,
+                    OrderItem = x
+                })
+                .ToList();
+
+            if (predicates?.SourcePredicate != null)
+                query = query.Where(predicates.SourcePredicate);
+
+            foreach(var item in orderItems.Where(x => x.SourceExpression != null))
+                query = item.OrderItem.IsDescending ? query.OrderByDescending(item.SourceExpression) : query.OrderBy(item.SourceExpression);
+                    
+            query = query.Select(compiler.BuildSelector(columns));
+
+            if (predicates?.ProjectionPredicate != null)
+                query = query.Where(predicates.ProjectionPredicate);
+
+            query = query.OrderBy(orderItems.Where(x => x.SourceExpression == null).Select(x => x.OrderItem));
+            
+            return query;
+        }
+
+        public DynamicQueryable BuildQuery(
+            IQueryable queryable,
+            IEnumerable<string> columns = null,
+            NodeBase filter = null,
+            string sort = null
+            )
+        {
+            return BuildQuery(queryable, columns, filter, OrderByExpressionParser.Parse(sort));
         }
     }
 }

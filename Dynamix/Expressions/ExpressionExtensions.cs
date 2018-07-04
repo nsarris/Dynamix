@@ -90,5 +90,15 @@ namespace Dynamix.Expressions.Extensions
                 Expression.NotEqual(expression, ExpressionEx.Constants.Null) :
                 Expression.Equal(expression, ExpressionEx.Constants.Null);
         }
+
+        public static bool CheckEquals(this Expression expression,Expression other)
+        {
+            return ExpressionEqualityComparer.Instance.Equals(other);
+        }
+
+        public static int CalculateHashCode(this Expression expression)
+        {
+            return ExpressionEqualityComparer.Instance.GetHashCode(expression);
+        }
     }
 }

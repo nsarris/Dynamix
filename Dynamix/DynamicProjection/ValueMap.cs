@@ -6,7 +6,7 @@ namespace Dynamix.DynamicProjection
     public enum UnmappedValueType
     {
         TypeDefault,
-        SetValue,
+        Constant,
         OriginalValue
     }
 

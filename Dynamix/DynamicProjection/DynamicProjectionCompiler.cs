@@ -279,7 +279,7 @@ namespace Dynamix.DynamicProjection
             var defaultValue = Expression.Constant(
                 valueMap.UnmappedValueType == UnmappedValueType.TypeDefault ?
                     targetType.IsNullable() ? null : targetType.DefaultOf() :
-                valueMap.UnmappedValueType == UnmappedValueType.SetValue ?
+                valueMap.UnmappedValueType == UnmappedValueType.Constant ?
                     valueMap.UnmappedValue :
                 //else
                 sourceExpression);

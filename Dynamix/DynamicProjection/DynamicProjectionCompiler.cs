@@ -232,9 +232,9 @@ namespace Dynamix.DynamicProjection
                 case StringProjectionSource stringProjectionSource:
                     return MemberExpressionBuilder.GetExpression(itParameter, stringProjectionSource.SourceExpression);
                 case ExpressionProjectionSource expressionProjectionSource:
-                    return LambdaParameterReplacer.ReplaceOfType(expressionProjectionSource.SourceExpression, itParameter.Type, itParameter);
+                    return Expressions.ExpressionParameterReplacer.Replace(expressionProjectionSource.SourceExpression, itParameter.Type, itParameter);
                 case LambdaExpressionProjectionSource lambdaExpressionProjectionSource:
-                    return LambdaParameterReplacer.Replace(lambdaExpressionProjectionSource.SourceExpression, lambdaExpressionProjectionSource.SourceExpression.Parameters.First(), itParameter);
+                    return Expressions.ExpressionParameterReplacer.Replace(lambdaExpressionProjectionSource.SourceExpression, lambdaExpressionProjectionSource.SourceExpression.Parameters.First(), itParameter);
                 case ConstantProjectionSource constantProjectionSource:
                     return Expression.Constant(constantProjectionSource.Value);
             }

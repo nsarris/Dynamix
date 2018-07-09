@@ -1,198 +1,154 @@
 ﻿using Dynamix.Reflection;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Dynamix
+namespace Dynamix.Helpers
 {
-    public static class EnumParser
+    public class EnumParser
     {
-        readonly static ConcurrentDictionary<Type, IEnumParser> parsers
-            = new ConcurrentDictionary<Type, IEnumParser>();
-            
-        private static IEnumParser GetParser(Type type)
+        #region Default Instance Configuration
+
+        public static StringComparer DefaultStringComparer { get; set; } = StringComparer.InvariantCulture;
+        public static Func<string, bool> DefaultNullComparer { get; set; } = IsNull;
+
+        #endregion
+
+        #region Singletons
+
+        public static readonly SystemEnumParser System = new SystemEnumParser();
+        public static readonly EnumParser Default = new EnumParser();
+        public static readonly EnumParser DefaultIgnoreCase = new EnumParser(StringComparer.InvariantCultureIgnoreCase);
+
+        #endregion
+
+        #region Fields
+
+        private readonly StringComparer stringComparer = DefaultStringComparer;
+        private readonly Func<string, bool> nullComparer = IsNull;
+
+        #endregion
+
+        #region Ctor
+
+        public EnumParser(StringComparer stringComparer = null, Func<string, bool> nullComparer = null)
         {
-            var effectiveType = Nullable.GetUnderlyingType(type) ?? type;
-
-            if (!parsers.TryGetValue(effectiveType, out var parser))
-            {
-                parser = (IEnumParser)Activator.CreateInstance(typeof(EnumParser<>).MakeGenericTypeCached(effectiveType));
-                parsers.TryAdd(effectiveType, parser);
-            }
-
-            return parser;
+            this.stringComparer = stringComparer ?? DefaultStringComparer;
+            this.nullComparer = nullComparer ?? DefaultNullComparer;
         }
 
-        private static bool IsNullable<T>()
+        public EnumParser(StringComparer stringComparer)
         {
-            return Nullable.GetUnderlyingType(typeof(T)) != null;
+            this.stringComparer = stringComparer ?? DefaultStringComparer;
         }
 
-        private static bool IsNullable(Type t)
+        public EnumParser(Func<string, bool> nullComparer)
         {
-            return Nullable.GetUnderlyingType(t) != null;
+            this.nullComparer = nullComparer ?? DefaultNullComparer;
         }
 
+        #endregion  
 
-        public static T Parse<T>(string s)
+        #region Public API
+
+        public T Parse<T>(object s)
         {
-            var parser = GetParser(typeof(T));
-            return (T)(IsNullable<T>() ?
-                parser.ParseNullable(s) :
-                parser.Parse(s));
+            return (T)Parse(typeof(T), s);
         }
-        public static T Parse<T>(string s, bool ignoreCase)
+        
+        public bool TryParse<T>(object s, out T result)
         {
-            var parser = GetParser(typeof(T));
-            return (T)(IsNullable<T>() ?
-                parser.ParseNullable(s, ignoreCase) :
-                parser.Parse(s, ignoreCase));
-        }
-      
-        public static bool TryParse<T>(string s, out T result)
-        {
-            var parser = GetParser(typeof(T));
-            var r = (IsNullable<T>() ?
-                parser.TryParseNullable(s, out object tmp) :
-                parser.TryParse(s, out tmp));
+            var r = TryParse(typeof(T), s, out var tmp);
             result = (T)tmp;
             return r;
         }
-        public static bool TryParse<T>(string s, bool ignoreCase, out T result)
+        
+        public object Parse(Type type, object s)
         {
-            var parser = GetParser(typeof(T));
-            var r = (IsNullable<T>() ?
-                parser.TryParseNullable(s, ignoreCase, out object tmp) :
-                parser.TryParse(s, ignoreCase, out tmp));
-            result = (T)tmp;
-            return r;
+            var r = TryParse(type, s, stringComparer, nullComparer, out var tmp);
+            if (!r) throw GetOverflowException(s , type.Name);
+            return tmp;
+        }
+        
+        public bool TryParse(Type type, object s, out object result)
+        {
+            return TryParse(type, s, stringComparer, nullComparer, out result);
+        }
+        
+
+        #endregion
+
+        #region Private API
+
+        private static bool TryParse(Type type, object value, StringComparer stringComparer, Func<string, bool> nullComparer, out object result)
+        {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+
+            if (!type.IsEnumOrNullableEnum(out var underlyingType))
+                throw new ArgumentException("Given type is not an enum", nameof(type));
+
+            result = type.DefaultOf();
+
+            if (value == null)
+                return type.IsNullable();
+            else if (value is string s)
+                return ParseString(type, s, stringComparer, nullComparer, out result);
+            else if (value.GetType().IsNumericOrNullableNumeric()
+                || value.GetType().IsEnumOrNullableEnum())
+                return TryParseNumericOrEnum(type, value, out result);
+            else
+                return ParseString(type, value.ToString(), stringComparer, nullComparer, out result);
         }
 
-        public static object Parse(Type type, string s)
+        private static bool ParseString(Type type, string value, StringComparer stringComparer, Func<string, bool> nullComparer, out object result)
         {
-            var parser = GetParser(type);
-            return IsNullable(type) ?
-                parser.ParseNullable(s) :
-                parser.Parse(s);
-        }
-        public static object Parse(Type type, string s, bool ignoreCase)
-        {
-            var parser = GetParser(type);
-            return IsNullable(type) ?
-                parser.ParseNullable(s, ignoreCase) :
-                parser.Parse(s, ignoreCase);
-        }
-       
+            result = type.DefaultOf();
+            var enumType = Nullable.GetUnderlyingType(type) ?? type;
+            var underlyingType = Enum.GetUnderlyingType(enumType);
 
-        public static bool TryParse(Type type, string s, out object result)
-        {
-            var parser = GetParser(type);
-            return IsNullable(type) ?
-                parser.TryParseNullable(s, out result) :
-                parser.TryParse(s, out result);
-        }
-        public static bool TryParse(Type type, string s, bool ignoreCase, out object result)
-        {
-            var parser = GetParser(type);
-            return IsNullable(type) ?
-                parser.TryParseNullable(s, ignoreCase, out result) :
-                parser.TryParse(s, ignoreCase, out result);
-        }
-    }
-    internal interface IEnumParser
-    {
-        object Parse(string s);
-        object Parse(string s, bool ignoreCase);
+            if (nullComparer(value))
+                return type.IsNullable();
 
-        bool TryParse(string s, out object result);
-        bool TryParse(string s, bool ignoreCase, out object result);
+            foreach (var v in Enum.GetValues(enumType))
+                if (stringComparer.Compare(value, v.ToString()) == 0
+                    || stringComparer.Compare(value, Convert.ChangeType(v, underlyingType).ToString()) == 0)
+                {
+                    result = v;
+                    return true;
+                }
 
-        object ParseNullable(string s);
-        object ParseNullable(string s, bool ignoreCase);
-
-        bool TryParseNullable(string s, out object result);
-        bool TryParseNullable(string s, bool ignoreCase, out object result);
-    }
-
-    internal class EnumParser<T> : IEnumParser
-        where T : struct, Enum
-    {
-        public T Parse(string s) => (T)Enum.Parse(typeof(T), s);
-        public T Parse(string s, bool ignoreCase) => (T)Enum.Parse(typeof(T), s, ignoreCase);
-
-        public bool TryParse(string s, out T result) => Enum.TryParse<T>(s, out result);
-        public bool TryParse(string s, bool ignoreCase, out T result) => Enum.TryParse<T>(s, ignoreCase, out result);
-
-
-        public bool TryParse(string s, out object result)
-        {
-            var check = TryParse(s, out T t);
-            result = t;
-            return check;
+            return false;
         }
 
-        public bool TryParse(string s, bool ignoreCase, out object result)
+        private static bool TryParseNumericOrEnum(Type type, object value, out object result)
         {
-            var check = TryParse(s, out T t);
-            result = t;
-            return check;
+            result = type.DefaultOf();
+            var enumType = Nullable.GetUnderlyingType(type) ?? type;
+
+            foreach (var v in Enum.GetValues(enumType))
+                if (Decimal.Compare(Convert.ToDecimal(value), Convert.ToDecimal(v)) == 0)
+                {
+                    result = v;
+                    return true;
+                }
+
+            return false;
         }
 
-        object IEnumParser.Parse(string s) => Parse(s);
-        object IEnumParser.Parse(string s, bool ignoreCase) => Parse(s, ignoreCase);
-
-
-        private bool CheckNull(string s)
+        private static bool IsNull(string s)
         {
-            return string.IsNullOrEmpty(s)
-                || StringComparer.OrdinalIgnoreCase.Compare(s, "null") == 0;
+            return s.IsNullOrWhiteSpace()
+                || StringComparer.InvariantCultureIgnoreCase.Compare(s, "null") == 0;
         }
 
-        public T? ParseNullable(string s)
+        private static Exception GetOverflowException(object value, string enumTypeName)
         {
-            if (CheckNull(s)) return null;
-            return (T?)Parse(s);
-        }
-        public T? ParseNullable(string s, bool ignoreCase)
-        {
-            if (CheckNull(s)) return null;
-            return (T?)Parse(s, ignoreCase);
+            return new OverflowException($"Value '{value}' is outside the range of the underlying type of enumType {enumTypeName}");
         }
 
-        public bool TryParseNullable(string s, out T? result)
-        {
-            var r = TryParse(s, out T tmp);
-            result = (T?)tmp;
-            return r;
-        }
-        public bool TryParseNullable(string s, bool ignoreCase, out T? result)
-        {
-            var r = TryParse(s, ignoreCase, out T tmp);
-            result = (T?)tmp;
-            return r;
-        }
-
-
-        object IEnumParser.ParseNullable(string s) => ParseNullable(s);
-        object IEnumParser.ParseNullable(string s, bool ignoreCase) => ParseNullable(s, ignoreCase);
-
-        public bool TryParseNullable(string s, out object result)
-        {
-            var r = TryParse(s, out T tmp);
-            result = (T?)tmp;
-            return r;
-        }
-
-        public bool TryParseNullable(string s, bool ignoreCase, out object result)
-        {
-            var r = TryParse(s, ignoreCase, out T tmp);
-            result = (T?)tmp;
-            return r;
-        }
+        #endregion
     }
 }
-

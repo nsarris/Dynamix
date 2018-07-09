@@ -53,9 +53,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DynamicProjection\DefaultMemberNameMatchStrategy.cs" />
-    <Compile Include="DynamicProjection\DynamicProjection1.cs" />
-    <Compile Include="DynamicProjection\CtorParamTargetConfiguration.cs" />
     <Compile Include="DynamicProjection\DynamicProjection.cs" />
+    <Compile Include="DynamicProjection\CtorParamTargetConfiguration.cs" />
+    <Compile Include="DynamicProjection\DynamicProjection2.cs" />
     <Compile Include="DynamicProjection\CompiledDynamicProjectionConfiguration.cs" />
     <Compile Include="DynamicProjection\DynamicProjectionCompiler.cs" />
     <Compile Include="DynamicProjection\DynamicProjectionConfiguration.cs" />
@@ -115,6 +115,7 @@
     <Compile Include="Expressions\Visitors\ParameterReplacerVisitor.cs" />
     <Compile Include="Helpers\EnumerableExtensions.cs" />
     <Compile Include="Helpers\EnumParser.cs" />
+    <Compile Include="Helpers\SystemEnumParser.cs" />
     <Compile Include="Helpers\NumericValueParser.cs" />
     <Compile Include="Helpers\NumericTypeHelper.cs" />
     <Compile Include="Helpers\StringExtensions.cs" />

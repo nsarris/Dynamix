@@ -57,7 +57,7 @@ namespace Dynamix
                     var v = (T)Convert.ChangeType(item, typeof(T));
                     r.Add(v);
                 }
-                catch (Exception e)
+                catch
                 {
                     if (!ignoreIvalidValues)
                         throw;

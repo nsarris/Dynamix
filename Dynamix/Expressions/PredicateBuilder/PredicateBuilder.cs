@@ -100,7 +100,7 @@ namespace Dynamix.Expressions.PredicateBuilder
                     PredicateDataType.TimeSpan :
                 type.IsEnumOrNullableEnum(out enumUnderlyingType) ?
                     PredicateDataType.Enum :
-                type.IsNumericOrNullable(out numericTypeDescriptor) ?
+                type.IsNumericOrNullableNumeric(out numericTypeDescriptor) ?
                     PredicateDataType.Number :
                 type.IsEnumerable(out enumerableTypeDescriptor) ?
                     PredicateDataType.Collection :
@@ -257,7 +257,7 @@ namespace Dynamix.Expressions.PredicateBuilder
                                 NumericTypeHelper.GetCommonTypeForConvertion(comparableType, EffectiveType, Enum.GetUnderlyingType(valueType));
                             return;
                         }
-                        if (valueType.IsNumericOrNullable())
+                        if (valueType.IsNumericOrNullableNumeric())
                         {
                             comparableType = NumericTypeHelper.GetCommonTypeForConvertion(comparableType, EffectiveType, valueType);
                             return;
@@ -269,7 +269,7 @@ namespace Dynamix.Expressions.PredicateBuilder
                             comparableType = NumericTypeHelper.GetCommonTypeForConvertion(comparableType, enumUnderlyingType, Enum.GetUnderlyingType(valueType));
                             return;
                         }
-                        if (valueType.IsNumericOrNullable())
+                        if (valueType.IsNumericOrNullableNumeric())
                         {
                             comparableType = NumericTypeHelper.GetCommonTypeForConvertion(comparableType, enumUnderlyingType, valueType);
                             return;
@@ -540,7 +540,7 @@ namespace Dynamix.Expressions.PredicateBuilder
 
                             return BuildIsContainedInValuesExpression(Expression, (IEnumerable)Value);
                         }
-                        else if (elementType.IsEnumOrNullableEnum() || elementType.IsNumericOrNullable())
+                        else if (elementType.IsEnumOrNullableEnum() || elementType.IsNumericOrNullableNumeric())
                         {
                             if (DataType != PredicateDataType.Number && DataType != PredicateDataType.Enum)
                                 throw new InvalidOperationException($"An array of {elementType.Name} cannot be compared against a {DataType}");

@@ -89,11 +89,11 @@ namespace Dynamix.DynamicProjection
 
         private CompiledDynamicProjectionConfiguration Compile()
         {
-            var compiledMembers = configuration.Members.Select(x => (Configuration: x, CompiledMember: CompileMember(x))).ToList();
-            var compiledCtorParams = configuration.CtorParameters.Select(x => (Configuration: x, CompiledCtorParam: CompileCtorParameter(x))).ToList();
-
             configuration.ProjectedType =
                 configuration.ProjectedType ?? BuildProjectedType();
+
+            var compiledMembers = configuration.Members.Select(x => (Configuration: x, CompiledMember: CompileMember(x))).ToList();
+            var compiledCtorParams = configuration.CtorParameters.Select(x => (Configuration: x, CompiledCtorParam: CompileCtorParameter(x))).ToList();
 
             configuration.Ctor = configuration.Ctor ?? 
                 configuration.ProjectedType
@@ -161,7 +161,20 @@ namespace Dynamix.DynamicProjection
             foreach (var member in configuration.Members)
                 typeBuilder.AddProperty(
                     member.ProjectedMember.GetName(),
-                    member.AsType ?? member.ProjectedMember.GetMemberType() ?? GetExpression(member.Source, configuration.It)?.Type ?? typeof(object), 
+                        //overriden type
+                        member.AsType ??
+                        //specified member type
+                        member.ProjectedMember.GetMemberType() ?? 
+                        //auto
+                        (member.Source == null ?
+                        GetMemberInfoType(
+                            configuration.SourceType.GetMember(
+                                GetSourceMemberNameFromMemberName(
+                                    member.ProjectedMember.GetName())).First()) :
+                        //expression
+                         GetExpression(member.Source, configuration.It)?.Type) ?? 
+                        //fallback
+                        typeof(object), 
                     config =>
                 {
                     if (member.ProjectionTarget == ProjectionTarget.CtorParameter)
@@ -182,7 +195,7 @@ namespace Dynamix.DynamicProjection
             if (name != null)
                 return name;
 
-            throw new InvalidOperationException($"Cannot infer member from constructor parameter {parameterName} for source type {configuration.SourceType.Name}");
+            throw new InvalidOperationException($"Cannot infer source member from constructor parameter {parameterName} for source type {configuration.SourceType.Name}");
         }
 
         private string GetSourceMemberNameFromMemberName(string memberName)
@@ -191,7 +204,7 @@ namespace Dynamix.DynamicProjection
             if (name != null)
                 return name;
 
-            throw new InvalidOperationException($"Cannot infer member from project member {memberName} for source type {configuration.SourceType.Name}");
+            throw new InvalidOperationException($"Cannot infer source member from projected member {memberName} for source type {configuration.SourceType.Name}");
         }
 
         private ParameterInfo GetCtorParameterFromMemberName(string memberName)

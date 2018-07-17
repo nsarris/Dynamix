@@ -19,7 +19,6 @@ namespace Dynamix.DynamicProjection
             public string CtorParameterName { get; set; }
             public Type CtorParameterType { get; set; }
             public ProjectionTarget ProjectionTarget { get; set; }
-            //public ProjectedMember ProjectedMember { get; set; }
         }
 
         internal class CompiledSourceConfiguration
@@ -46,8 +45,6 @@ namespace Dynamix.DynamicProjection
         internal class CompiledCtorParamConfiguration
         {
             public ParameterInfo ParameterInfo { get; set; }
-            //public string ParameterName { get; set; }
-            //public Type ParameterType { get; set; }
         }
 
         internal class CompiledSourceConfiguration
@@ -108,21 +105,50 @@ namespace Dynamix.DynamicProjection
             this.configuration = configuration;
             compiler = new DynamicProjectionCompiler(configuration);
 
-            //Compile();
             CompiledConfiguration = compiler.GetCompiledConfiguration();
         }
-
 
         public DynamicQueryable BuildQuery(
             IQueryable queryable,
             IEnumerable<string> columns = null,
-            NodeBase filter = null,
-            IEnumerable<OrderItem> sort = null
+            NodeBase filter = null)
+        {
+            return BuildQuery(queryable, columns, filter, (IEnumerable<OrderItem>)null);
+        }
+
+        public DynamicQueryable BuildQuery(
+            IQueryable queryable,
+            IEnumerable<string> columns,
+            NodeBase filter,
+            IEnumerable<OrderItem> sort
             )
         {
             var query = new DynamicQueryable(queryable);
 
-            var predicates = filter != null ? new DynamicProjectionPredicateVisitor(this).VisitLambda(filter, null, null) : null;
+            //var predicateTarget =
+            //    filter != null ?
+            //    new DynamicProjectionPredicateTargetVisitor(this).Visit(filter, DynamicProjectionPredicateTarget.Source) :
+            //    DynamicProjectionPredicateTarget.Source;
+
+            var predicateMembers =
+                    filter != null ?
+                    new DynamicProjectionPredicateMemberVisitor().Visit(filter) :
+                    new List<string>();
+
+            var predicateTarget =
+                predicateMembers.All(x => this.CompiledConfiguration.CompiledMembers.ContainsKey(x)) ?
+                DynamicProjectionPredicateTarget.Source : DynamicProjectionPredicateTarget.Projection;
+
+
+            var predicate = 
+                filter != null ? 
+                    predicateTarget == DynamicProjectionPredicateTarget.Source ?
+                        new DynamicProjectionPredicateVisitor(this)
+                            .VisitLambda(filter) :
+                        new ExpressionNodeVisitor()
+                            .VisitLambda(filter, configuration.ProjectedType) :
+                null;
+
             var orderItems = 
                 (sort ?? Enumerable.Empty<OrderItem>())
                 .Select(x => new
@@ -134,16 +160,20 @@ namespace Dynamix.DynamicProjection
                 })
                 .ToList();
 
-            if (predicates?.SourcePredicate != null)
-                query = query.Where(predicates.SourcePredicate);
+            if (predicate != null && predicateTarget == DynamicProjectionPredicateTarget.Source)
+                query = query.Where(predicate);
 
             foreach(var item in orderItems.Where(x => x.SourceExpression != null))
                 query = item.OrderItem.IsDescending ? query.OrderByDescending(item.SourceExpression) : query.OrderBy(item.SourceExpression);
-                    
-            query = query.Select(compiler.BuildSelector(columns));
 
-            if (predicates?.ProjectionPredicate != null)
-                query = query.Where(predicates.ProjectionPredicate);
+            var selectorColumns = 
+                predicateTarget == DynamicProjectionPredicateTarget.Source ?
+                columns : columns.Concat(predicateMembers).Distinct();
+
+            query = query.Select(compiler.BuildSelector(selectorColumns));
+
+            if (predicate != null && predicateTarget == DynamicProjectionPredicateTarget.Projection)
+                query = query.Where(predicate);
 
             query = query.OrderBy(orderItems.Where(x => x.SourceExpression == null).Select(x => x.OrderItem));
             
@@ -152,9 +182,9 @@ namespace Dynamix.DynamicProjection
 
         public DynamicQueryable BuildQuery(
             IQueryable queryable,
-            IEnumerable<string> columns = null,
-            NodeBase filter = null,
-            string sort = null
+            IEnumerable<string> columns,
+            NodeBase filter,
+            string sort
             )
         {
             return BuildQuery(queryable, columns, filter, OrderByExpressionParser.Parse(sort));

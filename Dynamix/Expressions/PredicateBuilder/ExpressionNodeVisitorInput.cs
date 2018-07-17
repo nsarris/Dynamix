@@ -21,7 +21,7 @@ namespace Dynamix.Expressions.PredicateBuilder
         }
 
         public ExpressionNodeVisitorInput(Type itParameterType, PredicateBuilderConfiguration defaultConfiguration)
-            : this(itParameterType, defaultConfiguration.ItParameterName, defaultConfiguration, null)
+            : this(itParameterType, defaultConfiguration?.ItParameterName, defaultConfiguration, null)
         {
 
         }
@@ -33,7 +33,7 @@ namespace Dynamix.Expressions.PredicateBuilder
         }
 
         public ExpressionNodeVisitorInput(Type itParameterType, PredicateBuilderConfiguration defaultConfiguration, IDictionary<string, PredicateBuilderConfiguration> configurations)
-            :this(itParameterType, defaultConfiguration.ItParameterName, defaultConfiguration, configurations)
+            :this(itParameterType, defaultConfiguration?.ItParameterName, defaultConfiguration, configurations)
         {
 
         }
@@ -46,8 +46,14 @@ namespace Dynamix.Expressions.PredicateBuilder
 
 
         public ExpressionNodeVisitorInput(Type itParameterType, string itParameterName, PredicateBuilderConfiguration defaultConfiguration, IDictionary<string, PredicateBuilderConfiguration> configurations = null)
+            :this(Expression.Parameter(itParameterType, itParameterName ?? ""), defaultConfiguration, configurations)
         {
-            ItParameterExpression = Expression.Parameter(itParameterType, itParameterName);
+            
+        }
+
+        public ExpressionNodeVisitorInput(ParameterExpression itParameterExpression, PredicateBuilderConfiguration defaultConfiguration = null, IDictionary<string, PredicateBuilderConfiguration> configurations = null)
+        {
+            ItParameterExpression = itParameterExpression;
             DefaultConfiguration = defaultConfiguration ?? PredicateBuilderConfiguration.Default;
 
             if (configurations != null)

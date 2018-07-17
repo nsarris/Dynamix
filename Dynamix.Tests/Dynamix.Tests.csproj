@@ -45,6 +45,7 @@
   <ItemGroup>
     <Compile Include="DynamicType\DynamicTypeTests.cs" />
     <Compile Include="Expressions\MemberInitExpressionParserTests.cs" />
+    <Compile Include="Expressions\PredicateBuilder\PredicateTreeTests.cs" />
     <Compile Include="Expressions\VisitorTests.cs" />
     <Compile Include="Helpers\EnumParserTests.cs" />
     <Compile Include="Reflection\MethodInvokerBuilderTests.cs" />

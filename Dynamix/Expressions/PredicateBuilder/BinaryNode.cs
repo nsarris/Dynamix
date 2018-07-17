@@ -6,9 +6,9 @@ using System.Web;
 
 namespace Dynamix.Expressions.PredicateBuilder
 {
-    public class UnaryNode : NodeBase
+    public class BinaryNode : NodeBase
     {
-        public UnaryNode(string expression, ExpressionOperator expressionOperator, object value, LogicalOperator logicalOperator)
+        public BinaryNode(string expression, ExpressionOperator expressionOperator, object value, LogicalOperator logicalOperator)
             :base(logicalOperator)
         {
             if (string.IsNullOrEmpty(expression))

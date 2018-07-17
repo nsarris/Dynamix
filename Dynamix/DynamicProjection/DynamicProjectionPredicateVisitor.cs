@@ -77,12 +77,12 @@ namespace Dynamix.DynamicProjection
             return new DynamicProjectionPredicate(sourceExpression, projectionExpression);
         }
 
-        DynamicProjectionPredicate INodeVisitor<DynamicProjectionPredicate, ExpressionNodeVisitorInput>.VisitUnaryNode(UnaryNode node, ExpressionNodeVisitorInput input)
+        DynamicProjectionPredicate INodeVisitor<DynamicProjectionPredicate, ExpressionNodeVisitorInput>.VisitUnaryNode(BinaryNode node, ExpressionNodeVisitorInput input)
         {
             return VisitUnaryNode(node, input);
         }
 
-        protected DynamicProjectionPredicate VisitUnaryNode(UnaryNode node, ExpressionNodeVisitorInput input)
+        protected DynamicProjectionPredicate VisitUnaryNode(BinaryNode node, ExpressionNodeVisitorInput input)
         {
             if (!input.Configurations.TryGetValue(node.Expression, out var configuration))
                 configuration = input.DefaultConfiguration;
@@ -90,7 +90,7 @@ namespace Dynamix.DynamicProjection
             return BuildUnaryNodeExpression(node, input.ItParameterExpression, configuration);
         }
 
-        protected virtual DynamicProjectionPredicate BuildUnaryNodeExpression(UnaryNode node, ParameterExpression itParameter, PredicateBuilderConfiguration nodeConfiguration)
+        protected virtual DynamicProjectionPredicate BuildUnaryNodeExpression(BinaryNode node, ParameterExpression itParameter, PredicateBuilderConfiguration nodeConfiguration)
         {
             if (dynamicProjection.CompiledConfiguration.CompiledMembers.TryGetValue(node.Expression, out var memberMap))
             {

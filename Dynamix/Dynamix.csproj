@@ -107,7 +107,7 @@
     <Compile Include="Expressions\PredicateBuilder\PredicateBuilderConfiguration.cs" />
     <Compile Include="Expressions\PredicateBuilder\PredicateDataType.cs" />
     <Compile Include="Expressions\PredicateBuilder\PredicateTreeBuilder.cs" />
-    <Compile Include="Expressions\PredicateBuilder\UnaryNode.cs" />
+    <Compile Include="Expressions\PredicateBuilder\BinaryNode.cs" />
     <Compile Include="Expressions\EqualityComparison\ExpressionEnumaration.cs" />
     <Compile Include="Expressions\Visitors\ExpressionForEachOfTypeVisitor.cs" />
     <Compile Include="Expressions\Visitors\ParameterReplacerOfNameVisitor.cs" />

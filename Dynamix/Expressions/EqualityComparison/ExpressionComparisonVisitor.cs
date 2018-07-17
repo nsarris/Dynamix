@@ -274,12 +274,12 @@ namespace Dynamix.Expressions
 
         protected virtual bool CheckTypeOperand(Type a, Type b)
         {
-            return a.Equals(b);
+            return CheckEqual(a, b);
         }
 
         protected virtual bool CheckConstructor(ConstructorInfo a, ConstructorInfo b)
         {
-            return a.Equals(b);
+            return CheckEqual(a, b);
         }
 
         protected virtual bool CheckMethod(
@@ -287,36 +287,58 @@ namespace Dynamix.Expressions
             bool? aIsLifted = null, bool? aIsLiftedToNull = null,
             bool? bIsLifted = null, bool? bIsLiftedToNull = null)
         {
-            return a.Equals(b) && aIsLifted == bIsLifted && aIsLiftedToNull == bIsLiftedToNull;
+            return CheckEqual(a, b, CheckEqualsMethod.ObjectEquals, true)
+                && CheckEqual(aIsLifted, bIsLifted)
+                && CheckEqual(aIsLiftedToNull, bIsLiftedToNull);
         }
 
         protected virtual bool CheckMember(MemberInfo a, MemberInfo b)
         {
-            return a.Equals(b);
+            return CheckEqual(a, b);
         }
 
         protected virtual bool CheckConstant(object a, object b)
         {
-            if (a == null && b == null)
-                return true;
-
-            if (a == null || b == null)
-                return false;
-
-            return CheckEqual(a,b);
+            return CheckEqual(a,b, CheckEqualsMethod.DefaultEqualityComparer, true);
         }
 
         protected virtual bool CheckParameter(
             string aName, Type aType, bool aIsByRef,
             string bName, Type bType, bool bIsByRef)
         {
-            return aType.Equals(bType);
+            return CheckEqual(aType, bType);
         }
 
 
-        private bool CheckEqual<T>(T t, T candidate)
+        private enum CheckEqualsMethod
         {
-            return EqualityComparer<T>.Default.Equals(t, candidate);
+            ObjectEquals,
+            ReferenceEquals,
+            DefaultEqualityComparer
+        }
+
+        private bool CheckEqual<T>(T t, T candidate, CheckEqualsMethod method = CheckEqualsMethod.ObjectEquals, bool checkNull = false)
+        {
+            if (checkNull)
+            {
+                if (t == null && candidate == null)
+                    return true;
+
+                if (t == null || candidate == null)
+                    return false;
+            }
+
+            var result =
+                method == CheckEqualsMethod.DefaultEqualityComparer ?
+                    EqualityComparer<T>.Default.Equals(t, candidate) :
+                method == CheckEqualsMethod.ObjectEquals ?
+                    object.Equals(t, candidate) :
+                    object.ReferenceEquals(t, candidate);
+
+            if (result)
+                return true;
+            else
+                return false;
         }
     }
 }

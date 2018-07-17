@@ -111,7 +111,7 @@ namespace Dynamix.Expressions.Extensions
 
         public static bool CheckEquals(this Expression expression,Expression other)
         {
-            return ExpressionEqualityComparer.Instance.Equals(other);
+            return ExpressionEqualityComparer.Instance.Equals(expression, other);
         }
 
         public static int CalculateHashCode(this Expression expression)

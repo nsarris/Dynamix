@@ -128,12 +128,16 @@ namespace Dynamix.Expressions
 
         public static LambdaExpression GetExpressionSelector(ParameterExpression instanceParameter, string expression, bool safe = false)
         {
-            return System.Linq.Dynamic.DynamicExpression.ParseLambda(new[] { instanceParameter }, null, expression);
+            var hasName = instanceParameter.Name != string.Empty;
+            var itParameter = hasName ? Expression.Parameter(instanceParameter.Type) : instanceParameter;
+            var l = System.Linq.Dynamic.DynamicExpression.ParseLambda(new[] { itParameter }, null, expression);
+            return hasName ? ExpressionParameterReplacer.Replace(l, itParameter, instanceParameter) : l;
         }
 
         public static Expression<Func<T, TProperty>> GetExpressionSelector<T, TProperty>(ParameterExpression instanceParameter, string expression, bool safe = false)
         {
-            return System.Linq.Dynamic.DynamicExpression.ParseLambda<T,TProperty>(expression);
+            var l = System.Linq.Dynamic.DynamicExpression.ParseLambda<T,TProperty>(expression);
+            return ExpressionParameterReplacer.Replace(l, l.Parameters[0], instanceParameter);
         }
 
         public static LambdaExpression GetExpressionSelector(Type type, string expression, bool safe = false)

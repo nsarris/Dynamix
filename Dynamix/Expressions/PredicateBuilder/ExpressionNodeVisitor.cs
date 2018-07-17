@@ -28,12 +28,12 @@ namespace Dynamix.Expressions.PredicateBuilder
             return expression;
         }
 
-        Expression INodeVisitor<Expression, ExpressionNodeVisitorInput>.VisitUnaryNode(UnaryNode node, ExpressionNodeVisitorInput input)
+        Expression INodeVisitor<Expression, ExpressionNodeVisitorInput>.VisitUnaryNode(BinaryNode node, ExpressionNodeVisitorInput input)
         {
             return VisitUnaryNode(node, input);
         }
 
-        protected Expression VisitUnaryNode(UnaryNode node, ExpressionNodeVisitorInput input)
+        protected Expression VisitUnaryNode(BinaryNode node, ExpressionNodeVisitorInput input)
         {
             if (!input.Configurations.TryGetValue(node.Expression, out var configuration))
                 configuration = input.DefaultConfiguration;
@@ -41,7 +41,7 @@ namespace Dynamix.Expressions.PredicateBuilder
             return BuildUnaryNodeExpression(node, input.ItParameterExpression, configuration);
         }
 
-        protected virtual Expression BuildUnaryNodeExpression(UnaryNode node, ParameterExpression itParameter, PredicateBuilderConfiguration nodeConfiguration)
+        protected virtual Expression BuildUnaryNodeExpression(BinaryNode node, ParameterExpression itParameter, PredicateBuilderConfiguration nodeConfiguration)
         {
             return PredicateBuilder.GetPredicateExpression(itParameter, node.Expression, node.Operator, node.Value, nodeConfiguration);
         }

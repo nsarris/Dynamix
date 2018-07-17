@@ -21,7 +21,7 @@ namespace Dynamix.Expressions.PredicateBuilder
         }
 
         public ExpressionNodeVisitorInput(Type itParameterType, PredicateBuilderConfiguration defaultConfiguration)
-            : this(itParameterType, defaultItParameterName, defaultConfiguration, null)
+            : this(itParameterType, defaultConfiguration.ItParameterName, defaultConfiguration, null)
         {
 
         }
@@ -33,7 +33,7 @@ namespace Dynamix.Expressions.PredicateBuilder
         }
 
         public ExpressionNodeVisitorInput(Type itParameterType, PredicateBuilderConfiguration defaultConfiguration, IDictionary<string, PredicateBuilderConfiguration> configurations)
-            :this(itParameterType, defaultItParameterName, defaultConfiguration, configurations)
+            :this(itParameterType, defaultConfiguration.ItParameterName, defaultConfiguration, configurations)
         {
 
         }

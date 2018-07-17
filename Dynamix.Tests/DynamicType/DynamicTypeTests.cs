@@ -26,6 +26,7 @@ namespace Dynamix.Tests.DynamicType
         public void TestDynamicTypeBuilder()
         {
             var descriptor = new DynamicTypeDescriptorBuilder()
+                .HasName("SomeDynamicType")
                 .AddProperty<int>("A", config => config
                     .HasAttribute(() => new TestPropertyAttribute("name", "value"))
                 );

@@ -125,58 +125,71 @@ namespace Dynamix.DynamicProjection
         {
             var query = new DynamicQueryable(queryable);
 
-            //var predicateTarget =
-            //    filter != null ?
-            //    new DynamicProjectionPredicateTargetVisitor(this).Visit(filter, DynamicProjectionPredicateTarget.Source) :
-            //    DynamicProjectionPredicateTarget.Source;
-
+            //Get all predicate expressions 
             var predicateMembers =
                     filter != null ?
                     new DynamicProjectionPredicateMemberVisitor().Visit(filter) :
                     new List<string>();
 
+            //Determine target of predicate (source or projection)
             var predicateTarget =
                 predicateMembers.All(x => this.CompiledConfiguration.CompiledMembers.ContainsKey(x)) ?
-                DynamicProjectionPredicateTarget.Source : DynamicProjectionPredicateTarget.Projection;
+                DynamicProjectionOperationTarget.Source : DynamicProjectionOperationTarget.Projection;
 
-
+            //Build predicate
             var predicate = 
                 filter != null ? 
-                    predicateTarget == DynamicProjectionPredicateTarget.Source ?
+                    predicateTarget == DynamicProjectionOperationTarget.Source ?
                         new DynamicProjectionPredicateVisitor(this)
                             .VisitLambda(filter) :
                         new ExpressionNodeVisitor()
                             .VisitLambda(filter, configuration.ProjectedType) :
                 null;
 
-            var orderItems = 
+            //Determine target of sort (source or projection)
+            var sortTarget =
                 (sort ?? Enumerable.Empty<OrderItem>())
-                .Select(x => new
-                {
-                    SourceExpression = CompiledConfiguration.CompiledMembers.TryGetValue(x.Expression, out var memberMap) 
-                                ? Expression.Lambda(memberMap.Source.SourceExpression, CompiledConfiguration.It)
-                                : null,
-                    OrderItem = x
-                })
-                .ToList();
+                .All(x => CompiledConfiguration.CompiledMembers.ContainsKey(x.Expression)) ?
+                DynamicProjectionOperationTarget.Source : DynamicProjectionOperationTarget.Projection;
 
-            if (predicate != null && predicateTarget == DynamicProjectionPredicateTarget.Source)
+            //Apply predicate on source if applicable
+            if (predicate != null && predicateTarget == DynamicProjectionOperationTarget.Source)
                 query = query.Where(predicate);
 
-            foreach(var item in orderItems.Where(x => x.SourceExpression != null))
-                query = item.OrderItem.IsDescending ? query.OrderByDescending(item.SourceExpression) : query.OrderBy(item.SourceExpression);
+            //Apply sort on source if applicable
+            if (sort != null && sortTarget == DynamicProjectionOperationTarget.Source)
+                query = sort.Aggregate(query, (acc, next) =>
+                    {
+                        var lambda = 
+                            Expression.Lambda(
+                                CompiledConfiguration.CompiledMembers[next.Expression]
+                                    .Source.SourceExpression, 
+                                CompiledConfiguration.It);
 
-            var selectorColumns = 
-                predicateTarget == DynamicProjectionPredicateTarget.Source ?
-                columns : columns.Concat(predicateMembers).Distinct();
+                        return next.IsDescending ?
+                            query.OrderByDescending(lambda) :
+                            query.OrderBy(lambda);
+                    });
 
+            //Append predicate and sort columns to projection if needed
+            var selectorColumns = columns;
+            if (predicateTarget == DynamicProjectionOperationTarget.Projection)
+                selectorColumns = columns.Concat(predicateMembers);
+            if (sortTarget == DynamicProjectionOperationTarget.Projection)
+                selectorColumns = columns.Concat(sort.Select(x => x.Expression));
+            selectorColumns = selectorColumns.Distinct().ToList();
+
+            //Apply selector
             query = query.Select(compiler.BuildSelector(selectorColumns));
 
-            if (predicate != null && predicateTarget == DynamicProjectionPredicateTarget.Projection)
+            //Apply predicate on projection if applicable
+            if (predicate != null && predicateTarget == DynamicProjectionOperationTarget.Projection)
                 query = query.Where(predicate);
 
-            query = query.OrderBy(orderItems.Where(x => x.SourceExpression == null).Select(x => x.OrderItem));
-            
+            //Apply sort on projection if applicable
+            if (sort != null && predicateTarget == DynamicProjectionOperationTarget.Projection)
+                query.OrderBy(sort);
+
             return query;
         }
 

@@ -1,10 +1,8 @@
 ﻿namespace Dynamix.DynamicProjection
 {
-    internal enum DynamicProjectionPredicateTarget
+    internal enum DynamicProjectionOperationTarget
     {
         Source,
         Projection
     }
-
-    
 }

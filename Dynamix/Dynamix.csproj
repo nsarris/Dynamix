@@ -59,7 +59,7 @@
     <Compile Include="DynamicProjection\DynamicProjectionCompiler.cs" />
     <Compile Include="DynamicProjection\DynamicProjectionConfiguration.cs" />
     <Compile Include="DynamicProjection\DynamicProjectionPredicateMemberVisitor.cs" />
-    <Compile Include="DynamicProjection\DynamicProjectionPredicateTarget.cs" />
+    <Compile Include="DynamicProjection\DynamicProjectionOperationTarget.cs" />
     <Compile Include="DynamicProjection\DynamicProjectionPredicateVisitor.cs" />
     <Compile Include="DynamicProjection\IMemberNameMatchStrategy.cs" />
     <Compile Include="DynamicProjection\TargetBuilders.cs" />

@@ -136,16 +136,6 @@ namespace Dynamix.DynamicProjection
                 predicateMembers.All(x => this.CompiledConfiguration.CompiledMembers.ContainsKey(x)) ?
                 DynamicProjectionOperationTarget.Source : DynamicProjectionOperationTarget.Projection;
 
-            //Build predicate
-            var predicate = 
-                filter != null ? 
-                    predicateTarget == DynamicProjectionOperationTarget.Source ?
-                        new DynamicProjectionPredicateVisitor(this)
-                            .VisitLambda(filter) :
-                        new ExpressionNodeVisitor()
-                            .VisitLambda(filter, configuration.ProjectedType) :
-                null;
-
             //Determine target of sort (source or projection)
             var sortTarget =
                 (sort ?? Enumerable.Empty<OrderItem>())
@@ -153,8 +143,10 @@ namespace Dynamix.DynamicProjection
                 DynamicProjectionOperationTarget.Source : DynamicProjectionOperationTarget.Projection;
 
             //Apply predicate on source if applicable
-            if (predicate != null && predicateTarget == DynamicProjectionOperationTarget.Source)
-                query = query.Where(predicate);
+            if (filter != null && predicateTarget == DynamicProjectionOperationTarget.Source)
+                query = query.Where(
+                            new DynamicProjectionPredicateVisitor(this)
+                            .VisitLambda(filter));
 
             //Apply sort on source if applicable
             if (sort != null && sortTarget == DynamicProjectionOperationTarget.Source)
@@ -183,8 +175,10 @@ namespace Dynamix.DynamicProjection
             query = query.Select(compiler.BuildSelector(selectorColumns));
 
             //Apply predicate on projection if applicable
-            if (predicate != null && predicateTarget == DynamicProjectionOperationTarget.Projection)
-                query = query.Where(predicate);
+            if (filter != null && predicateTarget == DynamicProjectionOperationTarget.Projection)
+                query = query.Where(
+                            new ExpressionNodeVisitor()
+                            .VisitLambda(filter, configuration.ProjectedType));
 
             //Apply sort on projection if applicable
             if (sort != null && predicateTarget == DynamicProjectionOperationTarget.Projection)

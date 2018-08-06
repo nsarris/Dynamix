@@ -54,6 +54,10 @@ namespace Dynamix.Helpers
             if (value == null)
                 return null;
 
+            var implicitCoverter = GetImplicitCovertionMethod(value.GetType(), targetType);
+            if (implicitCoverter != null)
+                return implicitCoverter.Invoke(value, new[] { targetType });
+
             if (value is IConvertible && IsConvertSupported(targetType))
                 return System.Convert.ChangeType(value, targetType);
 

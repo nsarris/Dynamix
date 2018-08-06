@@ -114,6 +114,7 @@
     <Compile Include="Expressions\Visitors\ParameterReplacerOfNameVisitor.cs" />
     <Compile Include="Expressions\Visitors\ParameterReplacerOfTypeVisitor.cs" />
     <Compile Include="Expressions\Visitors\ParameterReplacerVisitor.cs" />
+    <Compile Include="Helpers\ConvertEx.cs" />
     <Compile Include="Helpers\EnumerableExtensions.cs" />
     <Compile Include="Helpers\EnumParser.cs" />
     <Compile Include="Helpers\SystemEnumParser.cs" />

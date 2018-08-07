@@ -97,7 +97,7 @@ namespace Dynamix.Reflection
 
         public T Get<T>(object instance)
         {
-            return (T)Convert.ChangeType(Get(instance), typeof(T));
+            return ConvertEx.Convert<T>(Get(instance));
         }
 
         //Static

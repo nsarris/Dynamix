@@ -1,6 +1,7 @@
-﻿using Dynamix.Reflection;
+using Dynamix.Reflection;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -10,7 +11,7 @@ namespace Dynamix.Helpers
 {
     public static class ConvertEx
     {
-        private static MethodInfo castMethod 
+        private static MethodInfo castMethod
                 = typeof(ConvertEx).GetMethods(BindingFlags.Static | BindingFlags.Public)
                 .First(x => x.Name == nameof(Cast) && x.IsGenericMethod);
         private static bool IsConvertSupported(Type type)
@@ -54,12 +55,19 @@ namespace Dynamix.Helpers
             if (value == null)
                 return null;
 
-            var implicitCoverter = GetImplicitCovertionMethod(value.GetType(), targetType);
-            if (implicitCoverter != null)
-                return implicitCoverter.Invoke(value, new[] { targetType });
+            if (value.GetType().IsAssignableTo(targetType))
+                return CastTo(value, targetType);
+
+            //var implicitCoverter = GetImplicitCovertionMethod(value.GetType(), targetType);
+            //if (implicitCoverter != null)
+            //    return implicitCoverter.Invoke(value, new[] { targetType });
 
             if (value is IConvertible && IsConvertSupported(targetType))
                 return System.Convert.ChangeType(value, targetType);
+
+            var converter = TypeDescriptor.GetConverter(value);
+            if (converter != null && converter.CanConvertTo(targetType))
+                return converter.ConvertTo(value, targetType);
 
             return CastTo(value, targetType);
         }
@@ -70,7 +78,7 @@ namespace Dynamix.Helpers
 
             if (value == null)
             {
-                if (targetType.IsClass || targetType.IsNullable())
+                if (targetType.IsClass || Nullable.GetUnderlyingType(targetType) != null)
                     return default;
                 else
                     throw new InvalidCastException("Null cannot be casted to non nullable value type");
@@ -78,6 +86,10 @@ namespace Dynamix.Helpers
 
             if (value is IConvertible && IsConvertSupported(targetType))
                 return (T)System.Convert.ChangeType(value, targetType);
+
+            var converter = TypeDescriptor.GetConverter(value);
+            if (converter != null && converter.CanConvertTo(targetType))
+                return (T)converter.ConvertTo(value, targetType);
 
             return Cast<T>(value);
         }

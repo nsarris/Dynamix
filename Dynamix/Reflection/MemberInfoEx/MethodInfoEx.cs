@@ -33,18 +33,20 @@ namespace Dynamix.Reflection
 
         readonly GenericInstanceInvoker instanceInvoker;
         readonly GenericStaticInvoker staticInvoker;
+        readonly Dictionary<string, ParameterInfo> parameters;
 
         public MethodInfoEx(MethodInfo method, bool enableDelegateCaching = true)
         {
             this.MethodInfo = method ?? throw new ArgumentNullException(nameof(method));
             this.IsExtension = method.IsExtension();
-            this.Signature = new ReadOnlyCollection<Type>(method.GetParameters().Select(x => x.ParameterType).ToList());
+            parameters = method.GetParameters().ToDictionary(x => x.Name);
+            this.Signature = new ReadOnlyCollection<Type>(parameters.Values.Select(x => x.ParameterType).ToList());
 
             if (enableDelegateCaching)
             {
-                instanceInvoker = MemberAccessorDelegateBuilder.MethodBuilder.BuildGenericInstance(method);
+                instanceInvoker = MemberAccessorDelegateBuilder.CachedMethodBuilder.BuildGenericInstance(method);
                 if (method.IsStatic)
-                    staticInvoker = MemberAccessorDelegateBuilder.MethodBuilder.BuildGenericStatic(method);
+                    staticInvoker = MemberAccessorDelegateBuilder.CachedMethodBuilder.BuildGenericStatic(method);
             }
             else
             {
@@ -52,22 +54,119 @@ namespace Dynamix.Reflection
                 instanceInvoker = builder.BuildGenericInstance(method).Compile();
                 if (method.IsStatic)
                     staticInvoker = builder.BuildGenericStatic(method).Compile();
-                    
+
             }
+        }
+
+        #region Static Invokers
+
+        private void AssertStatic()
+        {
+            if (!MethodInfo.IsStatic)
+                throw new InvalidOperationException("Cannot use InvokeStatic on non static method");
         }
 
         public object InvokeStatic(params object[] arguments)
         {
-            if (!MethodInfo.IsStatic)
-                throw new InvalidOperationException("Cannot use InvokeStatic on non static method");
+            AssertStatic();
 
-            return staticInvoker(arguments);
+            if (arguments != null && arguments.Count() == 1
+                && arguments[0] != null &&
+                arguments[0].GetType().Namespace == null)
+                return InvokeAnonymousStatic(arguments[0]);
+            else
+                return staticInvoker(arguments);
         }
+
+        private object InvokeAnonymousStatic(object anonymousTypeArguments, bool defaultValueForMissing = false)
+        {
+            return InvokeStatic(InvocationHelper.GetInvocationParameters(anonymousTypeArguments), defaultValueForMissing);
+        }
+
+        private object InvokeStatic(IEnumerable<(string parameterName, object value)> namedParameters, bool defaultValueForMissing = false)
+        {
+            AssertStatic();
+            var invocationParameters = InvocationHelper.GetInvocationParameters(parameters.Values, namedParameters, defaultValueForMissing);
+            return instanceInvoker(invocationParameters);
+        }
+
+        public object InvokeStatic(params (string parameterName, object value)[] namedParameters)
+        {
+            return InvokeStatic(namedParameters.AsEnumerable());
+        }
+
+        public object InvokeStatic(IEnumerable<(string parameterName, object value)> namedParameters)
+        {
+            return InvokeStatic(namedParameters, false);
+        }
+
+        public object InvokeStaticWithDefaults(IEnumerable<(string parameterName, object value)> namedParameters)
+        {
+            return InvokeStatic(namedParameters, true);
+        }
+
+        public object InvokeStaticWithDefaults()
+        {
+            return InvokeStatic(null, true);
+        }
+
+        public object InvokeStaticWithDefaults(object anonymousTypeArguments)
+        {
+            return InvokeAnonymousStatic(anonymousTypeArguments, true);
+        }
+
+        #endregion
+
+        #region Instance Invokers
 
         public object Invoke(object instance, params object[] arguments)
         {
-            return instanceInvoker(instance, arguments);
+            if (arguments != null && arguments.Count() == 1
+                && arguments[0] != null &&
+                arguments[0].GetType().Namespace == null)
+                return InvokeAnonymous(instance, arguments[0]);
+            else
+                return instanceInvoker(instance, arguments);
+
         }
+
+        private object InvokeAnonymous(object instance, object anonymousTypeArguments, bool defaultValueForMissing = false)
+        {
+            return Invoke(instance, InvocationHelper.GetInvocationParameters(anonymousTypeArguments), defaultValueForMissing);
+        }
+
+        private object Invoke(object instance, IEnumerable<(string parameterName, object value)> namedParameters, bool defaultValueForMissing = false)
+        {
+            var invocationParameters = InvocationHelper.GetInvocationParameters(parameters.Values.Skip(1), namedParameters, defaultValueForMissing);
+            return instanceInvoker(instance, invocationParameters);
+        }
+
+        public object Invoke(object instance, IEnumerable<(string parameterName, object value)> namedParameters)
+        {
+            return Invoke(instance, namedParameters, false);
+        }
+
+        public object Invoke(object instance, params (string parameterName, object value)[] namedParameters)
+        {
+            return Invoke(instance, namedParameters.AsEnumerable());
+        }
+
+        public object InvokeWithDefaults(object instance, IEnumerable<(string parameterName, object value)> namedParameters)
+        {
+            return Invoke(instance, namedParameters, true);
+        }
+
+        public object InvokeWithDefaults(object instance)
+        {
+            return Invoke(instance, null, true);
+        }
+
+        public object InvokeWithDefaults(object instance, object anonymousTypeArguments)
+        {
+            return InvokeAnonymous(instance, anonymousTypeArguments, true);
+        }
+
+        #endregion
 
         public static implicit operator MethodInfo(MethodInfoEx methodInfoEx)
         {

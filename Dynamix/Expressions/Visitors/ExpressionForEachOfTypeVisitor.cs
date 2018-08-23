@@ -1,28 +1,31 @@
 ﻿using System;
 using System.Linq.Expressions;
 
-namespace Dynamix.Expressions
+namespace Dynamix.Expressions.Visitors
 {
     public class ExpressionForEachOfTypeVisitor<TExpression> : ExpressionVisitor 
         where TExpression : Expression
     {
-        private readonly Func<TExpression, Expression> _visitor;
-
+        private readonly Func<TExpression, Expression> visitor;
+        
         public ExpressionForEachOfTypeVisitor(Func<TExpression, Expression> visitor)
         {
-            _visitor = visitor;
+            this.visitor = visitor;
         }
 
-        public override Expression Visit(Expression expression)
+        public ExpressionForEachOfTypeVisitor(Action<TExpression> visitor)
         {
-            if (expression is TExpression && _visitor != null)
-            {
-                var e = _visitor(expression as TExpression);
-                if (e == null)
-                    return expression;
-            }
+            this.visitor = x => { visitor(x); return x; };
+        }
 
-            return base.Visit(expression);
+        public override Expression Visit(Expression node)
+        {
+            if (visitor != null 
+                && node is TExpression expression
+                && visitor(expression) == null)
+                    return node;
+            
+            return base.Visit(node);
         }
 
         public static Expression Visit(Expression expression, Func<TExpression, Expression> visitor)
@@ -31,6 +34,16 @@ namespace Dynamix.Expressions
         }
 
         public static Expression<TDelegate> Visit<TDelegate>(Expression<TDelegate> expression, Func<TExpression, Expression> visitor)
+        {
+            return (Expression<TDelegate>)new ExpressionForEachOfTypeVisitor<TExpression>(visitor).Visit(expression);
+        }
+
+        public static Expression Visit(Expression expression, Action<TExpression> visitor)
+        {
+            return new ExpressionForEachOfTypeVisitor<TExpression>(visitor).Visit(expression);
+        }
+
+        public static Expression<TDelegate> Visit<TDelegate>(Expression<TDelegate> expression, Action<TExpression> visitor)
         {
             return (Expression<TDelegate>)new ExpressionForEachOfTypeVisitor<TExpression>(visitor).Visit(expression);
         }

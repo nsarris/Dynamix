@@ -43,14 +43,14 @@ namespace Dynamix.Expressions.PredicateBuilder
 
         IPredicateTreeBuilderNext IPredicateTreeBuilderNext.And(string expression, ExpressionOperator expressionOperator, object value)
         {
-            RootNode.Nodes.Add(new UnaryNode(expression, expressionOperator, value, LogicalOperator.And));
+            RootNode.Nodes.Add(new BinaryNode(expression, expressionOperator, value, LogicalOperator.And));
             
             return this;
         }
 
         IPredicateTreeBuilderNext IPredicateTreeBuilderNext.Or(string expression, ExpressionOperator expressionOperator, object value)
         {
-            RootNode.Nodes.Add(new UnaryNode(expression, expressionOperator, value, LogicalOperator.Or));
+            RootNode.Nodes.Add(new BinaryNode(expression, expressionOperator, value, LogicalOperator.Or));
 
             return this;
         }

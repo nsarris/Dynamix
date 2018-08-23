@@ -1,0 +1,7 @@
+﻿DynamicProjection
+	- Force mapping of ValueSource in Value/Description mappings
+	- For Equals/NotEquals/In/NotIn key/value + valueMap can be mapped to source
+
+PredicateBuilder
+	- Refactor to map Equals to In(1)
+	- Refactor to have Not as parameter to operator object

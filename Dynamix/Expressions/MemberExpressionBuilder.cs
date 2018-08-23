@@ -13,13 +13,13 @@ namespace Dynamix.Expressions
     {
         #region MemberAccess
 
-        public static Expression MakeDeepMemberAccess(Expression expression, string memberPath, bool safe = false)
+        public static MemberExpression MakeDeepMemberAccess(Expression expression, string memberPath, bool safe = false)
         {
             return MakeDeepMemberAccess(expression, memberPath.Split('.'), safe);
         }
-        public static Expression MakeDeepMemberAccess(Expression expression, IEnumerable<string> members, bool safe = false)
+        public static MemberExpression MakeDeepMemberAccess(Expression expression, IEnumerable<string> members, bool safe = false)
         {
-            return members.Aggregate(expression, (aggregate, next) => MakeMemberAccess(aggregate, next, safe));
+            return (MemberExpression)members.Aggregate(expression, (aggregate, next) => MakeMemberAccess(aggregate, next, safe));
         }
 
         public static MemberExpression MakeMemberAccess(Expression expression, string memberName, bool safe = false)
@@ -77,6 +77,11 @@ namespace Dynamix.Expressions
             return GetPropertySelector(typeof(T), propertyName, safe);
         }
 
+        public static Expression GetPropertyExpression(ParameterExpression instanceExpression, string propertyName, bool safe = false)
+        {
+            return MakeMemberAccess(instanceExpression, propertyName, safe);
+        }
+
         #endregion
 
         #region DeepPropertySelector
@@ -112,18 +117,27 @@ namespace Dynamix.Expressions
             return GetDeepPropertySelector(typeof(T), propertyName, safe);
         }
 
+        public static Expression GetDeepPropertyExpression(ParameterExpression instanceExpression, string propertyName, bool safe = false)
+        {
+            return MakeDeepMemberAccess(instanceExpression, propertyName, safe);
+        }
+
         #endregion
 
         #region DynamicLinq Expression Selector
 
         public static LambdaExpression GetExpressionSelector(ParameterExpression instanceParameter, string expression, bool safe = false)
         {
-            return System.Linq.Dynamic.DynamicExpression.ParseLambda(new[] { instanceParameter }, null, expression);
+            var hasName = instanceParameter.Name != string.Empty;
+            var itParameter = hasName ? Expression.Parameter(instanceParameter.Type) : instanceParameter;
+            var l = System.Linq.Dynamic.DynamicExpression.ParseLambda(new[] { itParameter }, null, expression);
+            return hasName ? ExpressionParameterReplacer.Replace(l, itParameter, instanceParameter) : l;
         }
 
         public static Expression<Func<T, TProperty>> GetExpressionSelector<T, TProperty>(ParameterExpression instanceParameter, string expression, bool safe = false)
         {
-            return System.Linq.Dynamic.DynamicExpression.ParseLambda<T,TProperty>(expression);
+            var l = System.Linq.Dynamic.DynamicExpression.ParseLambda<T,TProperty>(expression);
+            return ExpressionParameterReplacer.Replace(l, l.Parameters[0], instanceParameter);
         }
 
         public static LambdaExpression GetExpressionSelector(Type type, string expression, bool safe = false)
@@ -145,6 +159,11 @@ namespace Dynamix.Expressions
         public static LambdaExpression GetExpressionSelector<T>(string expression, bool safe = false)
         {
             return GetExpressionSelector(typeof(T), expression, safe);
+        }
+
+        public static Expression GetExpression(ParameterExpression instanceExpression, string expression, bool safe = false)
+        {
+            return System.Linq.Dynamic.DynamicExpression.Parse(new[] { instanceExpression }, null, expression);
         }
 
         #endregion

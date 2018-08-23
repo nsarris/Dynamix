@@ -25,20 +25,22 @@ namespace Dynamix.Reflection
     {
         public string Name => ConstructorInfo.Name;
         public ConstructorInfo ConstructorInfo { get; private set; }
-        public IEnumerable<Type> Signature { get; private set; }
+        public IReadOnlyDictionary<string, Type> Signature { get; private set; }
         MemberInfo IMemberInfoEx.MemberInfo => ConstructorInfo;
 
         MemberInfoExKind IMemberInfoEx.Kind => MemberInfoExKind.Constructor;
 
+        readonly Dictionary<string, ParameterInfo> parameters;
         readonly GenericStaticInvoker invoker;
 
         public ConstructorInfoEx(ConstructorInfo ctor, bool enableDelegateCaching = true)
         {
-            this.ConstructorInfo = ctor;
-            this.Signature = new ReadOnlyCollection<Type>(ctor.GetParameters().Select(x => x.ParameterType).ToList());
+            ConstructorInfo = ctor;
+            parameters = ctor.GetParameters().ToDictionary(x => x.Name);
+            Signature = new ReadOnlyDictionary<string,Type>(parameters.ToDictionary(x => x.Key, x => x.Value.ParameterType));
 
             if (enableDelegateCaching)
-                invoker = MemberAccessorDelegateBuilder.ConstructorBuilder.BuildGeneric(ctor);
+                invoker = MemberAccessorDelegateBuilder.CachedConstructorBuilder.BuildGeneric(ctor);
             else
             {
                 var builder = new ConstructorInvokerLambdaBuilder(false);
@@ -46,9 +48,49 @@ namespace Dynamix.Reflection
             }
         }
         
-        public object Invoke(object instance, params object[] arguments)
+        public object Invoke(params object[] arguments)
         {
-            return invoker(instance, arguments);
+            if (arguments != null && arguments.Count() == 1
+                && arguments[0] != null &&
+                arguments[0].GetType().Namespace == null)
+                return InvokeAnonymous(arguments[0]);
+            else
+                return invoker(arguments);
+        }
+
+        private object InvokeAnonymous(object anonymousTypeArguments, bool defaultValueForMissing = false)
+        {
+            return Invoke(InvocationHelper.GetInvocationParameters(anonymousTypeArguments), defaultValueForMissing);
+        }
+
+        public object Invoke(params (string parameterName, object value)[] namedParameters)
+        {
+            return Invoke(namedParameters.AsEnumerable(), false);
+        }
+
+        public object Invoke(IEnumerable<(string parameterName, object value)> namedParameters)
+        {
+            return Invoke(namedParameters, false);
+        }
+
+        private object Invoke(IEnumerable<(string parameterName, object value)> namedParameters, bool defaultValueForMissing = false)
+        {
+            var invocationParameters = InvocationHelper.GetInvocationParameters(parameters.Values, namedParameters, defaultValueForMissing);
+            return invoker(invocationParameters);
+        }
+
+        public object InvokeWithDefaults(IEnumerable<(string parameterName, object value)> namedParameters)
+        {
+            return Invoke(namedParameters, true);
+        }
+        public object InvokeWithDefaults()
+        {
+            return Invoke(null, true);
+        }
+
+        public object InvokeWithDefaults(object anonymousTypeArguments)
+        {
+            return InvokeAnonymous(anonymousTypeArguments, true);
         }
 
         public static implicit operator ConstructorInfo(ConstructorInfoEx constructorInfoEx)

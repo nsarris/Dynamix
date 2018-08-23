@@ -60,7 +60,7 @@ namespace Dynamix.Tests.Expressions
             Assert.Throws<ArgumentException>(
                 () =>
                 {
-                    var p1 = Dynamix.Expressions.ExpressionParser.ParseInitExpression(mapExpression1);
+                    var p1 = Dynamix.Expressions.InitExpressionParser.ParseInitExpression(mapExpression1);
                 });
         }
 
@@ -87,7 +87,7 @@ namespace Dynamix.Tests.Expressions
                     }
                 };
 
-            var p1 = Dynamix.Expressions.ExpressionParser.ParseInitExpression(mapExpression1);
+            var p1 = Dynamix.Expressions.InitExpressionParser.ParseInitExpression(mapExpression1);
 
             Assert.AreEqual(p1.Members.Count, 4);
             Assert.AreEqual(p1.Members[0].MappedProperty.Name, "A");
@@ -110,14 +110,14 @@ namespace Dynamix.Tests.Expressions
                         }).ToList()
                 };
 
-            var p2 = Dynamix.Expressions.ExpressionParser.ParseInitExpression(mapExpression2);
+            var p2 = Dynamix.Expressions.InitExpressionParser.ParseInitExpression(mapExpression2);
             
             Assert.AreEqual(p2.Members.Count, 6);
             Assert.AreEqual(p2.Members[0].MappedProperty.Name, "A");
             Assert.AreEqual(p2.Members[1].MappedProperty.Name, "B");
             Assert.AreEqual(p2.Members[2].MappedProperty.Name, "C");
 
-            var p3 = Dynamix.Expressions.ExpressionParser.ParseNewExpression((SimpleInputClass i) => new
+            var p3 = Dynamix.Expressions.InitExpressionParser.ParseNewExpression((SimpleInputClass i) => new
             {
                 i.A,
                 BB = i.B,

@@ -1,5 +1,6 @@
 ﻿using Dynamix.Expressions;
 using Dynamix.Expressions.LambdaBuilders;
+using Dynamix.Helpers;
 using Dynamix.Reflection.DelegateBuilders;
 using System;
 using System.Collections.Concurrent;
@@ -50,7 +51,7 @@ namespace Dynamix.Reflection
             }
 
             if (FieldInfo.IsInitOnly && FieldInfo.Name.StartsWith("<") && FieldInfo.Name.EndsWith(">i__Field"))
-                AutoPropertyName = FieldInfo.Name.Substring(1, FieldInfo.Name.Length - 9);
+                AutoPropertyName = FieldInfo.Name.Substring(1, FieldInfo.Name.Length - 10);
             if (FieldInfo.HasAttribute<CompilerGeneratedAttribute>()
                 && FieldInfo.Name.StartsWith("<") && FieldInfo.Name.EndsWith(">k__BackingField"))
                 AutoPropertyName = FieldInfo.Name.Substring(1, FieldInfo.Name.Length - 17);
@@ -59,8 +60,8 @@ namespace Dynamix.Reflection
             
             if (enableDelegateCaching)
             {
-                this.Getter = MemberAccessorDelegateBuilder.FieldBuilder.BuildGenericGetter(this.FieldInfo);
-                this.Setter = MemberAccessorDelegateBuilder.FieldBuilder.BuildGenericSetter(this.FieldInfo);
+                this.Getter = MemberAccessorDelegateBuilder.CachedFieldBuilder.BuildGenericGetter(this.FieldInfo);
+                this.Setter = MemberAccessorDelegateBuilder.CachedFieldBuilder.BuildGenericSetter(this.FieldInfo);
             }
             else
             {
@@ -97,7 +98,7 @@ namespace Dynamix.Reflection
 
         public T Get<T>(object instance)
         {
-            return (T)Convert.ChangeType(Get(instance), typeof(T));
+            return ConvertEx.Convert<T>(Get(instance));
         }
 
         //Static

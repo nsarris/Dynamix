@@ -1,33 +1,51 @@
-﻿using Dynamix.Reflection;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
+using System.Linq;
 using System.Reflection.Emit;
 
 namespace Dynamix
 {
-    public class DynamicTypeProperty
+
+    public sealed class DynamicTypeProperty
     {
-        public string Name { get; set; }
-        public Type Type { get; set; }
+        public string Name { get; internal set; }
+        public Type Type { get; internal set; }
+        public bool  AsNullable { get; internal set; }
+        public string CtorParameterName { get; internal set; }
+        public object ConstructorDefaultValue { get; internal set; }
+        public bool HasConstructorDefaultValue { get; internal set; }
+        public bool InitializeInConstructor { get; internal set; }
+        public GetSetAccessModifier GetAccessModifier { get; internal set; } = GetSetAccessModifier.Public;
+        public GetSetAccessModifier SetAccessModifier { get; internal set; } = GetSetAccessModifier.Public;
         public IReadOnlyList<CustomAttributeBuilder> AttributeBuilders => attributeBuilders;
 
-        private List<CustomAttributeBuilder> attributeBuilders = new List<CustomAttributeBuilder>();
-        public DynamicTypeProperty()
+        private readonly List<CustomAttributeBuilder> attributeBuilders = new List<CustomAttributeBuilder>();
+        internal DynamicTypeProperty(string name, Type type, IEnumerable<CustomAttributeBuilder> attributeBuilders = null)
         {
+            Name = name;
+            Type = type;
 
+            if (attributeBuilders != null)
+                this.attributeBuilders = attributeBuilders.ToList();
         }
 
-        public DynamicTypeProperty(string Name, Type Type)
+        internal void AddAttributeBuilder(CustomAttributeBuilder attributeBuilder)
         {
-            this.Name = Name;
-            this.Type = Type;
+            attributeBuilders.Add(attributeBuilder);
         }
 
-        public DynamicTypeProperty HasAttribute(Expression<Func<Attribute>> builderExpression)
+        internal DynamicTypeProperty Clone()
         {
-            attributeBuilders.Add(CustomAttributeBuilderFactory.FromExpression(builderExpression));
-            return this;
+            return new DynamicTypeProperty(Name, Type, attributeBuilders)
+            {
+                AsNullable = AsNullable,
+                CtorParameterName = CtorParameterName,
+                ConstructorDefaultValue = ConstructorDefaultValue,
+                HasConstructorDefaultValue = HasConstructorDefaultValue,
+                InitializeInConstructor = InitializeInConstructor,
+                GetAccessModifier = GetAccessModifier,
+                SetAccessModifier = SetAccessModifier
+            };
         }
     }
 }

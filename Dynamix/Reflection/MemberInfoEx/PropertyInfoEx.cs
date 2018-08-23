@@ -1,4 +1,5 @@
 ﻿using Dynamix.Expressions.LambdaBuilders;
+using Dynamix.Helpers;
 using Dynamix.Reflection.DelegateBuilders;
 using System;
 using System.Collections.Concurrent;
@@ -81,7 +82,7 @@ namespace Dynamix.Reflection
             this.PublicSet = setMethod.IsPublic;
             
             if (enableDelegateCaching)
-                this.Setter = MemberAccessorDelegateBuilder.PropertyBuilder.BuildGenericSetter(this.PropertyInfo);
+                this.Setter = MemberAccessorDelegateBuilder.CachedPropertyBuilder.BuildGenericSetter(this.PropertyInfo);
             else
             {
                 var builder = new PropertyAccessorLambdaBuilder(false);
@@ -101,7 +102,7 @@ namespace Dynamix.Reflection
             this.PublicGet = getMethod.IsPublic;
 
             if (enableDelegateCaching)
-                this.Getter = MemberAccessorDelegateBuilder.PropertyBuilder.BuildGenericGetter(this.PropertyInfo);
+                this.Getter = MemberAccessorDelegateBuilder.CachedPropertyBuilder.BuildGenericGetter(this.PropertyInfo);
             else
             {
                 var builder = new PropertyAccessorLambdaBuilder(false);
@@ -144,7 +145,7 @@ namespace Dynamix.Reflection
 
         public T Get<T>(object instance)
         {
-            return (T)Convert.ChangeType(Get(instance), typeof(T));
+            return ConvertEx.Convert<T>(Get(instance));
         }
 
         //Static
@@ -162,7 +163,7 @@ namespace Dynamix.Reflection
 
         public T Get<T>(bool allowPrivate = false)
         {
-            return (T)Convert.ChangeType(Get(null, allowPrivate), typeof(T));
+            return ConvertEx.Convert<T>(Get(null, allowPrivate));
         }
 
 
@@ -181,7 +182,7 @@ namespace Dynamix.Reflection
 
         public T Get<T>(object instance, object[] indexers)
         {
-            return (T)Convert.ChangeType(Get(instance, indexers), typeof(T));
+            return ConvertEx.Convert<T>(Get(instance, indexers));
         }
 
 
@@ -201,7 +202,7 @@ namespace Dynamix.Reflection
 
         public T Get<T>(object instance, object indexer)
         {
-            return (T)Convert.ChangeType(Get(instance, indexer), typeof(T));
+            return ConvertEx.Convert<T>(Get(instance, indexer));
         }
 
         //2 Indexers
@@ -220,7 +221,7 @@ namespace Dynamix.Reflection
 
         public T Get<T>(object instance, object indexer1, object indexer2)
         {
-            return (T)Convert.ChangeType(Get(instance, indexer1, indexer2), typeof(T));
+            return ConvertEx.Convert<T>(Get(instance, indexer1, indexer2));
         }
 
         //3 Indexers
@@ -239,7 +240,7 @@ namespace Dynamix.Reflection
 
         public T Get<T>(object instance, object indexer1, object indexer2, object indexer3)
         {
-            return (T)Convert.ChangeType(Get(instance, indexer1, indexer2, indexer3), typeof(T));
+            return ConvertEx.Convert<T>(Get(instance, indexer1, indexer2, indexer3));
         }
 
         public static implicit operator PropertyInfo(PropertyInfoEx propertyInfoEx)

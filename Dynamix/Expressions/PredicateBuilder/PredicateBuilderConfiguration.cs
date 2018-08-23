@@ -12,7 +12,7 @@ namespace Dynamix.Expressions.PredicateBuilder
         private static readonly string[] nullValueStrings = new[] { "null" };
 
         private readonly Dictionary<PredicateDataType, IEnumerable<object>> emptyValues
-            = new Dictionary<PredicateDataType, IEnumerable<object>>();
+            = new Dictionary<PredicateDataType, IEnumerable<object>>() { { PredicateDataType.String, new[] { string.Empty } } };
 
         public static PredicateBuilderConfiguration Default { get; } = new PredicateBuilderConfiguration();
 
@@ -30,7 +30,13 @@ namespace Dynamix.Expressions.PredicateBuilder
         public string[] DateTimeFormats { get; private set; }
         public string[] TimeSpanFormats { get; private set; }
 
+        public string ItParameterName { get; private set; } = string.Empty;
 
+        public PredicateBuilderConfiguration WithItParameterName(string parameterName)
+        {
+            ItParameterName = parameterName;
+            return this;
+        }
 
         public PredicateBuilderConfiguration WithEmptyValues(PredicateDataType dataType, IEnumerable<object> values)
         {

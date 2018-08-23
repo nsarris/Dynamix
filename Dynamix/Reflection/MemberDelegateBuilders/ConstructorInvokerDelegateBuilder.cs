@@ -41,7 +41,7 @@ namespace Dynamix.Reflection.DelegateBuilders
         static ConcurrentDictionary<ConstructorInfo, Delegate> genericCache = new ConcurrentDictionary<ConstructorInfo, Delegate>();
 
         public bool EnableCaching { get; set; }
-        private ConstructorInvokerLambdaBuilder builder;
+        private readonly ConstructorInvokerLambdaBuilder builder;
 
         #endregion
 
@@ -49,12 +49,10 @@ namespace Dynamix.Reflection.DelegateBuilders
 
         public GenericStaticInvoker BuildGeneric(ConstructorInfo ctorInfo)
         {
-            if (EnableCaching)
-            {
-                if (genericCache.TryGetValue(ctorInfo, out var cachedDelegate))
+            if (EnableCaching 
+                && genericCache.TryGetValue(ctorInfo, out var cachedDelegate))
                     return (GenericStaticInvoker)cachedDelegate;
-            }
-
+            
             var delegate_ = builder.BuildGeneric(ctorInfo).Compile();
 
             if (EnableCaching)

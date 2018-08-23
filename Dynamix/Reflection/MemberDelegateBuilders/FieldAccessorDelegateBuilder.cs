@@ -44,7 +44,7 @@ namespace Dynamix.Reflection.DelegateBuilders
         static ConcurrentDictionary<FieldInfo, Delegate> genericSetterCache = new ConcurrentDictionary<FieldInfo, Delegate>();
 
         private bool EnableCaching { get; set; } = true;
-        private FieldAccessorLambdaBuilder builder;
+        private readonly FieldAccessorLambdaBuilder builder;
 
         #endregion
 

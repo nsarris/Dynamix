@@ -28,17 +28,22 @@ namespace Dynamix.Expressions.PredicateBuilder
             return expression;
         }
 
-        Expression INodeVisitor<Expression, ExpressionNodeVisitorInput>.VisitUnaryNode(UnaryNode node, ExpressionNodeVisitorInput input)
+        Expression INodeVisitor<Expression, ExpressionNodeVisitorInput>.VisitBinaryNode(BinaryNode node, ExpressionNodeVisitorInput input)
         {
-            return VisitUnaryNode(node, input);
+            return VisitBinaryNode(node, input);
         }
 
-        protected virtual Expression VisitUnaryNode(UnaryNode node, ExpressionNodeVisitorInput input)
+        protected Expression VisitBinaryNode(BinaryNode node, ExpressionNodeVisitorInput input)
         {
             if (!input.Configurations.TryGetValue(node.Expression, out var configuration))
                 configuration = input.DefaultConfiguration;
 
-            return PredicateBuilder.GetPredicateExpression(input.ItParameterExpression, node.Expression, node.Operator, node.Value, configuration);
+            return BuildUnaryNodeExpression(node, input.ItParameterExpression, configuration);
+        }
+
+        protected virtual Expression BuildUnaryNodeExpression(BinaryNode node, ParameterExpression itParameter, PredicateBuilderConfiguration nodeConfiguration)
+        {
+            return PredicateBuilder.GetPredicateExpression(itParameter, node.Expression, node.Operator, node.Value, nodeConfiguration);
         }
 
         public Expression Visit(NodeBase root, ExpressionNodeVisitorInput input)

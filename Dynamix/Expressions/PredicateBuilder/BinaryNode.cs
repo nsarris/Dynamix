@@ -6,9 +6,9 @@ using System.Web;
 
 namespace Dynamix.Expressions.PredicateBuilder
 {
-    public class UnaryNode : NodeBase
+    public class BinaryNode : NodeBase
     {
-        public UnaryNode(string expression, ExpressionOperator expressionOperator, object value, LogicalOperator logicalOperator)
+        public BinaryNode(string expression, ExpressionOperator expressionOperator, object value, LogicalOperator logicalOperator)
             :base(logicalOperator)
         {
             if (string.IsNullOrEmpty(expression))
@@ -31,17 +31,17 @@ namespace Dynamix.Expressions.PredicateBuilder
         
         public override T Accept<T>(INodeVisitor<T> visitor)
         {
-            return visitor.VisitUnaryNode(this);
+            return visitor.VisitBinaryNode(this);
         }
 
         public override T Accept<T, TInput>(INodeVisitor<T, TInput> visitor, TInput input)
         {
-            return visitor.VisitUnaryNode(this, input);
+            return visitor.VisitBinaryNode(this, input);
         }
 
         public override T Accept<T, TInput, TState>(INodeVisitor<T, TInput, TState> visitor, TInput input, TState state)
         {
-            return visitor.VisitUnaryNode(this, input, state);
+            return visitor.VisitBinaryNode(this, input, state);
         }
     }
 }

@@ -25,13 +25,10 @@ namespace Dynamix.Tests.DynamicType
         [Test]
         public void TestDynamicTypeBuilder()
         {
-            var descriptor = new DynamicTypeDescriptor()
-                .AddProperty(new DynamicTypeProperty
-                {
-                    Name = "A",
-                    Type = typeof(int)
-                }
-                .HasAttribute(() => new TestPropertyAttribute("name", "value"))
+            var descriptor = new DynamicTypeDescriptorBuilder()
+                .HasName("SomeDynamicType")
+                .AddProperty<int>("A", config => config
+                    .HasAttribute(() => new TestPropertyAttribute("name", "value"))
                 );
 
             var type = DynamicTypeBuilder.Instance.CreateType(descriptor);

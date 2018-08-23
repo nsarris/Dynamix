@@ -128,6 +128,12 @@ namespace Dynamix.Reflection
             return type == typeof(T?);
         }
 
+        public static bool IsNullable(this Type type, out Type underlyingType)
+        {
+            underlyingType = Nullable.GetUnderlyingType(type);
+            return underlyingType != null;
+        }
+
         public static bool IsOrNullable<T>(this Type type) where T : struct
         {
             return type == typeof(T) || type == typeof(T?);
@@ -136,6 +142,15 @@ namespace Dynamix.Reflection
         public static Type StripNullable(this Type type)
         {
             return Nullable.GetUnderlyingType(type) ?? type;
+        }
+        public static Type ToNullable(this Type type)
+        {
+            if (type.IsNullable())
+                return type;
+            else if (type.IsValueType)
+                return typeof(Nullable<>).MakeGenericTypeCached(type);
+            else
+                return type;
         }
 
         public static bool IsNumeric(this Type type)
@@ -147,12 +162,12 @@ namespace Dynamix.Reflection
         {
             return NumericTypeHelper.IsNumericType(type, out numericTypeDefinition, false);
         }
-        public static bool IsNumericOrNullable(this Type type)
+        public static bool IsNumericOrNullableNumeric(this Type type)
         {
             return NumericTypeHelper.IsNumericType(type);
         }
 
-        public static bool IsNumericOrNullable(this Type type, out NumericTypeDescriptor numericTypeDefinition)
+        public static bool IsNumericOrNullableNumeric(this Type type, out NumericTypeDescriptor numericTypeDefinition)
         {
             return NumericTypeHelper.IsNumericType(type, out numericTypeDefinition);
         }

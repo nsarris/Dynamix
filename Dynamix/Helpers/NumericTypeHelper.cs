@@ -1,4 +1,5 @@
-﻿using Dynamix.Reflection;
+﻿using Dynamix.Helpers;
+using Dynamix.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -296,7 +297,7 @@ namespace Dynamix
 
             if (!effectiveValueType.IsEnum
                 && !IsNumericType(value.GetType()) 
-                && !EnumParser.TryParse(enumType, value.ToString(), out value))
+                && !EnumParser.Default.TryParse(enumType, value, out value))
                 throw new InvalidOperationException($"Value {value} is not a number or cannot be converted to enum type {enumType.Name}");
 
             value = ConvertToComparableType(EnumToNumber(value), enumUnderlyingType, out comparableType);

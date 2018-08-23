@@ -54,7 +54,7 @@ namespace Dynamix.Expressions.PredicateBuilder
         public static Expression GetPredicateExpression
             (ParameterExpression instanceParameter, string sourceExpression, ExpressionOperator @operator, object value, PredicateBuilderConfiguration configuration = null)
         {
-            var left = MemberExpressionBuilder.GetExpressionSelector(instanceParameter, sourceExpression);
+            var left = MemberExpressionBuilder.GetExpressionSelector(instanceParameter, sourceExpression).Body;
                                 
             return GetPredicateExpression(left, @operator, value, configuration);
         }
@@ -100,7 +100,7 @@ namespace Dynamix.Expressions.PredicateBuilder
                     PredicateDataType.TimeSpan :
                 type.IsEnumOrNullableEnum(out enumUnderlyingType) ?
                     PredicateDataType.Enum :
-                type.IsNumericOrNullable(out numericTypeDescriptor) ?
+                type.IsNumericOrNullableNumeric(out numericTypeDescriptor) ?
                     PredicateDataType.Number :
                 type.IsEnumerable(out enumerableTypeDescriptor) ?
                     PredicateDataType.Collection :
@@ -134,14 +134,14 @@ namespace Dynamix.Expressions.PredicateBuilder
 
         private bool TryParseDateTime(string s, out DateTime d)
         {
-            return Configuration.DateTimeFormats.Length == 0 ?
+            return Configuration.DateTimeFormats is null || Configuration.DateTimeFormats.Length == 0 ?
                 DateTime.TryParse(s, Configuration.FormatProvider, Configuration.DateTimeStyles, out d) :
                 DateTime.TryParseExact(s, Configuration.DateTimeFormats, Configuration.FormatProvider, Configuration.DateTimeStyles, out d);
         }
 
         private bool TryParseTimeSpan(string s, out TimeSpan t)
         {
-            return Configuration.TimeSpanFormats.Length == 0 ?
+            return Configuration.TimeSpanFormats is null || Configuration.TimeSpanFormats.Length == 0 ?
                 TimeSpan.TryParse(s, Configuration.FormatProvider, out t) :
                 TimeSpan.TryParseExact(s, Configuration.TimeSpanFormats, Configuration.FormatProvider, out t);
         }
@@ -257,7 +257,7 @@ namespace Dynamix.Expressions.PredicateBuilder
                                 NumericTypeHelper.GetCommonTypeForConvertion(comparableType, EffectiveType, Enum.GetUnderlyingType(valueType));
                             return;
                         }
-                        if (valueType.IsNumericOrNullable())
+                        if (valueType.IsNumericOrNullableNumeric())
                         {
                             comparableType = NumericTypeHelper.GetCommonTypeForConvertion(comparableType, EffectiveType, valueType);
                             return;
@@ -269,7 +269,7 @@ namespace Dynamix.Expressions.PredicateBuilder
                             comparableType = NumericTypeHelper.GetCommonTypeForConvertion(comparableType, enumUnderlyingType, Enum.GetUnderlyingType(valueType));
                             return;
                         }
-                        if (valueType.IsNumericOrNullable())
+                        if (valueType.IsNumericOrNullableNumeric())
                         {
                             comparableType = NumericTypeHelper.GetCommonTypeForConvertion(comparableType, enumUnderlyingType, valueType);
                             return;
@@ -484,7 +484,7 @@ namespace Dynamix.Expressions.PredicateBuilder
             if (Value is TimeSpan t
                 || !TryParseTimeSpan(Value.ToString(), out t))
                 timeSpan = t;
-            if (Value is DateTime d
+            else if (Value is DateTime d
                 || !TryParseDateTime(Value.ToString(), out d))
                 timeSpan = d.TimeOfDay;
             else
@@ -540,7 +540,7 @@ namespace Dynamix.Expressions.PredicateBuilder
 
                             return BuildIsContainedInValuesExpression(Expression, (IEnumerable)Value);
                         }
-                        else if (elementType.IsEnumOrNullableEnum() || elementType.IsNumericOrNullable())
+                        else if (elementType.IsEnumOrNullableEnum() || elementType.IsNumericOrNullableNumeric())
                         {
                             if (DataType != PredicateDataType.Number && DataType != PredicateDataType.Enum)
                                 throw new InvalidOperationException($"An array of {elementType.Name} cannot be compared against a {DataType}");
@@ -612,25 +612,37 @@ namespace Dynamix.Expressions.PredicateBuilder
             switch (expressionOperator)
             {
                 case ExpressionOperator.IsNull:
-                    return Expression.Equal(left, ExpressionEx.Constants.Null);
+                    //return Expression.Equal(left, ExpressionEx.Constants.Null);
+                    return EqualWithOperator(left, ExpressionEx.Constants.NullOf(left.Type));
                 case ExpressionOperator.IsNotNull:
-                    return Expression.NotEqual(left, ExpressionEx.Constants.Null);
+                    return Expression.NotEqual(left, ExpressionEx.Constants.NullOf(left.Type));
                 case ExpressionOperator.IsEmpty:
                     return BuildIsEmptyExpression(false, left);
                 case ExpressionOperator.IsNotEmpty:
                     return BuildIsEmptyExpression(true, left);
                 case ExpressionOperator.IsNullOrEmpty:
-                    return Expression.Or(
+                    return Expression.OrElse(
                         BuildIsEmptyExpression(false, left),
-                        Expression.Equal(left, ExpressionEx.Constants.Null));
+                        //Expression.Equal(left, ExpressionEx.Constants.Null)
+                        EqualWithOperator(left, ExpressionEx.Constants.NullOf(left.Type))
+                        );
                 case ExpressionOperator.IsNotNullOrEmpty:
-                    return Expression.Not(Expression.Or(
+                    return Expression.Not(Expression.OrElse(
                         BuildIsEmptyExpression(false, left),
-                        Expression.Equal(left, ExpressionEx.Constants.Null)
+                        //Expression.Equal(left, ExpressionEx.Constants.Null)
+                        EqualWithOperator(left, ExpressionEx.Constants.NullOf(left.Type))
                         ));
                 default:
                     return null;
             }
+        }
+
+        private Expression EqualWithOperator(Expression left, Expression value)
+        {
+            if (left.Type == typeof(string))
+                return Expression.Equal(left, value, false, typeof(string).GetMethod("op_Equality"));
+            else
+                return Expression.Equal(left, value);
         }
 
         private Expression BuildCollectionSpecificExpression(Expression left, ExpressionOperator expressionOperator, Expression right)

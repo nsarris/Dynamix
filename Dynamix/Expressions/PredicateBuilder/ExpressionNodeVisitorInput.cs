@@ -10,7 +10,6 @@ namespace Dynamix.Expressions.PredicateBuilder
     {
         private static readonly string defaultItParameterName = string.Empty;
 
-        public Type ItParameterType  => ItParameterExpression.Type;
         public PredicateBuilderConfiguration DefaultConfiguration { get; }
         public IReadOnlyDictionary<string, PredicateBuilderConfiguration> Configurations { get; }
         public ParameterExpression ItParameterExpression { get; }
@@ -22,7 +21,7 @@ namespace Dynamix.Expressions.PredicateBuilder
         }
 
         public ExpressionNodeVisitorInput(Type itParameterType, PredicateBuilderConfiguration defaultConfiguration)
-            : this(itParameterType, defaultItParameterName, defaultConfiguration, null)
+            : this(itParameterType, defaultConfiguration?.ItParameterName, defaultConfiguration, null)
         {
 
         }
@@ -34,7 +33,7 @@ namespace Dynamix.Expressions.PredicateBuilder
         }
 
         public ExpressionNodeVisitorInput(Type itParameterType, PredicateBuilderConfiguration defaultConfiguration, IDictionary<string, PredicateBuilderConfiguration> configurations)
-            :this(itParameterType, defaultItParameterName, defaultConfiguration, configurations)
+            :this(itParameterType, defaultConfiguration?.ItParameterName, defaultConfiguration, configurations)
         {
 
         }
@@ -47,8 +46,14 @@ namespace Dynamix.Expressions.PredicateBuilder
 
 
         public ExpressionNodeVisitorInput(Type itParameterType, string itParameterName, PredicateBuilderConfiguration defaultConfiguration, IDictionary<string, PredicateBuilderConfiguration> configurations = null)
+            :this(Expression.Parameter(itParameterType, itParameterName ?? ""), defaultConfiguration, configurations)
         {
-            ItParameterExpression = Expression.Parameter(itParameterType, itParameterName);
+            
+        }
+
+        public ExpressionNodeVisitorInput(ParameterExpression itParameterExpression, PredicateBuilderConfiguration defaultConfiguration = null, IDictionary<string, PredicateBuilderConfiguration> configurations = null)
+        {
+            ItParameterExpression = itParameterExpression;
             DefaultConfiguration = defaultConfiguration ?? PredicateBuilderConfiguration.Default;
 
             if (configurations != null)

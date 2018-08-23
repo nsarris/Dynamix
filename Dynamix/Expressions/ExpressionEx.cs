@@ -18,11 +18,13 @@ namespace Dynamix.Expressions
         public static class Constants
         {
             
-            public static Expression Null { get; } = Expression.Constant(null);
-            public static Expression EmptyString { get; } = Expression.Constant(string.Empty);
-            public static Expression True { get; } = Expression.Constant(true);
-            public static Expression False { get; } = Expression.Constant(true);
-            public static Expression Bool(bool value)
+            public static ConstantExpression Null { get; } = Expression.Constant(null);
+            public static ConstantExpression NullOf<T>() => Expression.Constant(null, typeof(T));
+            public static ConstantExpression NullOf(Type type) => Expression.Constant(null, type);
+            public static ConstantExpression EmptyString { get; } = Expression.Constant(string.Empty);
+            public static ConstantExpression True { get; } = Expression.Constant(true);
+            public static ConstantExpression False { get; } = Expression.Constant(true);
+            public static ConstantExpression Bool(bool value)
             {
                 return value ? True : False;
             }

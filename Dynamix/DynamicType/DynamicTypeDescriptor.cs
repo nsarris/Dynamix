@@ -1,101 +1,94 @@
-﻿using Dynamix.Reflection;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Dynamix
 {
-    public class DynamicTypeDescriptor
+    public sealed class DynamicTypeDescriptor
     {
-        public DynamicTypeDescriptor(string Name = null, IEnumerable<DynamicTypeProperty> props = null, Type BaseType = null)
-        {
-            this.Name = Name;
-            if (props == null)
-                this.Properties = new List<DynamicTypeProperty>();
-            else
-                this.Properties = props.Select(x => new DynamicTypeProperty() { Type = x.Type, Name = x.Name }).ToList();
-        }
-        public string Name { get; set; }
-        public Type BaseType { get; set; }
-        public List<DynamicTypeProperty> Properties { get; set; }
+        public string Name { get; internal set; }
+        public Type BaseType { get; internal set; }
+        public IReadOnlyList<Type> Interfaces => interfaces;
+        public IReadOnlyList<DynamicTypeField> Fields => fields;
+        public IReadOnlyList<DynamicTypeProperty> Properties => properties;
         public IReadOnlyList<CustomAttributeBuilder> AttributeBuilders => attributeBuilders;
 
-        private List<CustomAttributeBuilder> attributeBuilders = new List<CustomAttributeBuilder>();
+        private readonly List<CustomAttributeBuilder> attributeBuilders;
+        private readonly List<Type> interfaces;
+        private readonly List<DynamicTypeField> fields;
+        private readonly List<DynamicTypeProperty> properties;
 
-        public DynamicTypeDescriptor AddProperty(DynamicTypeProperty property)
+        internal DynamicTypeDescriptor(string name = null, IEnumerable<DynamicTypeProperty> properties = null, IEnumerable<DynamicTypeField> fields = null, IEnumerable<Type> interfaces = null, Type baseType = null, IEnumerable<CustomAttributeBuilder> customAttributeBuilders = null)
         {
-            this.Properties.Add(property);
-            return this;
+            Name = name;
+            BaseType = baseType;
+
+            this.properties = properties == null ?
+                new List<DynamicTypeProperty>() :
+                properties.ToList();
+
+            this.fields = fields == null ?
+                new List<DynamicTypeField>() :
+                fields.ToList();
+
+            this.interfaces = interfaces == null ?
+                new List<Type>() :
+                interfaces.ToList();
+
+            this.attributeBuilders = customAttributeBuilders == null ?
+                new List<CustomAttributeBuilder>() :
+                customAttributeBuilders.ToList();
         }
 
-        public DynamicTypeDescriptor AddProperty(string Name, Type Type, bool AsNullable = false)
+        internal void AddCustomAttributeBuilder(CustomAttributeBuilder customAttributeBuilder)
         {
-            this.Properties.Add(new DynamicTypeProperty() { Name = Name, Type = (AsNullable ? ToNullable(Type) : Type) });
-            return this;
+            attributeBuilders.Add(customAttributeBuilder);
         }
 
-        public DynamicTypeDescriptor AddProperty<T>(string Name)
+        internal void AddProperty(CustomAttributeBuilder customAttributeBuilder)
         {
-            return AddProperty(Name, typeof(T));
+            attributeBuilders.Add(customAttributeBuilder);
         }
 
-        public DynamicTypeDescriptor AddProperty<T>(Expression<Func<T, object>> TemplatePropertyExpression, string OverrideName = null, Type OverrideType = null, bool AsNullable = false)
+        internal void AddProperty(DynamicTypeProperty property)
         {
-            var prop = ReflectionHelper.GetProperty(TemplatePropertyExpression);
-            return AddProperty(OverrideName ?? prop.Name, OverrideType ?? (AsNullable ? ToNullable(prop.PropertyType) : prop.PropertyType));
+            properties.Add(property);
         }
 
-        public DynamicTypeDescriptor AddPropertyAsNullable(string Name, Type Type)
+        internal void AddField(DynamicTypeField field)
         {
-            return AddProperty(Name, Type, true);
+            fields.Add(field);
         }
 
-        public DynamicTypeDescriptor AddPropertyAsNullable<T>(Expression<Func<T, object>> TemplatePropertyExpression, string OverrideName = null, Type OverrideType = null)
+        internal void AddInterface(Type @interface)
         {
-            return AddProperty(TemplatePropertyExpression, OverrideName, OverrideType, true);
+            interfaces.Add(@interface);
         }
 
-        public DynamicTypeDescriptor HasBaseType(Type BaseType)
+        internal void Validate()
         {
-            this.BaseType = BaseType;
-            return this;
+            if (string.IsNullOrWhiteSpace(Name))
+                throw new InvalidOperationException("Type Name cannot be null or whitespace");
+
+            if (!Properties.Any() && !Fields.Any())
+                throw new InvalidOperationException("Type must have at least one property or field");
+
+            if (Properties.GroupBy(x => x.Name).Count() < Properties.Count())
+                throw new InvalidOperationException("Duplicate property name found in type descriptor");
+
+            if (Fields.GroupBy(x => x.Name).Count() < Fields.Count())
+                throw new InvalidOperationException("Duplicate field name found in type descriptor");
+
+            if (Properties.Select(x => x.Name).Intersect(Fields.Select(x => x.Name)).Any())
+                throw new InvalidOperationException("Properties and Fields with the same name found in type descriptor");
         }
 
-        public DynamicTypeDescriptor HasBaseType<T>()
+        internal DynamicTypeDescriptor Clone()
         {
-            this.BaseType = typeof(T);
-            return this;
-        }
-
-        public DynamicTypeDescriptor HasName(string Name)
-        {
-            this.Name = Name;
-            return this;
-        }
-
-        private static Type ToNullable(Type SourceType)
-        {
-            var type = Nullable.GetUnderlyingType(SourceType);
-
-            if (type == null)
-                type = SourceType;
-
-            if (type.IsValueType)
-                type = typeof(Nullable<>).MakeGenericType(type);
-            else
-                type = SourceType;
-
-            return type;
-        }
-
-        public DynamicTypeDescriptor HasAttribute(Expression<Func<Attribute>> builderExpression)
-        {
-            attributeBuilders.Add(CustomAttributeBuilderFactory.FromExpression(builderExpression));
-            return this;
+            return new DynamicTypeDescriptor(Name, properties, fields, interfaces, BaseType, attributeBuilders);
         }
     }
 }

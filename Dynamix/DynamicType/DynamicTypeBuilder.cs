@@ -110,7 +110,7 @@ namespace Dynamix
             foreach (var iface in typeDescriptor.Interfaces)
                 tb.AddInterfaceImplementation(iface);
 
-            var propertyBuilders = typeDescriptor.Properties.Select(x => (x, CreateProperty(tb, x, typeDescriptor.Interfaces))).ToList();
+            var propertyBuilders = typeDescriptor.Properties.Select(x => (x, CreateProperty(tb, x, typeDescriptor.Interfaces, out var fieldBuilder), fieldBuilder)).ToList();
             var fieldBuilders = typeDescriptor.Fields.Select(x => (x, CreateField(tb, x))).ToList();
 
             var defaultConstructor = tb.DefineDefaultConstructor(MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
@@ -128,7 +128,7 @@ namespace Dynamix
         }
 
         private void CreateConstructor(TypeBuilder tb,
-            IEnumerable<(DynamicTypeProperty Property, PropertyBuilder PropertyBuilder)> propertyBuilders,
+            IEnumerable<(DynamicTypeProperty Property, PropertyBuilder PropertyBuilder, FieldBuilder FieldBuilder)> propertyBuilders,
             IEnumerable<(DynamicTypeField Field, FieldBuilder FieldBuilder)> fieldBuilders,
             ConstructorBuilder defaultConstructor)
         {
@@ -171,8 +171,9 @@ namespace Dynamix
             {
                 generator.Emit(OpCodes.Ldarg_0);
                 generator.Emit(OpCodes.Ldarg, i);
-                generator.Emit(OpCodes.Call, p.PropertyBuilder.SetMethod);
-
+                //generator.Emit(OpCodes.Call, p.PropertyBuilder.SetMethod);
+                generator.Emit(OpCodes.Stfld, p.FieldBuilder);
+                
                 if (p.Property.HasConstructorDefaultValue)
                     constructor
                         .DefineParameter(i, ParameterAttributes.Optional | ParameterAttributes.HasDefault, p.Property.CtorParameterName)
@@ -201,9 +202,13 @@ namespace Dynamix
             return tb;
         }
 
-        private static PropertyBuilder CreateProperty(TypeBuilder tb, DynamicTypeProperty property, IEnumerable<Type> interfaces)
+        private static PropertyBuilder CreateProperty(TypeBuilder tb, DynamicTypeProperty property, IEnumerable<Type> interfaces, out FieldBuilder fieldBuilder)
         {
-            var fieldBuilder = tb.DefineField("_" + property.Name, property.Type, FieldAttributes.Private);
+            var fieldAttributes = FieldAttributes.Private;
+            if (property.SetAccessModifier == GetSetAccessModifier.None)
+                fieldAttributes = fieldAttributes | FieldAttributes.InitOnly;
+
+            fieldBuilder = tb.DefineField("_" + property.Name, property.Type, fieldAttributes);
 
             var propertyBuilder = tb.DefineProperty(property.Name, PropertyAttributes.HasDefault, property.Type, null);
 
@@ -256,16 +261,10 @@ namespace Dynamix
                       null, new[] { property.Type });
 
                 var setterIlGenerator = setPropMthdBldr.GetILGenerator();
-                var modifyProperty = setterIlGenerator.DefineLabel();
-                var exitSet = setterIlGenerator.DefineLabel();
-
-                setterIlGenerator.MarkLabel(modifyProperty);
+                
                 setterIlGenerator.Emit(OpCodes.Ldarg_0);
                 setterIlGenerator.Emit(OpCodes.Ldarg_1);
                 setterIlGenerator.Emit(OpCodes.Stfld, fieldBuilder);
-
-                setterIlGenerator.Emit(OpCodes.Nop);
-                setterIlGenerator.MarkLabel(exitSet);
                 setterIlGenerator.Emit(OpCodes.Ret);
 
                 propertyBuilder.SetSetMethod(setPropMthdBldr);

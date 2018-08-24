@@ -1,4 +1,5 @@
-﻿using Dynamix.Reflection;
+﻿using Dynamix.DynamicLinq;
+using Dynamix.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -77,7 +78,7 @@ namespace Dynamix.Expressions
             return GetPropertySelector(typeof(T), propertyName, safe);
         }
 
-        public static Expression GetPropertyExpression(ParameterExpression instanceExpression, string propertyName, bool safe = false)
+        public static Expression GetPropertyExpression(Expression instanceExpression, string propertyName, bool safe = false)
         {
             return MakeMemberAccess(instanceExpression, propertyName, safe);
         }
@@ -117,7 +118,7 @@ namespace Dynamix.Expressions
             return GetDeepPropertySelector(typeof(T), propertyName, safe);
         }
 
-        public static Expression GetDeepPropertyExpression(ParameterExpression instanceExpression, string propertyName, bool safe = false)
+        public static Expression GetDeepPropertyExpression(Expression instanceExpression, string propertyName, bool safe = false)
         {
             return MakeDeepMemberAccess(instanceExpression, propertyName, safe);
         }
@@ -130,13 +131,13 @@ namespace Dynamix.Expressions
         {
             var hasName = instanceParameter.Name != string.Empty;
             var itParameter = hasName ? Expression.Parameter(instanceParameter.Type) : instanceParameter;
-            var l = System.Linq.Dynamic.DynamicExpression.ParseLambda(new[] { itParameter }, null, expression);
+            var l = DynamicExpressionParser.ParseLambda(new[] { itParameter }, null, expression);
             return hasName ? ExpressionParameterReplacer.Replace(l, itParameter, instanceParameter) : l;
         }
 
         public static Expression<Func<T, TProperty>> GetExpressionSelector<T, TProperty>(ParameterExpression instanceParameter, string expression, bool safe = false)
         {
-            var l = System.Linq.Dynamic.DynamicExpression.ParseLambda<T,TProperty>(expression);
+            var l = DynamicExpressionParser.ParseLambda<T,TProperty>(expression);
             return ExpressionParameterReplacer.Replace(l, l.Parameters[0], instanceParameter);
         }
 
@@ -163,7 +164,7 @@ namespace Dynamix.Expressions
 
         public static Expression GetExpression(ParameterExpression instanceExpression, string expression, bool safe = false)
         {
-            return System.Linq.Dynamic.DynamicExpression.Parse(new[] { instanceExpression }, null, expression);
+            return DynamicExpressionParser.Parse(new[] { instanceExpression }, null, expression);
         }
 
         #endregion

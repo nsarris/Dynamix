@@ -56,8 +56,7 @@ namespace Dynamix
 
             switch (function)
             {
-                case Functions.Where:
-                case Functions.Take:
+                case Functions.Where:case Functions.Take:
                 case Functions.Skip:
                     parameterExpressions = parameterExpressions.Concat(parameters).ToArray();
                     break;
@@ -328,6 +327,16 @@ namespace Dynamix
             var en = Source.GetEnumerator();
             while (en.MoveNext())
                 yield return en.Current;
+        }
+
+        public static DynamicQueryable FromEntityFrameworkDbContextSet(object dbContext, Type entityType, bool stateTracking = false)
+        {
+            return EntityFrameworkHelper.FromDbContextSet(dbContext, entityType, stateTracking);
+        }
+
+        public static DynamicQueryable FromLinqToDBDataConnection(object dataConnection, Type modelType)
+        {
+            return LinqToDBHeper.FromLinqToDBDataConnection(dataConnection, modelType);
         }
     }
 }

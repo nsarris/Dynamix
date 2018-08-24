@@ -125,6 +125,7 @@
     <Compile Include="Helpers\NumericValueParser.cs" />
     <Compile Include="Helpers\NumericTypeHelper.cs" />
     <Compile Include="Helpers\StringExtensions.cs" />
+    <Compile Include="Helpers\With.cs" />
     <Compile Include="QyeryableExtensions\QyerableExtensions.cs" />
     <Compile Include="QyeryableExtensions\SingleQueryable.cs" />
     <Compile Include="Reflection\Assembly\AssemblyArchitectureResolver.cs" />

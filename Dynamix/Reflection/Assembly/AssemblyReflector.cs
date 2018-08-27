@@ -17,13 +17,14 @@ namespace Dynamix.Reflection
 
         public static List<Type> FindTypesInAssemblies(Func<Type, bool> predicate, bool lookInBaseDirectory = true, params string[] extraPaths)
         {
-            var loadedTypes
-                     = AppDomain.CurrentDomain.GetAssemblies()
+            var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var loadedAssemblyNames = loadedAssemblies.Select(a => a.GetName().FullName).ToList();
+
+            var loadedTypes =
+                     loadedAssemblies
                     .Where(x => !x.IsDynamic)
                     .SelectMany(x => { try { return x.GetTypes().Where(t => { try { return predicate(t); } catch { return false; } }); } catch { return Enumerable.Empty<Type>(); } })
                     .ToList();
-
-            var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetName().FullName).ToList();
 
             var manager = new AssemblyReflectionManager();
 
@@ -42,7 +43,7 @@ namespace Dynamix.Reflection
                             try
                             {
                                 var assemblyName = AssemblyName.GetAssemblyName(file.FullName);
-                                if (!loadedAssemblies.Any(x => x == assemblyName.FullName))
+                                if (!loadedAssemblyNames.Any(x => x == assemblyName.FullName))
                                 {
                                     var success = manager.LoadAssembly(file.FullName, "TypeSearchDomain");
 

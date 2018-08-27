@@ -78,7 +78,7 @@ namespace Dynamix.Helpers
 
             if (value == null)
             {
-                if (targetType.IsClass || Nullable.GetUnderlyingType(targetType) != null)
+                if (targetType.IsInterface || targetType.IsClass || Nullable.GetUnderlyingType(targetType) != null)
                     return default;
                 else
                     throw new InvalidCastException("Null cannot be casted to non nullable value type");

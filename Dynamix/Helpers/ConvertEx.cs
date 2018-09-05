@@ -101,9 +101,15 @@ namespace Dynamix.Helpers
 
         public static object CastTo(object value, Type targetType)
         {
+            if (targetType == null)
+                throw new ArgumentNullException(nameof(targetType));
+
+            if (value == null || value.GetType() == targetType)
+                return value;
+
             return castMethod
                 .MakeGenericMethodCached(new[] { targetType })
-                .Invoke(value, null);
+                .Invoke(null, new[] { value });
         }
     }
 }

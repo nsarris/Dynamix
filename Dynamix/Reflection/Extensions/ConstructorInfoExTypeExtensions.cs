@@ -12,7 +12,7 @@ namespace Dynamix.Reflection
     {
         const BindingFlags PUBLIC_ISTANCE_STATIC = BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static;
 
-        public static ConstructorInfoEx ConstructorInfo(this ConstructorInfo constructorInfo, bool enableCaching = true)
+        public static ConstructorInfoEx GetConstructorEx(this ConstructorInfo constructorInfo, bool enableCaching = true)
         {
             if (enableCaching)
                 return ConstructorInfoExCache.GetConstructorEx(constructorInfo);

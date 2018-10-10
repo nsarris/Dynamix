@@ -133,6 +133,12 @@ namespace Dynamix.Reflection.DelegateBuilders
             return (Func<TParam1, TParam2, TParam3, TResult>)BuildFromTypes(ctorInfo, typeof(TResult), new[] { typeof(TParam1), typeof(TParam2), typeof(TParam3) });
         }
 
+        //Four parameters
+        public Func<TParam1, TParam2, TParam3, TParam4, TResult> Build<TParam1, TParam2, TParam3, TParam4, TResult>(ConstructorInfo ctorInfo)
+        {
+            return (Func<TParam1, TParam2, TParam3, TParam4, TResult>)BuildFromTypes(ctorInfo, typeof(TResult), new[] { typeof(TParam1), typeof(TParam2), typeof(TParam3), typeof(TParam4) });
+        }
+
         #endregion Typed Builders
     }
 }

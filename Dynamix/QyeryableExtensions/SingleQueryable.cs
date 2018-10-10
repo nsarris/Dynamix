@@ -10,6 +10,12 @@ namespace Dynamix.QueryableExtensions
         {
             Queryable = queryable;
         }
+
+        public SingleQueryable(T item)
+        {
+            Queryable = new[] { item }.AsQueryable();
+        }
+
         public IQueryable<T> Queryable { get; private set; }
         public T Single()
         {

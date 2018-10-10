@@ -60,29 +60,28 @@ namespace Dynamix.Reflection
         {
             foreach (var assemblyName in assemblyNames)
             {
-                var executingAssembly = FindFile(AppDomain.CurrentDomain.BaseDirectory, Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location));
-                var assemblyDir = Path.GetDirectoryName(executingAssembly);
-
-                var a = new AssemblyResolverDescriptor
+                if (!resolverDescriptors.ContainsKey(assemblyName))
                 {
-                    AssemblyName = assemblyName,
-                    OriginalAssembly = Path.Combine(assemblyDir, assemblyName + ".dll"),
-                    X86Assembly = Path.Combine(assemblyDir, "x86", assemblyName + ".dll"),
-                    X64Assembly = Path.Combine(assemblyDir, "x64", assemblyName + ".dll")
-                };
-                
-                resolverDescriptors.Add(a.AssemblyName, a);
+                    var executingAssembly = FindFile(AppDomain.CurrentDomain.BaseDirectory, Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location));
+                    var assemblyDir = Path.GetDirectoryName(executingAssembly);
 
-                if (assemblyDir != null && (File.Exists(a.OriginalAssembly)))
-                {
-                    throw new InvalidOperationException(string.Format("Found {0}.dll which cannot exist. "
-                        + "Must instead have x86\\{0}.dll and x64\\{0}.dll. Check your build settings.", assemblyName));
+                    var a = new AssemblyResolverDescriptor
+                    {
+                        AssemblyName = assemblyName,
+                        OriginalAssembly = Path.Combine(assemblyDir, assemblyName + ".dll"),
+                        X86Assembly = Path.Combine(assemblyDir, "x86", assemblyName + ".dll"),
+                        X64Assembly = Path.Combine(assemblyDir, "x64", assemblyName + ".dll")
+                    };
+
+                    resolverDescriptors.Add(a.AssemblyName, a);
+
+                    if (assemblyDir != null && (File.Exists(a.OriginalAssembly)))
+                    {
+                        throw new InvalidOperationException(string.Format("Found {0}.dll which cannot exist. "
+                            + "Must instead have x86\\{0}.dll and x64\\{0}.dll. Check your build settings.", assemblyName));
+                    }
                 }
             }
-
-            
-
-            
         }
 
         private static string FindFile(string directory, string filename)

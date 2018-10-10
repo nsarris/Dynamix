@@ -8,13 +8,8 @@ using System.Threading.Tasks;
 
 namespace Dynamix.Reflection
 {
-    public class AssemblyReflector
+    public static class AssemblyReflector
     {
-        private static string GetResolvedAssemblyFileName(string assemblyFileName)
-        {
-            return null;
-        }
-
         public static List<Type> FindTypesInAssemblies(Func<Type, bool> predicate, bool lookInBaseDirectory = true, params string[] extraPaths)
         {
             var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
@@ -45,8 +40,6 @@ namespace Dynamix.Reflection
                                 var assemblyName = AssemblyName.GetAssemblyName(file.FullName);
                                 if (!loadedAssemblyNames.Any(x => x == assemblyName.FullName))
                                 {
-                                    var success = manager.LoadAssembly(file.FullName, "TypeSearchDomain");
-
                                     var results = manager.Reflect(file.FullName, (a) =>
                                     {
                                         return a.GetTypes();
@@ -60,7 +53,9 @@ namespace Dynamix.Reflection
                                     manager.UnloadAssembly(fileName);
                                 }
                             }
-                            catch { }
+                            catch {
+                                //Ignore assemblies that can't be loaded, perhaps log them
+                            }
                         }
                     }
                 }
@@ -78,7 +73,7 @@ namespace Dynamix.Reflection
         {
             var assembly = FindOrLoadAssembly(assemblyName, lookInBaseDirectory, extraPaths);
             if (assembly == null)
-                throw new Exception("Cannot load assembly " + assemblyName);
+                throw new InvalidOperationException("Cannot load assembly " + assemblyName);
 
             return assembly.GetTypes().Where(predicate).ToList();
         }
@@ -86,8 +81,7 @@ namespace Dynamix.Reflection
         public static Assembly FindOrLoadAssembly(string name, bool lookInBaseDirectory = true, params string[] extraPaths)
         {
             var loadedAssembly = AppDomain.CurrentDomain.GetAssemblies()
-                .Where(x => !x.IsDynamic && x.GetName().Name == name)
-                .FirstOrDefault();
+                .FirstOrDefault(x => !x.IsDynamic && x.GetName().Name == name);
 
             if (loadedAssembly != null)
                 return loadedAssembly;
@@ -146,6 +140,4 @@ namespace Dynamix.Reflection
             }
         }      
     }
-
 }
-

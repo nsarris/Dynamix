@@ -66,7 +66,11 @@ namespace Dynamix.Reflection
 
         public static Type FindTypeInAssembly(string assemblyName, string typeName, bool lookInBaseDirectory = true, params string[] extraPaths)
         {
-            return FindTypesInAssembly(assemblyName, x => x.Name == typeName, lookInBaseDirectory, extraPaths).FirstOrDefault();
+            var assembly = FindOrLoadAssembly(assemblyName, lookInBaseDirectory, extraPaths);
+            if (assembly == null)
+                throw new InvalidOperationException("Cannot load assembly " + assemblyName);
+
+            return assembly.GetType(typeName);
         }
 
         public static List<Type> FindTypesInAssembly(string assemblyName, Func<Type, bool> predicate, bool lookInBaseDirectory = true, params string[] extraPaths)

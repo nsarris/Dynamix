@@ -206,6 +206,9 @@ namespace Dynamix.Reflection
 
         public static object DefaultOf(this Type type)
         {
+            if (type.IsClass || type.IsInterface)
+                return null;
+
             return defaultOfGenericMethod.Value
                 .MakeGenericMethodCached(type)
                 .Invoke(null, null);
@@ -220,6 +223,46 @@ namespace Dynamix.Reflection
             return default;
         }
 
-        
+        public static bool IsOrSubclassOfGenericDeep(this Type type, Type openGenericType)
+        {
+            return IsOrSubclassOfGenericDeep(type, openGenericType, out var _);
+        }
+
+        public static bool IsOrSubclassOfGenericDeep(this Type type, Type openGenericType, out Type actualType)
+        {
+            actualType = null;
+            while (type != typeof(object))
+            {
+                if (type.IsGenericType && type.GetGenericTypeDefinition() == openGenericType)
+                {
+                    actualType = type;
+                    return true;
+                }
+                type = type.BaseType;
+            }
+            return false;
+        }
+
+        public static bool IsOrSubclassOfDeep(this Type type, Type typeToCompare)
+        {
+            if (typeToCompare == typeof(object))
+                return true;
+
+            while (type != typeof(object))
+            {
+                if (type == typeToCompare)
+
+                    return true;
+
+                type = type.BaseType;
+            }
+            return false;
+        }
+
+        public static bool IsSubclassOfDeep(this Type type, Type typeToCompare)
+        {
+
+            return type.BaseType.IsOrSubclassOfDeep(typeToCompare);
+        }
     }
 }

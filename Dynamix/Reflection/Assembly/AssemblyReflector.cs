@@ -13,13 +13,14 @@ namespace Dynamix.Reflection
         public static List<Type> FindTypesInAssemblies(Func<Type, bool> predicate, bool lookInBaseDirectory = true, params string[] extraPaths)
         {
             var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-            var loadedAssemblyNames = loadedAssemblies.Select(a => a.GetName().FullName).ToList();
 
             var loadedTypes =
                      loadedAssemblies
                     .Where(x => !x.IsDynamic)
                     .SelectMany(x => { try { return x.GetTypes().Where(t => { try { return predicate(t); } catch { return false; } }); } catch { return Enumerable.Empty<Type>(); } })
                     .ToList();
+
+            var loadedAssemblyNames = loadedAssemblies.Select(a => a.GetName().FullName).ToList();
 
             var manager = new AssemblyReflectionManager();
 
@@ -38,7 +39,8 @@ namespace Dynamix.Reflection
                             try
                             {
                                 var assemblyName = AssemblyName.GetAssemblyName(file.FullName);
-                                if (!loadedAssemblyNames.Any(x => x == assemblyName.FullName))
+                                if (!loadedAssemblyNames.Any(x => x == assemblyName.FullName)
+                                    && manager.LoadAssembly(file.FullName, "TypeSearchDomain"))
                                 {
                                     var results = manager.Reflect(file.FullName, (a) =>
                                     {
@@ -53,7 +55,8 @@ namespace Dynamix.Reflection
                                     manager.UnloadAssembly(fileName);
                                 }
                             }
-                            catch {
+                            catch
+                            {
                                 //Ignore assemblies that can't be loaded, perhaps log them
                             }
                         }
@@ -117,10 +120,12 @@ namespace Dynamix.Reflection
             }
             return null;
         }
+
         public static void LoadAllAssemblies()
         {
             LoadAllAssemblies(AppDomain.CurrentDomain.BaseDirectory);
         }
+
         public static void LoadAllAssemblies(string path)
         {
             var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies()
@@ -142,6 +147,6 @@ namespace Dynamix.Reflection
                     }
                 }
             }
-        }      
+        }
     }
 }

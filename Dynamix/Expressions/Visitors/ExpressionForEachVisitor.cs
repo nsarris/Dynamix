@@ -24,7 +24,7 @@ namespace Dynamix.Expressions.Visitors
 
         public override Expression Visit(Expression node)
         {
-            if ( visitor != null)
+            if (visitor != null)
                 node = visitor(node);
 
             return base.Visit(node);

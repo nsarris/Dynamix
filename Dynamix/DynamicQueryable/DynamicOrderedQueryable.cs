@@ -10,12 +10,12 @@ namespace Dynamix
         internal DynamicOrderedQueryable(IQueryable query)
             : base(query.AsQueryable())
         {
-            
+
         }
         public DynamicOrderedQueryable(IOrderedQueryable query)
             : base(query)
         {
-            
+
         }
         public DynamicOrderedQueryable ThenBy(LambdaExpression ordering)
         {

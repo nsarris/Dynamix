@@ -18,9 +18,9 @@ namespace Dynamix.Expressions.PredicateBuilder
             foreach (var childNode in node.Nodes)
             {
                 expression =
-                    expression == null 
-                        ? childNode.Accept(this, input) 
-                        : childNode.LogicalOperator == LogicalOperator.And 
+                    expression == null
+                        ? childNode.Accept(this, input)
+                        : childNode.LogicalOperator == LogicalOperator.And
                             ? ExpressionEx.AndAlso(expression, childNode.Accept(this, input))
                             : ExpressionEx.OrElse(expression, childNode.Accept(this, input));
             }
@@ -57,10 +57,10 @@ namespace Dynamix.Expressions.PredicateBuilder
             return Expression.Lambda(Visit(root, input), input.ItParameterExpression);
         }
 
-        public Expression<Func<T,bool>> VisitLambda<T>(NodeBase root, PredicateBuilderConfiguration configuration = null)
+        public Expression<Func<T, bool>> VisitLambda<T>(NodeBase root, PredicateBuilderConfiguration configuration = null)
         {
             var input = new ExpressionNodeVisitorInput(typeof(T), configuration);
-            return Expression.Lambda<Func<T,bool>>(Visit(root, input), input.ItParameterExpression);
+            return Expression.Lambda<Func<T, bool>>(Visit(root, input), input.ItParameterExpression);
         }
     }
 }

@@ -8,7 +8,7 @@ namespace Dynamix
 {
     public static class LINQExtensions
     {
-        
+
         public static IEnumerable<TResult> Zip<TFirst, TSecond, TResult>(this IEnumerable<TFirst> first, IEnumerable<TSecond> second, Func<TFirst, TSecond, int, TResult> resultSelector)
         {
             if (first == null)

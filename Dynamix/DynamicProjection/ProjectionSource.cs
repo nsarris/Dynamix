@@ -7,7 +7,7 @@ namespace Dynamix.DynamicProjection
 {
     internal interface IProjectionSource
     {
-        
+
     }
 
     internal class StringProjectionSource : IProjectionSource

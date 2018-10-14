@@ -50,7 +50,7 @@ namespace Dynamix.Reflection.DelegateBuilders
 
         #region Generic Builders
 
-        public Func<object,object> BuildGenericGetter(FieldInfo fieldInfo)
+        public Func<object, object> BuildGenericGetter(FieldInfo fieldInfo)
         {
             if (fieldInfo == null)
                 throw new ArgumentNullException(nameof(fieldInfo));

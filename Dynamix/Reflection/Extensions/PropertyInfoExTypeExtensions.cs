@@ -46,7 +46,7 @@ namespace Dynamix.Reflection
             if (enableCaching)
                 return PropertyInfoExCache.GetPropertiesEx(type, bindingFlags);
             else
-                return type.GetProperties(bindingFlags).Select(x => new PropertyInfoEx(x,false));
+                return type.GetProperties(bindingFlags).Select(x => new PropertyInfoEx(x, false));
         }
 
         public static PropertyInfoEx GetPropertyEx(this Type type, string name, BindingFlagsEx bindingFlags, bool enableCaching = true)
@@ -61,7 +61,7 @@ namespace Dynamix.Reflection
 
         public static IEnumerable<PropertyInfoEx> GetPropertiesEx(this Type type, BindingFlagsEx bindingFlags, bool enableCaching = true)
         {
-            return GetPropertiesEx(type, (BindingFlags)bindingFlags,enableCaching);
+            return GetPropertiesEx(type, (BindingFlags)bindingFlags, enableCaching);
         }
     }
 }

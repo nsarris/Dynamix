@@ -24,7 +24,7 @@ namespace Dynamix
 
             Type = type;
             EffectiveType = nullableUnderlyingType ?? type;
-            
+
             if (!sizeInBytes.TryGetValue(EffectiveType, out var sizeBytes))
                 throw new InvalidOperationException("Type " + type.Name + " is not a numeric type");
 
@@ -43,7 +43,7 @@ namespace Dynamix
                  typeof(float),typeof(double),typeof(decimal)
             };
 
-        
+
         readonly static Dictionary<Type, byte> sizeInBytes = new Dictionary<Type, byte>()
         {
             {  typeof(sbyte), 1 }, {  typeof(byte), 1 },
@@ -84,8 +84,8 @@ namespace Dynamix
                     .Select(x => typeof(Nullable<>).MakeGenericType(x)))
                 .ToDictionary(x => x, x => new NumericTypeDescriptor(x));
 
-            
-            
+
+
             maxIntegralSizeBytes = numericTypes.Values.Where(x => x.IsIntegral).Max(x => x.SizeBytes);
 
             var maxSizeBytes = numericTypes.Values.Where(x => !x.IsIntegral && x.Signed).Max(x => x.SizeBytes);
@@ -142,15 +142,15 @@ namespace Dynamix
                 else
                     returnType = numericTypes.Values.FirstOrDefault(x => x.Signed && x.SizeBytes == maxSize + 1).EffectiveType;
             }
-            else if(!leftDefinition.IsIntegral && !rightDefinition.IsIntegral)
+            else if (!leftDefinition.IsIntegral && !rightDefinition.IsIntegral)
             {
                 returnType = leftDefinition.SizeBytes > rightDefinition.SizeBytes ?
                        leftDefinition.EffectiveType : rightDefinition.EffectiveType;
             }
-            else 
+            else
             {
                 returnType = leftDefinition.IsIntegral ?
-                       leftDefinition.EffectiveType : 
+                       leftDefinition.EffectiveType :
                        rightDefinition.EffectiveType;
             }
 
@@ -281,14 +281,14 @@ namespace Dynamix
 
             var effectiveValueType = Nullable.GetUnderlyingType(value.GetType()) ?? value.GetType();
             var effectiveEnumType = Nullable.GetUnderlyingType(enumType) ?? enumType;
-            
+
             if (value is null)
             {
                 if (enumType == effectiveEnumType)
                     return null;
                 else
                     throw new InvalidOperationException($"Cannot convert from null to a non nullable target type of ${enumType.Name}");
-            }      
+            }
 
             if (!effectiveEnumType.IsEnum)
                 throw new InvalidOperationException($"Type {effectiveEnumType.Name} is not an enum");
@@ -296,7 +296,7 @@ namespace Dynamix
             var enumUnderlyingType = effectiveEnumType.IsEnum ? Enum.GetUnderlyingType(effectiveEnumType) : null;
 
             if (!effectiveValueType.IsEnum
-                && !IsNumericType(value.GetType()) 
+                && !IsNumericType(value.GetType())
                 && !EnumParser.Default.TryParse(enumType, value, out value))
                 throw new InvalidOperationException($"Value {value} is not a number or cannot be converted to enum type {enumType.Name}");
 

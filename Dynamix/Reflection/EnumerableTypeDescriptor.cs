@@ -72,7 +72,7 @@ namespace Dynamix.Reflection
             AddType(typeof(IReadOnlyCollection<>), IsReadOnly: true, IsIndexed: false, EnumerableType: EnumerableTypeEnum.Collection);
             AddType(typeof(IDictionary), IsReadOnly: false, IsIndexed: true, EnumerableType: EnumerableTypeEnum.Dictionary);
             AddType(typeof(IReadOnlyDictionary<,>), IsReadOnly: true, IsIndexed: false, EnumerableType: EnumerableTypeEnum.Dictionary);
-            AddType(typeof(IDictionary<,>), IsReadOnly: false, IsIndexed: true,  EnumerableType: EnumerableTypeEnum.Dictionary);
+            AddType(typeof(IDictionary<,>), IsReadOnly: false, IsIndexed: true, EnumerableType: EnumerableTypeEnum.Dictionary);
         }
 
         private void ConstructArrayType()
@@ -93,15 +93,15 @@ namespace Dynamix.Reflection
 
             if (!Types.TryGetValue(IsGeneric ? GenericType : Type, out var typeDescriptor))
                 throw new Exception("Type is not an enumerable type");
-            
+
             IsReadOnly = typeDescriptor.IsReadOnly;
             IsDictionary = typeDescriptor.EnumerableType == EnumerableTypeEnum.Dictionary;
             IsCollection = typeDescriptor.EnumerableType == EnumerableTypeEnum.Collection;
             IsArray = typeDescriptor.EnumerableType == EnumerableTypeEnum.Array;
             IsList = typeDescriptor.EnumerableType == EnumerableTypeEnum.List;
-            
+
             IsIndexed = typeDescriptor.IsIndexed;
-            
+
             if (!IsGeneric)
                 enumeratorMethod = typeof(IEnumerable).GetMethod("GetEnumerator");
             else
@@ -122,7 +122,7 @@ namespace Dynamix.Reflection
             }
         }
 
-        
+
 
         private void ConstructClassType()
         {
@@ -137,7 +137,7 @@ namespace Dynamix.Reflection
             var enumerable = interfaces.Any(x => x.Type == typeof(IEnumerable));
             if (!enumerable)
                 throw new Exception("Type is not an enumerable type");
-            
+
             var enumeratorMethods = Type.GetMethods().Where(x => x.Name == "GetEnumerator" && x.GetParameters().Count() == 0).ToList();
             //TODO: Check if only explicit implementation!!
             enumeratorMethod = enumeratorMethods.FirstOrDefault();
@@ -162,7 +162,7 @@ namespace Dynamix.Reflection
 
             IsReadOnly = !actualInterfaces.Any(x => !x.TypeDescriptor.IsReadOnly);
             IsIndexed = actualInterfaces.Any(x => x.TypeDescriptor.IsIndexed);
-            
+
             if (actualInterfaces.Any(x => x.TypeDescriptor.EnumerableType == EnumerableTypeEnum.Dictionary))
             {
                 IsDictionary = true;
@@ -314,14 +314,14 @@ namespace Dynamix.Reflection
             throw new NotImplementedException();
         }
 
-        
+
         public static IList BuildListFromEnumerable(IEnumerable enumerable, Type elementType = null, bool readOnly = false)
         {
             if (elementType != null)
                 return (IList)typeof(EnumerableTypeDescriptor).GetMethods()
                     .Where(x => x.Name == nameof(BuildListFromEnumerable) && x.IsGenericMethod).FirstOrDefault()
                     .MakeGenericMethodCached(elementType).Invoke(null, new object[] { enumerable, readOnly });
-            
+
             if (readOnly)
                 return new ReadOnlyCollection<object>(enumerable.Cast<object>().ToList());
             else

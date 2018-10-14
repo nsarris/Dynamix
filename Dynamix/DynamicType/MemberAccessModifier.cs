@@ -2,7 +2,7 @@
 {
     public enum MemberAccessModifier
     {
-        Public, 
+        Public,
         Private,
         Protected
     }

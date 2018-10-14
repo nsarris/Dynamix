@@ -11,7 +11,7 @@ namespace Dynamix
     {
         [NonSerialized]
         IReadOnlyDictionary<string, PropertyInfoEx> props;
-        
+
         public IEnumerable<PropertyInfoEx> GetProperties()
         {
             return Properties.Values;
@@ -34,7 +34,7 @@ namespace Dynamix
             {
                 if (props == null)
                     props = PropertyInfoExCache.GetPropertiesExDic(this.GetType());
-                
+
                 return props;
             }
         }
@@ -70,7 +70,7 @@ namespace Dynamix
                 return default;
             else if (nullableOf == v.GetType())
                 return (T)v;
-            else 
+            else
                 return (T)Convert.ChangeType(v, nullableOf);
         }
 

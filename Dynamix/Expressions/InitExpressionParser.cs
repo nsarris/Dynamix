@@ -43,8 +43,8 @@ namespace Dynamix.Expressions
             get
             {
                 if (compiledLambdaExpression == null && ValueLambdaExpression != null)
-                        compiledLambdaExpression = ValueLambdaExpression.Compile();
-                
+                    compiledLambdaExpression = ValueLambdaExpression.Compile();
+
                 return compiledLambdaExpression;
             }
         }

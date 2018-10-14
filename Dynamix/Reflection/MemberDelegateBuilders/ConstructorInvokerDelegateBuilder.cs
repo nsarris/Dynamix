@@ -49,10 +49,10 @@ namespace Dynamix.Reflection.DelegateBuilders
 
         public GenericStaticInvoker BuildGeneric(ConstructorInfo ctorInfo)
         {
-            if (EnableCaching 
+            if (EnableCaching
                 && genericCache.TryGetValue(ctorInfo, out var cachedDelegate))
-                    return (GenericStaticInvoker)cachedDelegate;
-            
+                return (GenericStaticInvoker)cachedDelegate;
+
             var delegate_ = builder.BuildGeneric(ctorInfo).Compile();
 
             if (EnableCaching)
@@ -118,13 +118,13 @@ namespace Dynamix.Reflection.DelegateBuilders
         //One parameter
         public Func<TParam1, TResult> Build<TParam1, TResult>(ConstructorInfo ctorInfo)
         {
-            return (Func<TParam1, TResult>)BuildFromTypes(ctorInfo, typeof(TResult), new[] { typeof(TParam1)});
+            return (Func<TParam1, TResult>)BuildFromTypes(ctorInfo, typeof(TResult), new[] { typeof(TParam1) });
         }
 
         //Two parameters
         public Func<TParam1, TParam2, TResult> Build<TParam1, TParam2, TResult>(ConstructorInfo ctorInfo)
         {
-            return (Func<TParam1, TParam2, TResult>)BuildFromTypes(ctorInfo, typeof(TResult), new[] { typeof(TParam1), typeof(TParam2)});
+            return (Func<TParam1, TParam2, TResult>)BuildFromTypes(ctorInfo, typeof(TResult), new[] { typeof(TParam1), typeof(TParam2) });
         }
 
         //Three parameters

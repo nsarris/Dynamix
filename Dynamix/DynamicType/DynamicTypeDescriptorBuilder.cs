@@ -15,7 +15,7 @@ namespace Dynamix
             dynamicTypeDescriptor = new DynamicTypeDescriptor(name, properties, fields, interfaces, baseType);
         }
 
-        
+
         public DynamicTypeDescriptorBuilder AddProperty(DynamicTypeProperty property)
         {
             dynamicTypeDescriptor.AddProperty(property);

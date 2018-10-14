@@ -28,7 +28,7 @@ namespace Dynamix.DynamicProjection
             It = Expression.Parameter(SourceType);
         }
 
-        public DynamicProjectionConfiguration Clone(Type sourceType, Type projectedType, bool dynamicProjectedType,string dynamicTypeName)
+        public DynamicProjectionConfiguration Clone(Type sourceType, Type projectedType, bool dynamicProjectedType, string dynamicTypeName)
         {
             return new DynamicProjectionConfiguration(sourceType ?? SourceType, dynamicProjectedType ? null : projectedType ?? ProjectedType)
             {

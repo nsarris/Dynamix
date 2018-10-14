@@ -36,7 +36,7 @@ namespace Dynamix.DynamicLinq
 
         public static Expression<Func<T, S>> ParseLambda<T, S>(string expression, params object[] values)
         {
-            return System.Linq.Dynamic.DynamicExpression.ParseLambda<T,S>(expression, values);
+            return System.Linq.Dynamic.DynamicExpression.ParseLambda<T, S>(expression, values);
         }
     }
 }

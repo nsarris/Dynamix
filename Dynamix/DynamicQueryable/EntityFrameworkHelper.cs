@@ -33,7 +33,7 @@ namespace Dynamix
                                 Params = m.GetParameters(),
                                 Args = m.GetGenericArguments()
                             });
-                        
+
                         if (setMethods != null)
                         {
                             efmethods = new EFMethods

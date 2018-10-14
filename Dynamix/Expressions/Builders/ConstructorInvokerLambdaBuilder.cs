@@ -52,7 +52,7 @@ namespace Dynamix.Expressions.LambdaBuilders
 
             if (EnableCaching && genericCache.TryGetValue(ctorInfo, out var cachedLambda))
                 return (Expression<GenericStaticInvoker>)cachedLambda;
-            
+
             var inputParameters = Expression.Parameter(typeof(object[]), "parameters");
 
             var methodParameters = ctorInfo.GetParameters();
@@ -134,7 +134,7 @@ namespace Dynamix.Expressions.LambdaBuilders
 
             if (EnableCaching && byDelegateTypeCache.TryGetValue(delegateType, out var cachedLambda))
                 return cachedLambda;
-            
+
             var parameterTypes = ctorInfo.GetParameters().Select(x => x.ParameterType);
             Type instanceType = ctorInfo.DeclaringType;
 

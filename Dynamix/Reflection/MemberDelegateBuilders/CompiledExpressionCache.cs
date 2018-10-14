@@ -10,7 +10,7 @@ namespace Dynamix.Reflection.DelegateBuilders
 {
     internal static class CompiledExpressionCache
     {
-        private static ConcurrentDictionary<LambdaExpression, object> cache 
+        private static ConcurrentDictionary<LambdaExpression, object> cache
             = new ConcurrentDictionary<LambdaExpression, object>();
 
         public static object GetCached(LambdaExpression l)

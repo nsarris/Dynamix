@@ -152,10 +152,10 @@ namespace Dynamix.DynamicProjection
             if (sort != null && sortTarget == DynamicProjectionOperationTarget.Source)
                 query = sort.Aggregate(query, (acc, next) =>
                     {
-                        var lambda = 
+                        var lambda =
                             Expression.Lambda(
                                 CompiledConfiguration.CompiledMembers[next.Expression]
-                                    .Source.SourceExpression, 
+                                    .Source.SourceExpression,
                                 CompiledConfiguration.It);
 
                         return next.IsDescending ?

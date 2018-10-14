@@ -17,7 +17,7 @@ namespace Dynamix.Expressions
 
         public static class Constants
         {
-            
+
             public static ConstantExpression Null { get; } = Expression.Constant(null);
             public static ConstantExpression NullOf<T>() => Expression.Constant(null, typeof(T));
             public static ConstantExpression NullOf(Type type) => Expression.Constant(null, type);

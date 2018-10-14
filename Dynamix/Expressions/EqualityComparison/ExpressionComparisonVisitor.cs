@@ -136,35 +136,35 @@ namespace Dynamix.Expressions
 
         protected virtual bool VisitExpressionList(ReadOnlyCollection<Expression> a, ReadOnlyCollection<Expression> b)
         {
-            return VisitList(a,b, Visit);
+            return VisitList(a, b, Visit);
         }
 
         protected virtual bool VisitBindingList(ReadOnlyCollection<MemberBinding> a, ReadOnlyCollection<MemberBinding> b)
         {
-            return VisitList(a,b, VisitBinding);
+            return VisitList(a, b, VisitBinding);
         }
 
         protected virtual bool VisitElementInitializerList(ReadOnlyCollection<ElementInit> a, ReadOnlyCollection<ElementInit> b)
         {
-            return VisitList(a,b, VisitElementInitializer);
+            return VisitList(a, b, VisitElementInitializer);
         }
 
         protected virtual bool VisitMemberAssignment(MemberAssignment a, MemberAssignment b)
         {
-            return CheckMember(a.Member,b.Member)
+            return CheckMember(a.Member, b.Member)
                 && Visit(a.Expression, b.Expression);
         }
 
 
         protected virtual bool VisitElementInitializer(ElementInit a, ElementInit b)
         {
-            return CheckMethod(a.AddMethod,b.AddMethod)
+            return CheckMethod(a.AddMethod, b.AddMethod)
                 && VisitExpressionList(a.Arguments, b.Arguments);
         }
 
         protected virtual bool VisitMemberMemberBinding(MemberMemberBinding a, MemberMemberBinding b)
         {
-            return CheckMember(a.Member, b.Member) 
+            return CheckMember(a.Member, b.Member)
                 && VisitBindingList(a.Bindings, b.Bindings);
         }
 
@@ -177,7 +177,7 @@ namespace Dynamix.Expressions
 
         private bool VisitLambda(LambdaExpression a, LambdaExpression b)
         {
-            return 
+            return
                 a.ReturnType == b.ReturnType
                 && VisitList(a.Parameters, b.Parameters, (p1, p2)
                     => CheckParameter(p1.Name, p1.Type, p1.IsByRef, p2.Name, p2.Type, p2.IsByRef))
@@ -186,7 +186,7 @@ namespace Dynamix.Expressions
 
         private bool VisitUnary(UnaryExpression a, UnaryExpression b)
         {
-            return CheckMethod(a.Method, b.Method, a.IsLifted, a.IsLiftedToNull,b.IsLifted, b.IsLiftedToNull)
+            return CheckMethod(a.Method, b.Method, a.IsLifted, a.IsLiftedToNull, b.IsLifted, b.IsLiftedToNull)
                 && Visit(a.Operand, b.Operand);
         }
 
@@ -221,7 +221,7 @@ namespace Dynamix.Expressions
 
         private bool VisitParameter(ParameterExpression a, ParameterExpression b)
         {
-            return CheckParameter(a.Name,a.Type, a.IsByRef, b.Name,b.Type,b.IsByRef);
+            return CheckParameter(a.Name, a.Type, a.IsByRef, b.Name, b.Type, b.IsByRef);
         }
 
         private bool VisitMember(MemberExpression a, MemberExpression b)
@@ -232,7 +232,7 @@ namespace Dynamix.Expressions
 
         private bool VisitMethodCall(MethodCallExpression a, MethodCallExpression b)
         {
-            return CheckMethod(a.Method,b.Method)
+            return CheckMethod(a.Method, b.Method)
                 && Visit(a.Object, b.Object)
                 && VisitExpressionList(a.Arguments, b.Arguments);
         }
@@ -299,7 +299,7 @@ namespace Dynamix.Expressions
 
         protected virtual bool CheckConstant(object a, object b)
         {
-            return CheckEqual(a,b, CheckEqualsMethod.DefaultEqualityComparer, true);
+            return CheckEqual(a, b, CheckEqualsMethod.DefaultEqualityComparer, true);
         }
 
         protected virtual bool CheckParameter(

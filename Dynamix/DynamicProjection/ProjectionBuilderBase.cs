@@ -30,7 +30,7 @@ namespace Dynamix.DynamicProjection
 
         //internal readonly List<MemberTargetConfiguration> members = new List<MemberTargetConfiguration>();
         //internal readonly List<CtorParamTargetConfiguration> ctorParameters = new List<CtorParamTargetConfiguration>();
-        
+
         protected ProjectionBuilderBase(Type sourceType, Type projectedType)
         {
             Configuration = new DynamicProjectionConfiguration(sourceType, projectedType);
@@ -95,9 +95,9 @@ namespace Dynamix.DynamicProjection
 
         //TODO: Using specific Ctor
 
-        internal TMemberTargetBuilder GetMemberTargetBuilder(MemberTargetConfiguration configuration) 
+        internal TMemberTargetBuilder GetMemberTargetBuilder(MemberTargetConfiguration configuration)
             => (TMemberTargetBuilder)memberTargetBuilderCtor.Invoke(configuration);
-        internal TCtorParamTargetBuilder GetCtorTargetBuilder(CtorParamTargetConfiguration configuration) 
+        internal TCtorParamTargetBuilder GetCtorTargetBuilder(CtorParamTargetConfiguration configuration)
             => (TCtorParamTargetBuilder)ctorParamTargetBuilderCtor.Invoke(configuration);
     }
 }

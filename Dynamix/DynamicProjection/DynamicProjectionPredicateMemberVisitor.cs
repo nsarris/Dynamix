@@ -30,5 +30,5 @@ namespace Dynamix.DynamicProjection
         }
     }
 
-    
+
 }

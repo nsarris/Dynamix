@@ -90,7 +90,7 @@ namespace Dynamix.Expressions.LambdaBuilders
 
             if (EnableCaching
                 && genericGetterCache.TryGetValue(fieldInfo, out var cachedLambda))
-                    return (Expression<Func<object, object>>)cachedLambda;
+                return (Expression<Func<object, object>>)cachedLambda;
 
             var instanceParameter = Expression.Parameter(typeof(object), "instance");
 
@@ -100,7 +100,7 @@ namespace Dynamix.Expressions.LambdaBuilders
                 fieldInfo);
 
             var body = ExpressionEx.CastTypeSafe(invokerExpression, typeof(object));
-            var lambda = Expression.Lambda< Func<object, object>>(body, instanceParameter);
+            var lambda = Expression.Lambda<Func<object, object>>(body, instanceParameter);
 
             if (EnableCaching)
                 genericGetterCache.TryAdd(fieldInfo, lambda);
@@ -114,7 +114,7 @@ namespace Dynamix.Expressions.LambdaBuilders
 
             if (EnableCaching
                 && genericSetterCache.TryGetValue(fieldInfo, out var cachedLambda))
-                    return (Expression<Action<object, object>>)cachedLambda;
+                return (Expression<Action<object, object>>)cachedLambda;
 
             var instanceParameter = Expression.Parameter(typeof(object), "instance");
             var value = Expression.Parameter(typeof(object), "value");

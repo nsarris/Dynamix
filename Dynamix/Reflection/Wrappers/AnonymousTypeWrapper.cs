@@ -33,7 +33,7 @@ namespace Dynamix.Reflection
                 return fields;
             }
         }
-        
+
         private string TranslateFieldName(string fieldname)
         {
             return "<" + fieldname + ">i__Field";
@@ -52,7 +52,7 @@ namespace Dynamix.Reflection
             {
                 if (Fields.TryGetValue(TranslateFieldName(FieldName), out var field))
                     field.Set(wrappedObject, value);
-                
+
                 else throw new ArgumentException("Field " + FieldName + " does not exist in Type " + wrappedObject.GetType());
             }
         }

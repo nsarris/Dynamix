@@ -13,21 +13,21 @@ namespace Dynamix.DynamicProjection
         public Type SourceType { get; }
         public Type ProjectedType { get; }
         public ParameterExpression It { get; }
-        public List<MemberTargetConfiguration> Members { get; set; } 
-        public List<CtorParamTargetConfiguration> CtorParameters { get; set; } 
-        public IMemberNameMatchStrategy MemberNameMatchStrategy { get; set; } 
+        public List<MemberTargetConfiguration> Members { get; set; }
+        public List<CtorParamTargetConfiguration> CtorParameters { get; set; }
+        public IMemberNameMatchStrategy MemberNameMatchStrategy { get; set; }
         public ConstructorInfo Ctor { get; set; }
 
         public Dictionary<string, CompiledCtorParamTargetConfiguration> CompiledCtorParams { get; }
         public Dictionary<string, CompiledMemberTargetConfiguration> CompiledMembers { get; }
-    
+
         public List<MemberInitAssignment> MemberInitAssignments { get; }
         public List<CtorParameterAssignment> CtorParameterAssignments { get; }
 
         public LambdaExpression DefaultSelector { get; }
 
         public CompiledDynamicProjectionConfiguration(
-            DynamicProjectionConfiguration configuration, 
+            DynamicProjectionConfiguration configuration,
             List<CompiledCtorParamTargetConfiguration> compiledCtorParams,
             List<CompiledMemberTargetConfiguration> compiledMembers,
             List<MemberInitAssignment> memberInitAssignments,

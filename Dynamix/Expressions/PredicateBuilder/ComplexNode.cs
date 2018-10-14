@@ -9,7 +9,7 @@ namespace Dynamix.Expressions.PredicateBuilder
     public class ComplexNode : NodeBase
     {
         public ComplexNode(LogicalOperator logicalOperator)
-            :base(logicalOperator)
+            : base(logicalOperator)
         {
 
         }
@@ -19,12 +19,12 @@ namespace Dynamix.Expressions.PredicateBuilder
         public override string GetStringExpression()
         {
             return string.Join(" ",
-                Nodes.Select(node => 
+                Nodes.Select(node =>
                 $"({node} {node.LogicalOperator})"
                 ));
         }
 
-        
+
         public override T Accept<T>(INodeVisitor<T> visitor)
         {
             return visitor.VisitComplexNode(this);

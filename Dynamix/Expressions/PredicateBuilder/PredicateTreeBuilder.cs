@@ -44,7 +44,7 @@ namespace Dynamix.Expressions.PredicateBuilder
         IPredicateTreeBuilderNext IPredicateTreeBuilderNext.And(string expression, ExpressionOperator expressionOperator, object value)
         {
             RootNode.Nodes.Add(new BinaryNode(expression, expressionOperator, value, LogicalOperator.And));
-            
+
             return this;
         }
 
@@ -61,7 +61,7 @@ namespace Dynamix.Expressions.PredicateBuilder
             nestedPredicate(innerBuilder);
             var innerNode = new ComplexNode(LogicalOperator.And);
             innerNode.Nodes.Add(innerBuilder.RootNode);
-            
+
             RootNode.Nodes.Add(innerNode);
 
             return this;

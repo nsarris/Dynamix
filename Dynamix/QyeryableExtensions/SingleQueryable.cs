@@ -42,7 +42,7 @@ namespace Dynamix.QueryableExtensions
             return Queryable.All(condition);
         }
 
-        public SingleQueryable<TResult> Select<TResult>(Expression<Func<T,TResult>> selector)
+        public SingleQueryable<TResult> Select<TResult>(Expression<Func<T, TResult>> selector)
         {
             return new SingleQueryable<TResult>(Queryable.Select(selector));
         }

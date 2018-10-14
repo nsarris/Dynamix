@@ -99,8 +99,8 @@ namespace Dynamix.Expressions.LambdaBuilders
 
             if (EnableCaching
                 && genericGetterCache.TryGetValue(propertyInfo, out var cachedLambda))
-                    return (Expression < GenericPropertyGetter > )cachedLambda;
-            
+                return (Expression<GenericPropertyGetter>)cachedLambda;
+
             var instanceParameter = Expression.Parameter(typeof(object), "instance");
             var inputParameters = Expression.Parameter(typeof(object[]), "indexers");
 
@@ -130,8 +130,8 @@ namespace Dynamix.Expressions.LambdaBuilders
 
             if (EnableCaching
                 && genericSetterCache.TryGetValue(propertyInfo, out var cachedLambda))
-                    return (Expression < GenericPropertySetter > )cachedLambda;
-            
+                return (Expression<GenericPropertySetter>)cachedLambda;
+
             var instanceParameter = Expression.Parameter(typeof(object), "instance");
             var inputParameters = Expression.Parameter(typeof(object[]), "indexers");
             var valueParameter = Expression.Parameter(typeof(object), "value");

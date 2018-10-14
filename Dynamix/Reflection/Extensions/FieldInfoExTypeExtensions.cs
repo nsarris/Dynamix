@@ -35,7 +35,7 @@ namespace Dynamix.Reflection
         public static IReadOnlyDictionary<string, FieldInfoEx> GetFieldsExDic(this Type type, BindingFlags bindingFlags = PUBLIC_ISTANCE_STATIC, bool enableCaching = true)
         {
             if (enableCaching)
-                return FieldInfoExCache.GetFieldsExDic(type,bindingFlags);
+                return FieldInfoExCache.GetFieldsExDic(type, bindingFlags);
             else
                 return new ReadOnlyDictionary<string, FieldInfoEx>(
                     type.GetFields(bindingFlags).ToDictionary(x => x.Name, x => new FieldInfoEx(x, false)));
@@ -61,7 +61,7 @@ namespace Dynamix.Reflection
 
         public static IEnumerable<FieldInfoEx> GetFieldsEx(this Type type, BindingFlagsEx bindingFlags, bool enableCaching = true)
         {
-            return GetFieldsEx(type, (BindingFlags)bindingFlags,enableCaching);
+            return GetFieldsEx(type, (BindingFlags)bindingFlags, enableCaching);
         }
     }
 }

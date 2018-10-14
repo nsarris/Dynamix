@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Dynamix.Reflection.DelegateBuilders
 {
-    
+
 
     public class MethodInvokerDelegateBuilder
     {
@@ -64,11 +64,11 @@ namespace Dynamix.Reflection.DelegateBuilders
         public GenericInstanceInvoker BuildGenericInstance(MethodInfo MethodInfo)
         {
             //if (MethodInfo.IsStatic)
-                //throw new ArgumentException("Method is not instance", nameof(MethodInfo));
+            //throw new ArgumentException("Method is not instance", nameof(MethodInfo));
 
             return (GenericInstanceInvoker)BuildGenericInvoker(MethodInfo, true);
         }
-        
+
 
         private Delegate BuildGenericInvoker(MethodInfo methodInfo, bool asInstance = false)
         {
@@ -94,7 +94,7 @@ namespace Dynamix.Reflection.DelegateBuilders
         #endregion Generic Builders
 
         #region Typed Builders
-        
+
         public Delegate BuildFromTypes(MethodInfo methodInfo, Type instanceType = null, IEnumerable<Type> parameterTypes = null, Type returnType = null)
         {
             if (methodInfo == null)

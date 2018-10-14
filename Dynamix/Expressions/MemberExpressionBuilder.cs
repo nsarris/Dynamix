@@ -137,7 +137,7 @@ namespace Dynamix.Expressions
 
         public static Expression<Func<T, TProperty>> GetExpressionSelector<T, TProperty>(ParameterExpression instanceParameter, string expression, bool safe = false)
         {
-            var l = DynamicExpressionParser.ParseLambda<T,TProperty>(expression);
+            var l = DynamicExpressionParser.ParseLambda<T, TProperty>(expression);
             return ExpressionParameterReplacer.Replace(l, l.Parameters[0], instanceParameter);
         }
 

@@ -15,7 +15,7 @@ namespace Dynamix.Reflection
             var m = typeof(ActivatorEx<>).MakeGenericTypeCached(new Type[] { t }).GetMethod("CreateInstance", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
             return m.Invoke(null, null);
         }
-        
+
         public static T CreateInstance<T>()
         {
             return (T)CreateInstance(typeof(T));

@@ -3,11 +3,11 @@ using System.Linq.Expressions;
 
 namespace Dynamix.Expressions.Visitors
 {
-    public class ExpressionForEachOfTypeVisitor<TExpression> : ExpressionVisitor 
+    public class ExpressionForEachOfTypeVisitor<TExpression> : ExpressionVisitor
         where TExpression : Expression
     {
         private readonly Func<TExpression, Expression> visitor;
-        
+
         public ExpressionForEachOfTypeVisitor(Func<TExpression, Expression> visitor)
         {
             this.visitor = visitor;
@@ -20,11 +20,11 @@ namespace Dynamix.Expressions.Visitors
 
         public override Expression Visit(Expression node)
         {
-            if (visitor != null 
+            if (visitor != null
                 && node is TExpression expression
                 && visitor(expression) == null)
-                    return node;
-            
+                return node;
+
             return base.Visit(node);
         }
 

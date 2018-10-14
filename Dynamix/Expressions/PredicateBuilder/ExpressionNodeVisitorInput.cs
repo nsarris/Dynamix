@@ -15,9 +15,9 @@ namespace Dynamix.Expressions.PredicateBuilder
         public ParameterExpression ItParameterExpression { get; }
 
         public ExpressionNodeVisitorInput(Type itParameterType)
-            :this(itParameterType, defaultItParameterName, null)
+            : this(itParameterType, defaultItParameterName, null)
         {
-            
+
         }
 
         public ExpressionNodeVisitorInput(Type itParameterType, PredicateBuilderConfiguration defaultConfiguration)
@@ -33,22 +33,22 @@ namespace Dynamix.Expressions.PredicateBuilder
         }
 
         public ExpressionNodeVisitorInput(Type itParameterType, PredicateBuilderConfiguration defaultConfiguration, IDictionary<string, PredicateBuilderConfiguration> configurations)
-            :this(itParameterType, defaultConfiguration?.ItParameterName, defaultConfiguration, configurations)
+            : this(itParameterType, defaultConfiguration?.ItParameterName, defaultConfiguration, configurations)
         {
 
         }
 
         public ExpressionNodeVisitorInput(Type itParameterType, string itParameterName, IDictionary<string, PredicateBuilderConfiguration> configurations)
-            :this(itParameterType, itParameterName, null, configurations)
+            : this(itParameterType, itParameterName, null, configurations)
         {
-         
+
         }
 
 
         public ExpressionNodeVisitorInput(Type itParameterType, string itParameterName, PredicateBuilderConfiguration defaultConfiguration, IDictionary<string, PredicateBuilderConfiguration> configurations = null)
-            :this(Expression.Parameter(itParameterType, itParameterName ?? ""), defaultConfiguration, configurations)
+            : this(Expression.Parameter(itParameterType, itParameterName ?? ""), defaultConfiguration, configurations)
         {
-            
+
         }
 
         public ExpressionNodeVisitorInput(ParameterExpression itParameterExpression, PredicateBuilderConfiguration defaultConfiguration = null, IDictionary<string, PredicateBuilderConfiguration> configurations = null)

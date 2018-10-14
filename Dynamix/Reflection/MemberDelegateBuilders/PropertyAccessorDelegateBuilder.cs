@@ -43,7 +43,7 @@ namespace Dynamix.Reflection.DelegateBuilders
         static ConcurrentDictionary<HashKey, Delegate> setterCache = new ConcurrentDictionary<HashKey, Delegate>();
 
         private bool EnableCaching { get; set; } = true;
-        
+
         private PropertyAccessorLambdaBuilder builder;
 
         #endregion

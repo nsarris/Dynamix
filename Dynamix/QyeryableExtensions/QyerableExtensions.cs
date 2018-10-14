@@ -14,7 +14,7 @@ namespace Dynamix.QueryableExtensions
             return new SingleQueryable<T>(queryable);
         }
 
-        public static SingleQueryable<T> ToSingleQueryable<T>(this IQueryable<T> queryable, Expression<Func<T,bool>> predicate)
+        public static SingleQueryable<T> ToSingleQueryable<T>(this IQueryable<T> queryable, Expression<Func<T, bool>> predicate)
         {
             return new SingleQueryable<T>(queryable.Where(predicate));
         }

@@ -34,7 +34,7 @@ namespace Dynamix.Reflection
             return invocationParameters.ToArray();
         }
 
-        public static (string,object)[] GetInvocationParameters(object anonymousTypeArguments)
+        public static (string, object)[] GetInvocationParameters(object anonymousTypeArguments)
         {
             return new AnonymousTypeWrapper(anonymousTypeArguments).Fields.Select(x => (x.Value.AutoPropertyName, x.Value.Getter(anonymousTypeArguments))).ToArray();
         }

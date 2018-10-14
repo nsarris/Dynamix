@@ -20,7 +20,7 @@ namespace Dynamix
             public bool AsNullable { get; internal set; }
             public string PropertyPath { get; internal set; }
         }
-        
+
         static Random random = new Random();
         readonly List<DynamicDtoPropertyConfig> props = new List<DynamicDtoPropertyConfig>();
         int unnamedpropcount = 1;
@@ -141,7 +141,7 @@ namespace Dynamix
             var inParam = Expression.Parameter(ModelType, "model");
             if (returnType == null)
                 returnType = GetReturnType("tmpDynamicDTO_" + random.Next().ToString());
-            
+
             var memberAssignments = new List<MemberAssignment>();
             foreach (var p in (includedProperties == null ? props : props.Where(x => includedProperties.Any(ip => StringComparer.OrdinalIgnoreCase.Compare(ip, x.TargetProperty ?? x.PropertyName) == 0))))
             {
@@ -230,6 +230,6 @@ namespace Dynamix
         }
     }
 
-    
+
 
 }

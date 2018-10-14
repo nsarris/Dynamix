@@ -154,6 +154,6 @@ namespace Dynamix.Expressions.PredicateBuilder
             return NullTextValues.Contains(s);
         }
 
-        
+
     }
 }

@@ -15,7 +15,7 @@ namespace Dynamix.Reflection
 
         static ConcurrentDictionary<ConstructorInfo, ConstructorInfoEx> cache
             = new ConcurrentDictionary<ConstructorInfo, ConstructorInfoEx>();
-        
+
         public static ConstructorInfoEx GetConstructorEx(ConstructorInfo constructorInfo)
         {
             if (!cache.TryGetValue(constructorInfo, out var prop))
@@ -34,11 +34,11 @@ namespace Dynamix.Reflection
 
         public static ConstructorInfoEx GetConstructorEx(Type type, IEnumerable<Type> signature = null, BindingFlags bindingFlags = PUBLIC_ISTANCE_STATIC)
         {
-            var f = type.GetConstructor(bindingFlags, null,signature?.ToArray() ?? Type.EmptyTypes,null);
+            var f = type.GetConstructor(bindingFlags, null, signature?.ToArray() ?? Type.EmptyTypes, null);
             if (f == null) return null;
             return GetConstructorEx(f);
         }
-        
+
         public static IReadOnlyDictionary<string, ConstructorInfoEx> GetConstructorsExDic(Type type, BindingFlags bindingFlags = PUBLIC_ISTANCE_STATIC)
         {
             return new ReadOnlyDictionary<string, ConstructorInfoEx>(
@@ -46,7 +46,7 @@ namespace Dynamix.Reflection
                 .ToDictionary(x => x.Name));
         }
 
-        public static IEnumerable<ConstructorInfoEx> GetConstructorsEx(Type type,BindingFlags bindingFlags = PUBLIC_ISTANCE_STATIC)
+        public static IEnumerable<ConstructorInfoEx> GetConstructorsEx(Type type, BindingFlags bindingFlags = PUBLIC_ISTANCE_STATIC)
         {
             return type.GetConstructors(bindingFlags).Select(x => GetConstructorEx(x));
         }

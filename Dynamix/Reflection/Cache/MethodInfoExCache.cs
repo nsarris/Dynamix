@@ -27,10 +27,10 @@ namespace Dynamix.Reflection
             return method;
         }
 
-        
+
         public static MethodInfoEx GetMethodEx(Type type, string name, IEnumerable<Type> signature, BindingFlags bindingFlags = PUBLIC_ISTANCE_STATIC)
         {
-            var f = (signature == null) ? type.GetMethod(name, bindingFlags) : type.GetMethod(name, bindingFlags,null, signature.ToArray(), null);
+            var f = (signature == null) ? type.GetMethod(name, bindingFlags) : type.GetMethod(name, bindingFlags, null, signature.ToArray(), null);
             if (f == null) return null;
             return GetMethodEx(f);
         }
@@ -52,7 +52,7 @@ namespace Dynamix.Reflection
             return type.GetMethods(bindingFlags).Select(x => GetMethodEx(x));
         }
 
-        
+
         public static MethodInfoEx GetMethodEx(Type type, string name, IEnumerable<Type> signature, BindingFlagsEx bindingFlags)
         {
             return GetMethodEx(type, name, signature, (BindingFlags)bindingFlags);

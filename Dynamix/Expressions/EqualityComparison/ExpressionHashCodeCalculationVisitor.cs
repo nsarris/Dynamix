@@ -27,7 +27,7 @@ namespace Dynamix.Expressions
         //Add the NodeType and return Type of each visited expression
         protected override void Visit(Expression expression)
         {
-            
+
             if (expression != null)
             {
                 Add((int)expression.NodeType);

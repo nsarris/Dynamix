@@ -9,7 +9,7 @@ using System.Collections.Concurrent;
 
 namespace Dynamix.Reflection
 {
-    
+
     internal static class FieldInfoExCache
     {
         const BindingFlags PUBLIC_ISTANCE_STATIC = BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static;
@@ -17,7 +17,7 @@ namespace Dynamix.Reflection
         static ConcurrentDictionary<FieldInfo, FieldInfoEx> cache
             = new ConcurrentDictionary<FieldInfo, FieldInfoEx>();
 
-        
+
 
         public static FieldInfoEx GetFieldEx(FieldInfo fieldInfo)
         {
@@ -29,14 +29,14 @@ namespace Dynamix.Reflection
 
             return prop;
         }
-        
+
         public static FieldInfoEx GetFieldEx(Type type, string name, BindingFlags bindingFlags = PUBLIC_ISTANCE_STATIC)
         {
             var f = type.GetField(name, bindingFlags);
             if (f == null) return null;
             return GetFieldEx(f);
         }
-        
+
         public static IReadOnlyDictionary<string, FieldInfoEx> GetFieldsExDic(Type type, BindingFlags bindingFlags = PUBLIC_ISTANCE_STATIC)
         {
             return new ReadOnlyDictionary<string, FieldInfoEx>(
@@ -63,7 +63,7 @@ namespace Dynamix.Reflection
         {
             return GetFieldsEx(type, (BindingFlags)bindingFlags);
         }
-        
+
         //public static void ClearCache() { fieldCache.Clear(); }
         //public static void RemoveFromCache(Type t) { fieldCache.Where(x => x.Value.FieldInfo.ReflectedType == t).ToList().ForEach(x => { fieldCache.TryRemove(x.Key, out var vv); }); }
 

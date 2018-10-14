@@ -263,7 +263,7 @@
 //        {
 //            if (ListType == null)
 //                ListType = typeof(object);
-            
+
 //            var method = typeof(Queryable).GetMethod("Cast")
 //                    .MakeGenericMethod(ListType);
 //            var method2 = typeof(Enumerable).GetMethod("ToList")
@@ -279,7 +279,7 @@
 //        //{
 //        //    if (CastType == null)
 //        //        CastType = typeof(object);
-            
+
 //        //    return new DynamicEnumerable(
 //        //        (IQueryable) source.Provider.Execute(
 //        //            Expression.Call(
@@ -305,7 +305,7 @@
 //        private List<Tuple<LambdaExpression, bool>> ParseOrdering(Type entityType, string ordering)
 //        {
 //            var res = new List<Tuple<LambdaExpression, bool>>();
-            
+
 //            foreach (var item in ordering.Split(','))
 //            {
 //                var o = item.Trim().Split(' ');
@@ -335,7 +335,7 @@
 //            return res;
 //        }
 
-       
+
 //        public IEnumerator GetEnumerator()
 //        {
 //            return Source.GetEnumerator();
@@ -348,10 +348,10 @@
 //                yield return en.Current;
 //        }
 
-        
+
 //    }
 
- 
+
 
 
 //}

@@ -53,7 +53,7 @@ namespace Dynamix
                 parser.ParseNullable(s, style, provider) :
                 parser.Parse(s, style, provider));
         }
-        public static T Parse<T>(string s, IFormatProvider provider) 
+        public static T Parse<T>(string s, IFormatProvider provider)
         {
             var parser = GetParser(typeof(T));
             return (T)(IsNullable<T>() ?
@@ -233,8 +233,8 @@ namespace Dynamix
 
         private bool CheckNull(string s)
         {
-            return string.IsNullOrEmpty(s) 
-                || StringComparer.OrdinalIgnoreCase.Compare(s,"null") == 0;
+            return string.IsNullOrEmpty(s)
+                || StringComparer.OrdinalIgnoreCase.Compare(s, "null") == 0;
         }
 
         public T? ParseNullable(string s)

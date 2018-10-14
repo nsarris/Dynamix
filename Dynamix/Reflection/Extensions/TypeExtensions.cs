@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Dynamix.Reflection
 {
-    public static class TypeExtensions 
+    public static class TypeExtensions
     {
         public static bool HasGenericDefinition(this Type type, Type genericTypeDefinition)
         {
@@ -58,7 +58,8 @@ namespace Dynamix.Reflection
                 .Where(x => x.GetParameters().Length > 0
                     && x.IsDefined(typeof(System.Runtime.CompilerServices.ExtensionAttribute), false)
                     && x.GetParameters().Length > 0)
-                .Select(x => new {
+                .Select(x => new
+                {
                     Method = x,
                     ExtendedType = x.GetParameters().First().ParameterType
                 })
@@ -81,7 +82,7 @@ namespace Dynamix.Reflection
         {
             if (givenType == null || targetType == null)
                 return false;
-            
+
             return givenType == targetType
               || givenType.MapsToGenericTypeDefinition(targetType)
               || givenType.HasInterfaceThatMapsToGenericTypeDefinition(targetType)
@@ -188,7 +189,7 @@ namespace Dynamix.Reflection
             type = Nullable.GetUnderlyingType(type) ?? type;
 
             underlyingType = type.IsEnum ? Enum.GetUnderlyingType(type) : null;
-            
+
             return underlyingType != null;
         }
 

@@ -47,7 +47,7 @@ namespace Dynamix.Expressions.Extensions
                     && (filter == null || filter(p)))
                         r.Add(p);
                 });
-            
+
             return r;
         }
 
@@ -82,7 +82,7 @@ namespace Dynamix.Expressions.Extensions
 
                     return p;
                 });
-            
+
             return r;
         }
 
@@ -109,7 +109,7 @@ namespace Dynamix.Expressions.Extensions
                 Expression.Equal(expression, ExpressionEx.Constants.Null);
         }
 
-        public static bool CheckEquals(this Expression expression,Expression other)
+        public static bool CheckEquals(this Expression expression, Expression other)
         {
             return ExpressionEqualityComparer.Instance.Equals(expression, other);
         }

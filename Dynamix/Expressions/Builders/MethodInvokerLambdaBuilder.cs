@@ -151,13 +151,13 @@ namespace Dynamix.Expressions.LambdaBuilders
                 delegateType = typeof(GenericStaticInvoker);
             }
 
-            
+
             var isFunc = methodInfo.ReturnType != typeof(void);
 
-            
-                
+
+
             var byRefAssignmentsFromArray = byRefVariables
-                .Select(x => (Expression)Expression.Assign(x.Variable, 
+                .Select(x => (Expression)Expression.Assign(x.Variable,
                     ExpressionEx.ConvertIfNeeded(
                         Expression.ArrayAccess(inputParameters, Expression.Constant(x.Index)), x.Variable.Type)));
 
@@ -176,7 +176,7 @@ namespace Dynamix.Expressions.LambdaBuilders
                 .Concat(returnVariable != null ? new[] { Expression.Assign(returnVariable, invokerExpression) } : new[] { invokerExpression })
                 .Concat(byRefAssignmentsToArray)
                 .Concat(returnVariable != null ? new[] { returnVariable } : Enumerable.Empty<Expression>());
-               
+
             if (!isFunc)
                 invokerBody = invokerBody.Concat(new Expression[] { Expression.Constant(null) });
 
@@ -185,10 +185,10 @@ namespace Dynamix.Expressions.LambdaBuilders
             var body = (!isFunc) ?
                     Expression.Block(typeof(object), declaredVariables, invokerBody) :
                     ExpressionEx.ConvertIfNeeded(
-                        Expression.Block(methodInfo.ReturnType, declaredVariables, invokerBody), 
+                        Expression.Block(methodInfo.ReturnType, declaredVariables, invokerBody),
                         typeof(object));
 
-            
+
             var lambda = Expression.Lambda(delegateType, body, expressionParameters);
 
             if (EnableCaching)

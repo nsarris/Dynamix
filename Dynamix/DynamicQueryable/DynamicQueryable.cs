@@ -56,7 +56,8 @@ namespace Dynamix
 
             switch (function)
             {
-                case Functions.Where:case Functions.Take:
+                case Functions.Where:
+                case Functions.Take:
                 case Functions.Skip:
                     parameterExpressions = parameterExpressions.Concat(parameters).ToArray();
                     break;
@@ -72,9 +73,9 @@ namespace Dynamix
                 case Functions.Min:
                 case Functions.Sum:
                 case Functions.Average:
-                //case Functions.ToList:
-                //case Functions.Cast:
-                //case Functions.ToString:
+                    //case Functions.ToList:
+                    //case Functions.Cast:
+                    //case Functions.ToString:
                     Execute = true;
                     if (parameters != null && parameters.Any() && parameters[0] != null)
                         parameterExpressions = parameterExpressions.Concat(parameters).ToArray();
@@ -258,7 +259,7 @@ namespace Dynamix
         {
             if (ListType == null)
                 ListType = typeof(object);
-            
+
             var method = typeof(Queryable).GetMethod("Cast")
                     .MakeGenericMethodCached(ListType);
             var method2 = typeof(Enumerable).GetMethod("ToList")

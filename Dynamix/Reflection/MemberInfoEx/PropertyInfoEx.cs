@@ -36,10 +36,10 @@ namespace Dynamix.Reflection
         public bool PublicSet { get; private set; }
         public bool PublicGet { get; private set; }
         public bool IsStatic { get; private set; }
-        
+
         MemberInfo IMemberInfoEx.MemberInfo => PropertyInfo;
         bool IValueMemberInfoEx.IsField => false;
-        MemberInfoExKind IMemberInfoEx.Kind  => MemberInfoExKind.Field;
+        MemberInfoExKind IMemberInfoEx.Kind => MemberInfoExKind.Field;
         public Type Type => PropertyInfo.PropertyType;
         public string Name => PropertyInfo.Name;
         public string BackingFieldName { get; private set; }
@@ -58,7 +58,7 @@ namespace Dynamix.Reflection
 
             //PrimitiveLike?
 
-            var backingField= property.DeclaringType.GetFields(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy)
+            var backingField = property.DeclaringType.GetFields(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy)
                 .Where(x => x.HasAttribute<CompilerGeneratedAttribute>()
                     && (x.Name == "<" + property.Name + ">k__BackingField" // Auto property
                         || x.Name == "<" + property.Name + ">i__Field")) //Anonymous type
@@ -80,7 +80,7 @@ namespace Dynamix.Reflection
             this.CanSet = true;
             this.IsStatic = setMethod.IsStatic;
             this.PublicSet = setMethod.IsPublic;
-            
+
             if (enableDelegateCaching)
                 this.Setter = MemberAccessorDelegateBuilder.CachedPropertyBuilder.BuildGenericSetter(this.PropertyInfo);
             else
@@ -151,13 +151,13 @@ namespace Dynamix.Reflection
         //Static
         public object Get(bool allowPrivate = false)
         {
-            ValidateGetter(null,true);
+            ValidateGetter(null, true);
             return this.Getter(null);
         }
 
         public void Set(object value)
         {
-            ValidateSetter( null, true);
+            ValidateSetter(null, true);
             this.Setter(null, value);
         }
 
@@ -170,7 +170,7 @@ namespace Dynamix.Reflection
         //Indexers
         public object Get(object instance, object[] indexers)
         {
-            ValidateGetter( indexers);
+            ValidateGetter(indexers);
             return this.Getter(instance, indexers);
         }
 

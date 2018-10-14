@@ -57,26 +57,26 @@ namespace Dynamix.Helpers
         {
             return (T)Parse(typeof(T), s);
         }
-        
+
         public bool TryParse<T>(object s, out T result)
         {
             var r = TryParse(typeof(T), s, out var tmp);
             result = (T)tmp;
             return r;
         }
-        
+
         public object Parse(Type type, object s)
         {
             var r = TryParse(type, s, stringComparer, nullComparer, out var tmp);
-            if (!r) throw GetOverflowException(s , type.Name);
+            if (!r) throw GetOverflowException(s, type.Name);
             return tmp;
         }
-        
+
         public bool TryParse(Type type, object s, out object result)
         {
             return TryParse(type, s, stringComparer, nullComparer, out result);
         }
-        
+
 
         #endregion
 

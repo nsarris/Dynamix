@@ -9,7 +9,7 @@ namespace Dynamix.Expressions.PredicateBuilder
     public class BinaryNode : NodeBase
     {
         public BinaryNode(string expression, ExpressionOperator expressionOperator, object value, LogicalOperator logicalOperator)
-            :base(logicalOperator)
+            : base(logicalOperator)
         {
             if (string.IsNullOrEmpty(expression))
                 throw new ArgumentException(nameof(expression) + " cannot be null or empty", nameof(expression));
@@ -28,7 +28,7 @@ namespace Dynamix.Expressions.PredicateBuilder
             return $"{Expression} {Operator} {Value}";
         }
 
-        
+
         public override T Accept<T>(INodeVisitor<T> visitor)
         {
             return visitor.VisitBinaryNode(this);

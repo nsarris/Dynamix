@@ -24,7 +24,7 @@ namespace Dynamix.Reflection
             this.WrappedObject = wrappedObject ?? throw new ArgumentNullException(nameof(wrappedObject));
             this.Fields = wrappedObject.GetType().GetFieldsExDic(bindingFlags, enableFieldCaching);
         }
-        
+
         public object this[string fieldName]
         {
             get
@@ -38,7 +38,7 @@ namespace Dynamix.Reflection
             {
                 if (Fields.TryGetValue(fieldName, out var field))
                     field.Set(WrappedObject, value);
-                
+
                 else throw new MissingFieldException("Field " + fieldName + " does not exist in Type " + WrappedObject.GetType());
             }
         }
@@ -68,7 +68,7 @@ namespace Dynamix.Reflection
         }
 
         public FieldInfoExWrapper(object wrappedObject, BindingFlags bindingFlags, bool enableFieldCaching = true)
-            :base(wrappedObject,bindingFlags,enableFieldCaching)
+            : base(wrappedObject, bindingFlags, enableFieldCaching)
         {
 
         }

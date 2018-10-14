@@ -12,7 +12,7 @@ namespace Dynamix.DynamicProjection
 
     #region Member Target Builder
 
-    public sealed class MemberTargetBuilder 
+    public sealed class MemberTargetBuilder
     {
         readonly MemberTargetConfiguration configuration;
 
@@ -98,7 +98,7 @@ namespace Dynamix.DynamicProjection
 
         public ExpressionMemberTargetBuilder HasValueMap(Dictionary<object, object> values, UnmappedValueType unmappedValueType = UnmappedValueType.TypeDefault, object unmappedValue = null)
         {
-            Configuration.ValueMap = new ValueMap(values, unmappedValueType, unmappedValue); 
+            Configuration.ValueMap = new ValueMap(values, unmappedValueType, unmappedValue);
             return this;
         }
     }
@@ -115,7 +115,7 @@ namespace Dynamix.DynamicProjection
 
     #region Member Target Builder <TSource>
 
-    public sealed class MemberTargetBuilder<TSource> 
+    public sealed class MemberTargetBuilder<TSource>
     {
         readonly MemberTargetConfiguration configuration;
 
@@ -220,7 +220,7 @@ namespace Dynamix.DynamicProjection
 
     #region Ctor Target Builder
 
-    public sealed class CtorParamTargetBuilder 
+    public sealed class CtorParamTargetBuilder
     {
         readonly CtorParamTargetConfiguration configuration;
 
@@ -286,7 +286,7 @@ namespace Dynamix.DynamicProjection
 
     #region Ctor Target Builder <TSource>
 
-    public sealed class CtorParamTargetBuilder<TSource> 
+    public sealed class CtorParamTargetBuilder<TSource>
     {
         readonly CtorParamTargetConfiguration configuration;
 
@@ -322,13 +322,13 @@ namespace Dynamix.DynamicProjection
 
     public sealed class ExpressionCtorParamTargetBuilder<TSource> : ConfiguredCtorParamTargetBuilder
     {
-        
+
         internal ExpressionCtorParamTargetBuilder(CtorParamTargetConfiguration configuration)
             : base(configuration)
         {
         }
 
-        
+
         public ExpressionCtorParamTargetBuilder<TSource> HasValueMap(Dictionary<object, object> values, UnmappedValueType unmappedValueType = UnmappedValueType.TypeDefault, object unmappedValue = null)
         {
             Configuration.ValueMap = new ValueMap(values, unmappedValueType, unmappedValue);

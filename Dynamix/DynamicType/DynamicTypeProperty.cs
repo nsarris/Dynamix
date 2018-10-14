@@ -10,7 +10,7 @@ namespace Dynamix
     {
         public string Name { get; internal set; }
         public Type Type { get; internal set; }
-        public bool  AsNullable { get; internal set; }
+        public bool AsNullable { get; internal set; }
         public string CtorParameterName { get; internal set; }
         public object ConstructorDefaultValue { get; internal set; }
         public bool HasConstructorDefaultValue { get; internal set; }

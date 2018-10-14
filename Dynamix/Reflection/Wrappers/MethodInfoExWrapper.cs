@@ -54,7 +54,7 @@ namespace Dynamix.Reflection
                 {
                     if (!arguments.Any(x => x == null))
                         method = methods.Where(x => x.MethodInfo.HasSignature(arguments.Select(y => y.GetType()))).FirstOrDefault();
-                    
+
                     if (method == null)
                     {
                         //Best match

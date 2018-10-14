@@ -13,7 +13,7 @@ namespace Dynamix.Expressions.PredicateBuilder
         EndsWith,
         Equals,
         DoesNotEqual,
-        
+
         LessThan,
         GreaterThan,
         LessThanOrEqual,

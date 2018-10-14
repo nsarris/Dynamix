@@ -163,7 +163,7 @@ namespace Dynamix.Expressions
 
         protected virtual void VisitLambda(LambdaExpression node)
         {
-            VisitList(node.Parameters, p => ParameterReference(p.Name,p.Type,p.IsByRef));
+            VisitList(node.Parameters, p => ParameterReference(p.Name, p.Type, p.IsByRef));
 
             Visit(node.Body);
         }
@@ -215,7 +215,7 @@ namespace Dynamix.Expressions
         protected virtual void VisitMemberAssignment(MemberAssignment memberAssignment)
         {
             MemberReference(memberAssignment.Member);
-            
+
             Visit(memberAssignment.Expression);
         }
 

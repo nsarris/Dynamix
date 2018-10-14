@@ -118,7 +118,7 @@ namespace Dynamix
 
             return sb.ToString();
         }
-        
+
         public static string ReplaceCharacter(this string value, char find, char replace)
         {
             if (string.IsNullOrEmpty(value)) return value;

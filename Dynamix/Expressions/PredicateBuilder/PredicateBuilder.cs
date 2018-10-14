@@ -18,7 +18,7 @@ namespace Dynamix.Expressions.PredicateBuilder
         private Type enumUnderlyingType;
         private EnumerableTypeDescriptor enumerableTypeDescriptor;
         private NumericTypeDescriptor numericTypeDescriptor;
-        
+
 
         public Expression Expression { get; }
         public ExpressionOperator Operator { get; }
@@ -29,7 +29,7 @@ namespace Dynamix.Expressions.PredicateBuilder
         public Type EffectiveType { get; }
         public PredicateDataType DataType { get; }
         public PredicateBuilderConfiguration Configuration { get; }
-        
+
 
         #endregion
 
@@ -55,7 +55,7 @@ namespace Dynamix.Expressions.PredicateBuilder
             (ParameterExpression instanceParameter, string sourceExpression, ExpressionOperator @operator, object value, PredicateBuilderConfiguration configuration = null)
         {
             var left = MemberExpressionBuilder.GetExpressionSelector(instanceParameter, sourceExpression).Body;
-                                
+
             return GetPredicateExpression(left, @operator, value, configuration);
         }
 
@@ -231,7 +231,7 @@ namespace Dynamix.Expressions.PredicateBuilder
             {
                 if (IsNullable)
                 {
-                    if(!targetType.IsNullable())
+                    if (!targetType.IsNullable())
                         comparableType = typeof(Nullable<>).MakeGenericTypeCached(targetType);
 
                     return;
@@ -253,7 +253,7 @@ namespace Dynamix.Expressions.PredicateBuilder
                     case PredicateDataType.Number:
                         if (valueType.IsEnumOrNullableEnum())
                         {
-                            comparableType = 
+                            comparableType =
                                 NumericTypeHelper.GetCommonTypeForConvertion(comparableType, EffectiveType, Enum.GetUnderlyingType(valueType));
                             return;
                         }
@@ -390,7 +390,7 @@ namespace Dynamix.Expressions.PredicateBuilder
             {
                 right = ExpressionEx.Constants.Bool(Operator == ExpressionOperator.DoesNotContain);
             }
-            
+
             return BuildCollectionSpecificExpression(Expression, Operator, right);
         }
 
@@ -454,8 +454,8 @@ namespace Dynamix.Expressions.PredicateBuilder
             if (Value is bool b)
                 value = b;
             else if (!TryParseBool(Value.ToString(), out value))
-                 throw new InvalidOperationException($"Value {value} cannot be converted to boolean");
-            
+                throw new InvalidOperationException($"Value {value} cannot be converted to boolean");
+
             return BuildEquitableExpression(Expression, Operator, ExpressionEx.Constants.Bool(value));
         }
 
@@ -671,7 +671,7 @@ namespace Dynamix.Expressions.PredicateBuilder
                 valueType = Enum.GetUnderlyingType(valueType);
                 value = Convert.ChangeType(Convert.ChangeType(value, nonNullableType), valueType);
             }
-            else if(valueType.IsNullable())
+            else if (valueType.IsNullable())
             {
                 return value;
             }
@@ -685,7 +685,7 @@ namespace Dynamix.Expressions.PredicateBuilder
         private Expression BuildIsContainedInValuesExpression(Expression expression, IEnumerable values)
         {
             var elementType = EnumerableTypeDescriptor.Get(values.GetType()).ElementType;
-            
+
             var castedValues = values.Cast<object>().ToArray();
 
             AssertCompatibleValues(castedValues, out var comparableType);

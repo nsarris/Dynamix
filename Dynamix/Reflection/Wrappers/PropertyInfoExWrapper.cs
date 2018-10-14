@@ -22,7 +22,7 @@ namespace Dynamix.Reflection
             this.WrappedObject = wrappedObject ?? throw new ArgumentNullException(nameof(wrappedObject));
             this.Properties = wrappedObject.GetType().GetPropertiesExDic(bindingFlags, enablePropertyCaching);
         }
-        
+
 
         public object this[string propertyName]
         {
@@ -67,7 +67,7 @@ namespace Dynamix.Reflection
         }
 
         public PropertyInfoExWrapper(object wrappedObject, BindingFlags bindingFlags, bool enableFieldCaching = true)
-            :base(wrappedObject,bindingFlags,enableFieldCaching)
+            : base(wrappedObject, bindingFlags, enableFieldCaching)
         {
 
         }

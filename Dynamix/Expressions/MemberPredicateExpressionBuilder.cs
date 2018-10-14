@@ -18,7 +18,7 @@ namespace Dynamix.Expressions
 
             var body = MemberExpressionBuilder.GetDeepPropertyExpression(param, propertyName);
 
-            return Expression.Lambda<Func<T,TMember, bool>>(Expression.Equal(body, param2), param, param2);
+            return Expression.Lambda<Func<T, TMember, bool>>(Expression.Equal(body, param2), param, param2);
         }
 
         public static Expression<Func<object, TMember, bool>> CreateMemberPredicate<TMember>(Type type, string propertyName)

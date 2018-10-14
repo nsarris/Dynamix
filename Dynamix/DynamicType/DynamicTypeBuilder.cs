@@ -106,7 +106,7 @@ namespace Dynamix
         private Type CreateTypeInternal(DynamicTypeDescriptor typeDescriptor)
         {
             var tb = GetTypeBuilder(typeDescriptor.Name, typeDescriptor.BaseType);
-             
+
             foreach (var iface in typeDescriptor.Interfaces)
                 tb.AddInterfaceImplementation(iface);
 
@@ -173,7 +173,7 @@ namespace Dynamix
                 generator.Emit(OpCodes.Ldarg, i);
                 //generator.Emit(OpCodes.Call, p.PropertyBuilder.SetMethod);
                 generator.Emit(OpCodes.Stfld, p.FieldBuilder);
-                
+
                 if (p.Property.HasConstructorDefaultValue)
                     constructor
                         .DefineParameter(i, ParameterAttributes.Optional | ParameterAttributes.HasDefault, p.Property.CtorParameterName)
@@ -261,7 +261,7 @@ namespace Dynamix
                       null, new[] { property.Type });
 
                 var setterIlGenerator = setPropMthdBldr.GetILGenerator();
-                
+
                 setterIlGenerator.Emit(OpCodes.Ldarg_0);
                 setterIlGenerator.Emit(OpCodes.Ldarg_1);
                 setterIlGenerator.Emit(OpCodes.Stfld, fieldBuilder);

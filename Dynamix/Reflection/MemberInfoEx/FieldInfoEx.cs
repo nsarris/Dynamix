@@ -29,7 +29,7 @@ namespace Dynamix.Reflection
         public EnumerableTypeDescriptor EnumerableDescriptor { get; private set; }
         bool IValueMemberInfoEx.PublicGet => FieldInfo.IsPublic;
         bool IValueMemberInfoEx.PublicSet => FieldInfo.IsPublic;
-        MemberInfoExKind IMemberInfoEx.Kind  => MemberInfoExKind.Field;
+        MemberInfoExKind IMemberInfoEx.Kind => MemberInfoExKind.Field;
         MemberInfo IMemberInfoEx.MemberInfo => FieldInfo;
         bool IValueMemberInfoEx.IsField => true;
         public bool IsPublic => FieldInfo.IsPublic;
@@ -39,7 +39,7 @@ namespace Dynamix.Reflection
         public Action<object, object> Setter { get; private set; }
         public bool IsStatic => FieldInfo.IsStatic;
         public string AutoPropertyName { get; private set; }
-        
+
         public FieldInfoEx(FieldInfo field, bool enableDelegateCaching = true)
         {
             this.FieldInfo = field;
@@ -57,7 +57,7 @@ namespace Dynamix.Reflection
                 AutoPropertyName = FieldInfo.Name.Substring(1, FieldInfo.Name.Length - 17);
 
             //PrimitiveLike?
-            
+
             if (enableDelegateCaching)
             {
                 this.Getter = MemberAccessorDelegateBuilder.CachedFieldBuilder.BuildGenericGetter(this.FieldInfo);

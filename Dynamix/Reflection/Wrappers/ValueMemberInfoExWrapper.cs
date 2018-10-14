@@ -14,11 +14,11 @@ namespace Dynamix.Reflection
         PropertyInfoExWrapper propWrapper;
         FieldInfoExWrapper fieldWrapper;
         protected object wrappedObject;
-        
+
         public object WrappedObject { get { return wrappedObject; } }
 
-        public ValueMemberInfoExWrapper(object wrappedObject, BindingFlagsEx bindingFlags = BindingFlagsEx.All ,bool enableCaching = true)
-            :this(wrappedObject, (BindingFlags)bindingFlags, enableCaching)
+        public ValueMemberInfoExWrapper(object wrappedObject, BindingFlagsEx bindingFlags = BindingFlagsEx.All, bool enableCaching = true)
+            : this(wrappedObject, (BindingFlags)bindingFlags, enableCaching)
         {
 
         }
@@ -106,13 +106,13 @@ namespace Dynamix.Reflection
     public class ValueMemberInfoExWrapper<T> : ValueMemberInfoExWrapper
     {
         public ValueMemberInfoExWrapper(object wrappedObject, BindingFlagsEx bindingFlags = BindingFlagsEx.All, bool enableCaching = true)
-            :base(wrappedObject, (BindingFlags)bindingFlags, enableCaching)
+            : base(wrappedObject, (BindingFlags)bindingFlags, enableCaching)
         {
 
         }
 
         public ValueMemberInfoExWrapper(object wrappedObject, BindingFlags bindingFlags, bool enableCaching = true)
-            :base(wrappedObject,bindingFlags,enableCaching)
+            : base(wrappedObject, bindingFlags, enableCaching)
         {
         }
 

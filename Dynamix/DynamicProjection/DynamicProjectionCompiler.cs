@@ -26,7 +26,7 @@ namespace Dynamix.DynamicProjection
         {
             var memberInfo = GetMemberInfo(configuration.SourceType, configuration.ProjectedType, memberConfiguration.ProjectedMember);
 
-            var parameter = 
+            var parameter =
                 memberConfiguration.ProjectionTarget == ProjectionTarget.CtorParameter ?
                     memberConfiguration.CtorParameterName.IsNullOrEmpty() ?
                         GetCtorParameterFromMemberName(memberInfo.Name) :
@@ -82,7 +82,7 @@ namespace Dynamix.DynamicProjection
             return new CompiledCtorParamTargetConfiguration.CompiledSourceConfiguration()
             {
                 SourceExpression = sourceExpression,
-                Source = source, 
+                Source = source,
                 ValueMap = ctorParamconfiguration.ValueMap,
             };
         }
@@ -95,7 +95,7 @@ namespace Dynamix.DynamicProjection
             var compiledMembers = configuration.Members.Select(x => (Configuration: x, CompiledMember: CompileMember(x))).ToList();
             var compiledCtorParams = configuration.CtorParameters.Select(x => (Configuration: x, CompiledCtorParam: CompileCtorParameter(x))).ToList();
 
-            configuration.Ctor = configuration.Ctor ?? 
+            configuration.Ctor = configuration.Ctor ??
                 configuration.ProjectedType
                 .GetConstructors(BindingFlags.Instance | BindingFlags.Public)
                 .OrderByDescending(x => x.GetParameters().Length)
@@ -164,24 +164,24 @@ namespace Dynamix.DynamicProjection
                         //overriden type
                         member.AsType ??
                         //specified member type
-                        member.ProjectedMember.GetMemberType() ?? 
+                        member.ProjectedMember.GetMemberType() ??
                         //auto
                         (member.Source == null ?
                         GetMemberInfoType(
                             configuration.SourceType.GetMember(
                                 GetSourceMemberNameFromMemberName(
                                     member.ProjectedMember.GetName())).First()) :
-                        //expression
-                         GetExpression(member.Source, configuration.It)?.Type) ?? 
+                         //expression
+                         GetExpression(member.Source, configuration.It)?.Type) ??
                         //fallback
-                        typeof(object), 
+                        typeof(object),
                     config =>
                 {
                     if (member.ProjectionTarget == ProjectionTarget.CtorParameter)
                         config.IsInitializedInConstructorOptional(member.CtorParameterName);
 
                     config.AsNullable(member.AsNullable);
-                    
+
                     return config;
                 });
 

@@ -222,14 +222,25 @@ namespace Dynamix.Reflection
             return default;
         }
 
-        public static bool IsOrSubclassOfGenericDeep(this Type type, Type openGenericType)
+        public static bool IsOrSubclassOfGeneric(this Type type, Type openGenericType)
         {
-            return IsOrSubclassOfGenericDeep(type, openGenericType, out var _);
+            return IsOrSubclassOfGeneric(type, openGenericType, out var _);
         }
 
-        public static bool IsOrSubclassOfGenericDeep(this Type type, Type openGenericType, out Type actualType)
+        public static bool IsSubclassOfGeneric(this Type type, Type openGenericType)
         {
-            actualType = null;
+            return IsSubclassOfGeneric(type, openGenericType, out var _);
+        }
+
+        public static bool IsSubclassOfGeneric(this Type type, Type openGenericType, out Type actualType)
+        {
+            return IsOrSubclassOfGeneric(type.BaseType, openGenericType, out actualType);
+        }
+
+        public static bool IsOrSubclassOfGeneric(this Type type, Type genericType, out Type actualType)
+        {
+            var openGenericType = GetTypeOrGenericTypeDefinition(genericType);
+            
             while (type != typeof(object))
             {
                 if (type.IsGenericType && type.GetGenericTypeDefinition() == openGenericType)
@@ -239,28 +250,40 @@ namespace Dynamix.Reflection
                 }
                 type = type.BaseType;
             }
+
+            actualType = null;
             return false;
         }
 
-        public static bool IsOrSubclassOfDeep(this Type type, Type typeToCompare)
+        public static bool IsOrSubclassOf(this Type type, Type typeToCompare)
         {
-            if (typeToCompare == typeof(object))
-                return true;
-
-            while (type != typeof(object))
-            {
-                if (type == typeToCompare)
-
-                    return true;
-
-                type = type.BaseType;
-            }
-            return false;
+            return type == typeToCompare || type.IsSubclassOf(typeToCompare);
         }
 
-        public static bool IsSubclassOfDeep(this Type type, Type typeToCompare)
+
+        public static bool IsSuperclassOf(this Type type, Type typeToCompare)
         {
-            return type.BaseType.IsOrSubclassOfDeep(typeToCompare);
+            return typeToCompare.IsSubclassOf(type);
+        }
+
+        public static bool IsOrSuperclassOf(this Type type, Type typeToCompare)
+        {
+            return type == typeToCompare || typeToCompare.IsSubclassOf(type);
+        }
+
+        public static bool IsGenericSuperclassOf(this Type genericType, Type type)
+        {
+            return type.IsSubclassOfGeneric(GetTypeOrGenericTypeDefinition(genericType));
+        }
+
+        public static bool IsGenericOrGenericSuperclassOf(this Type genericType, Type type)
+        {
+            return type.IsOrSubclassOfGeneric(GetTypeOrGenericTypeDefinition(genericType));
+        }
+
+        public static Type GetTypeOrGenericTypeDefinition(this Type type)
+        {
+            return type.IsGenericType ? type.GetGenericTypeDefinition() : type;
         }
     }
 }

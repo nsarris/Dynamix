@@ -71,8 +71,6 @@ namespace Dynamix.Reflection
                 .Select(x => x.Method);
         }
 
-
-
         public static bool IsAssignableTo(this Type givenType, Type targetType)
         {
             return targetType.IsAssignableFrom(givenType);
@@ -262,7 +260,6 @@ namespace Dynamix.Reflection
 
         public static bool IsSubclassOfDeep(this Type type, Type typeToCompare)
         {
-
             return type.BaseType.IsOrSubclassOfDeep(typeToCompare);
         }
     }

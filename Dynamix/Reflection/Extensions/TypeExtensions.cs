@@ -243,7 +243,8 @@ namespace Dynamix.Reflection
             
             while (type != typeof(object))
             {
-                if (type.IsGenericType && type.GetGenericTypeDefinition() == openGenericType)
+                if (type == openGenericType ||
+                    (type.IsGenericType && type.GetGenericTypeDefinition() == openGenericType))
                 {
                     actualType = type;
                     return true;

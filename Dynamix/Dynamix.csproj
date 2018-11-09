@@ -148,10 +148,25 @@
     <Compile Include="Reflection\ActivatorEx.cs" />
     <Compile Include="Reflection\Emit\FieldAccessorMethodEmitter.cs" />
     <Compile Include="Reflection\EnumerableTypeDescriptor.cs" />
+    <Compile Include="Reflection\MemberDelegateBuilders\MethodInvokerDelegateBuilder_TypedBuilders.cs">
+      <DependentUpon>MethodInvokerDelegateBuilder_TypedBuilders.tt</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Reflection\MemberDelegateBuilders\ConstructorInvokerDelegateBuilder_TypedBuilders.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ConstructorInvokerDelegateBuilder_TypedBuilders.tt</DependentUpon>
+    </Compile>
     <Compile Include="Reflection\MemberInfoEx\ConstructorInfoEx.cs" />
     <Compile Include="Reflection\MemberInfoEx\InvocationHelper.cs" />
     <Compile Include="Reflection\MemberInfoEx\_Enums.cs" />
     <Compile Include="Reflection\TypeConstructor.cs" />
+    <Compile Include="Reflection\TypeConstructors.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>TypeConstructors.tt</DependentUpon>
+    </Compile>
     <Compile Include="Reflection\Wrappers\AnonymousTypeWrapper.cs" />
     <Compile Include="Reflection\Cache\GenericMethodCache.cs" />
     <Compile Include="Reflection\Cache\GenericTypeCache.cs" />
@@ -188,7 +203,22 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Reflection\MemberDelegateBuilders\MethodInvokerDelegateBuilder_TypedBuilders.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>MethodInvokerDelegateBuilder_TypedBuilders.cs</LastGenOutput>
+    </Content>
+    <Content Include="Reflection\MemberDelegateBuilders\ConstructorInvokerDelegateBuilder_TypedBuilders.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>ConstructorInvokerDelegateBuilder_TypedBuilders.cs</LastGenOutput>
+    </Content>
+    <Content Include="Reflection\TypeConstructors.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>TypeConstructors.cs</LastGenOutput>
+    </Content>
     <Content Include="TODO.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

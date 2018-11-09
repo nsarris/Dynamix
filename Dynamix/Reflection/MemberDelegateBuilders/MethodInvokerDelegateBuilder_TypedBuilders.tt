@@ -1,0 +1,44 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+<# var numOfGenericParameters = 15; #>
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+
+namespace Dynamix.Reflection.DelegateBuilders
+{
+	public partial class MethodInvokerDelegateBuilder
+    {
+<# for (var i = 1; i <= numOfGenericParameters; i++) { 
+	var generics = string.Join(", ",Enumerable.Range(1, i).Select(x => "TParam" + x));
+	var typeofs = string.Join(", ",Enumerable.Range(1, i).Select(x => $"typeof(TParam{x})"));
+#>		public Action<T, <#= generics #>> BuildActionInstance<T, <#= generics #>>(MethodInfo methodInfo)
+        {
+            return (Action<T, <#= generics #>>)BuildFromTypes(methodInfo, typeof(T), new[] { <#= typeofs #> }, typeof(void));
+        }
+
+        public Func<T, <#= generics #>, TResult> BuildFuncInstance<T, <#= generics #>, TResult>(MethodInfo methodInfo)
+        {
+            return (Func<T, <#= generics #>, TResult>)BuildFromTypes(methodInfo, typeof(T), new[] { <#= typeofs #> }, typeof(TResult));
+        }
+<# } #>
+
+<# for (var i = 1; i <= numOfGenericParameters; i++) { 
+	var generics = string.Join(", ",Enumerable.Range(1, i).Select(x => "TParam" + x));
+	var typeofs = string.Join(", ",Enumerable.Range(1, i).Select(x => $"typeof(TParam{x})"));
+#>		public Action<<#= generics #>> BuildActionStatic<<#= generics #>>(MethodInfo methodInfo)
+        {
+            return (Action<<#= generics #>>)BuildFromTypes(methodInfo, null, new[] { <#= typeofs #> }, typeof(void));
+        }
+        public Func<<#= generics #>, TResult> BuildFuncStatic<<#= generics #>, TResult>(MethodInfo methodInfo)
+        {
+            return (Func<<#= generics #>, TResult>)BuildFromTypes(methodInfo, null, new[] { <#= typeofs #> }, typeof(TResult));
+        }
+<# } #>
+	}
+}

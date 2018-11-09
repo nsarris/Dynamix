@@ -11,7 +11,7 @@ using Dynamix.Expressions.LambdaBuilders;
 
 namespace Dynamix.Reflection.DelegateBuilders
 {
-    public class ConstructorInvokerDelegateBuilder
+    public partial class ConstructorInvokerDelegateBuilder
     {
         #region Ctor
 
@@ -88,12 +88,9 @@ namespace Dynamix.Reflection.DelegateBuilders
             if (delegateType == null)
                 return BuildFromTypes(ctorInfo);
 
-            if (EnableCaching)
-            {
-                if (byDelegateTypeCache.TryGetValue(delegateType, out var cachedDelegate))
+            if (EnableCaching && byDelegateTypeCache.TryGetValue(delegateType, out var cachedDelegate))
                     return cachedDelegate;
-            }
-
+            
             var delegate_ = builder.BuildFromDelegate(ctorInfo, delegateType).Compile();
 
             if (EnableCaching)
@@ -108,35 +105,10 @@ namespace Dynamix.Reflection.DelegateBuilders
             return (TDelegate)Convert.ChangeType(BuildFromDelegate(ctorInfo, typeof(TDelegate)), typeof(Delegate));
         }
 
-        //No parameters
 
         public Func<TResult> Build<TResult>(ConstructorInfo ctorInfo)
         {
             return (Func<TResult>)BuildFromTypes(ctorInfo, typeof(TResult), null);
-        }
-
-        //One parameter
-        public Func<TParam1, TResult> Build<TParam1, TResult>(ConstructorInfo ctorInfo)
-        {
-            return (Func<TParam1, TResult>)BuildFromTypes(ctorInfo, typeof(TResult), new[] { typeof(TParam1) });
-        }
-
-        //Two parameters
-        public Func<TParam1, TParam2, TResult> Build<TParam1, TParam2, TResult>(ConstructorInfo ctorInfo)
-        {
-            return (Func<TParam1, TParam2, TResult>)BuildFromTypes(ctorInfo, typeof(TResult), new[] { typeof(TParam1), typeof(TParam2) });
-        }
-
-        //Three parameters
-        public Func<TParam1, TParam2, TParam3, TResult> Build<TParam1, TParam2, TParam3, TResult>(ConstructorInfo ctorInfo)
-        {
-            return (Func<TParam1, TParam2, TParam3, TResult>)BuildFromTypes(ctorInfo, typeof(TResult), new[] { typeof(TParam1), typeof(TParam2), typeof(TParam3) });
-        }
-
-        //Four parameters
-        public Func<TParam1, TParam2, TParam3, TParam4, TResult> Build<TParam1, TParam2, TParam3, TParam4, TResult>(ConstructorInfo ctorInfo)
-        {
-            return (Func<TParam1, TParam2, TParam3, TParam4, TResult>)BuildFromTypes(ctorInfo, typeof(TResult), new[] { typeof(TParam1), typeof(TParam2), typeof(TParam3), typeof(TParam4) });
         }
 
         #endregion Typed Builders

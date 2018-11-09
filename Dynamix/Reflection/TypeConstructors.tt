@@ -1,0 +1,39 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+<# var numOfGenericParameters = 16; #>
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+
+namespace Dynamix.Reflection
+{
+<# for (var i = 2; i <= numOfGenericParameters; i++) { 
+	var generics = string.Join(", ",Enumerable.Range(1, i).Select(x => "TArg" + x));
+	var typeofs = string.Join(", ",Enumerable.Range(1, i).Select(x => $"typeof(TArg{x})"));
+	var args = string.Join(", ",Enumerable.Range(1, i).Select(x => $"arg{x}"));
+	var ctorArgs = string.Join(", ",Enumerable.Range(1, i).Select(x => $"TArg{x} arg{x}"));
+#>	public class TypeConstructor<T, <#= generics #>> : TypeConstructor<T>
+        where T : class
+    {
+        private readonly Func<<#= generics #>, T> constructor;
+
+        public TypeConstructor(Type concreteType = null, Action<T> initializer = null)
+            : base(concreteType, initializer)
+        {
+            constructor = MemberAccessorDelegateBuilder.CachedConstructorBuilder.Build<<#= generics #>, T>(GetConstructor(<#= typeofs #>));
+        }
+
+        public T Construct(<#= ctorArgs #>)
+        {
+            var r = constructor(<#= args #>);
+            initializer?.Invoke(r);
+            return r;
+        }
+    }
+<# } #>
+}

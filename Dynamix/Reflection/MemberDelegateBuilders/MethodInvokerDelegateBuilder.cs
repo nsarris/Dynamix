@@ -12,7 +12,7 @@ namespace Dynamix.Reflection.DelegateBuilders
 {
 
 
-    public class MethodInvokerDelegateBuilder
+    public partial class MethodInvokerDelegateBuilder
     {
         #region Ctor
 
@@ -48,7 +48,7 @@ namespace Dynamix.Reflection.DelegateBuilders
 
         private bool EnableCaching { get; set; } = true;
 
-        private MethodInvokerLambdaBuilder builder;
+        private readonly MethodInvokerLambdaBuilder builder;
 
         #endregion
 
@@ -124,11 +124,9 @@ namespace Dynamix.Reflection.DelegateBuilders
             if (methodInfo == null)
                 throw new ArgumentNullException(nameof(methodInfo));
 
-            if (EnableCaching)
-            {
-                if (byDelegateTypeCache.TryGetValue(delegateType, out var cachedDelegate))
+            if (EnableCaching &&
+                byDelegateTypeCache.TryGetValue(delegateType, out var cachedDelegate))
                     return cachedDelegate;
-            }
 
             var delegate_ = builder.BuildFromDelegate(methodInfo, delegateType).Compile();
 
@@ -144,51 +142,15 @@ namespace Dynamix.Reflection.DelegateBuilders
             return (TDelegate)(object)BuildFromDelegate(methodInfo, typeof(TDelegate));
         }
 
-        /// INSTANCE ///
-        //No parameters
-
         public Action<T> BuildActionInstance<T>(MethodInfo methodInfo)
         {
             return (Action<T>)BuildFromTypes(methodInfo, typeof(T), null, typeof(void));
         }
+
         public Func<T, TResult> BuildFuncInstance<T, TResult>(MethodInfo methodInfo)
         {
             return (Func<T, TResult>)BuildFromTypes(methodInfo, typeof(T), null, typeof(TResult));
         }
-
-        //One parameter
-        public Action<T, TParam1> BuildActionInstance<T, TParam1>(MethodInfo methodInfo)
-        {
-            return (Action<T, TParam1>)BuildFromTypes(methodInfo, typeof(T), new[] { typeof(TParam1) }, typeof(void));
-        }
-        public Func<T, TParam1, TResult> BuildFuncInstance<T, TParam1, TResult>(MethodInfo methodInfo)
-        {
-            return (Func<T, TParam1, TResult>)BuildFromTypes(methodInfo, typeof(T), new[] { typeof(TParam1) }, typeof(TResult));
-        }
-
-        //Two parameters
-        public Action<T, TParam1, TParam2> BuildActionInstance<T, TParam1, TParam2>(MethodInfo methodInfo)
-        {
-            return (Action<T, TParam1, TParam2>)BuildFromTypes(methodInfo, typeof(T), new[] { typeof(TParam1), typeof(TParam2) }, typeof(void));
-        }
-        public Func<T, TParam1, TParam2, TResult> BuildFuncInstance<T, TParam1, TParam2, TResult>(MethodInfo methodInfo)
-        {
-            return (Func<T, TParam1, TParam2, TResult>)BuildFromTypes(methodInfo, typeof(T), new[] { typeof(TParam1), typeof(TParam2) }, typeof(TResult));
-        }
-
-        //Three parameters
-        public Action<T, TParam1, TParam2, TParam3> BuildActionInstance<T, TParam1, TParam2, TParam3>(MethodInfo methodInfo)
-        {
-            return (Action<T, TParam1, TParam2, TParam3>)BuildFromTypes(methodInfo, typeof(T), new[] { typeof(TParam1), typeof(TParam2), typeof(TParam3) }, typeof(void));
-        }
-        public Func<T, TParam1, TParam2, TParam3, TResult> BuildFuncInstance<T, TParam1, TParam2, TParam3, TResult>(MethodInfo methodInfo)
-        {
-            return (Func<T, TParam1, TParam2, TParam3, TResult>)BuildFromTypes(methodInfo, typeof(T), new[] { typeof(TParam1), typeof(TParam2), typeof(TParam3) }, typeof(TResult));
-        }
-
-
-        // STATIC ///
-        //No parameters
 
         public Action BuildActionStatic(MethodInfo methodInfo)
         {
@@ -197,36 +159,6 @@ namespace Dynamix.Reflection.DelegateBuilders
         public Func<TResult> BuildFuncStatic<TResult>(MethodInfo methodInfo)
         {
             return (Func<TResult>)BuildFromTypes(methodInfo, null, null, typeof(TResult));
-        }
-
-        //One parameter
-        public Action<TParam1> BuildActionStatic<TParam1>(MethodInfo methodInfo)
-        {
-            return (Action<TParam1>)BuildFromTypes(methodInfo, null, new[] { typeof(TParam1) }, typeof(void));
-        }
-        public Func<TParam1, TResult> BuildFuncStatic<TParam1, TResult>(MethodInfo methodInfo)
-        {
-            return (Func<TParam1, TResult>)BuildFromTypes(methodInfo, null, new[] { typeof(TParam1) }, typeof(TResult));
-        }
-
-        //Two parameters
-        public Action<TParam1, TParam2> BuildActionStatic<TParam1, TParam2>(MethodInfo methodInfo)
-        {
-            return (Action<TParam1, TParam2>)BuildFromTypes(methodInfo, null, new[] { typeof(TParam1), typeof(TParam2) }, typeof(void));
-        }
-        public Func<TParam1, TParam2, TResult> BuildFuncStatic<TParam1, TParam2, TResult>(MethodInfo methodInfo)
-        {
-            return (Func<TParam1, TParam2, TResult>)BuildFromTypes(methodInfo, null, new[] { typeof(TParam1), typeof(TParam2) }, typeof(TResult));
-        }
-
-        //Three parameters
-        public Action<TParam1, TParam2, TParam3> BuildActionStatic<TParam1, TParam2, TParam3>(MethodInfo methodInfo)
-        {
-            return (Action<TParam1, TParam2, TParam3>)BuildFromTypes(methodInfo, null, new[] { typeof(TParam1), typeof(TParam2), typeof(TParam3) }, typeof(void));
-        }
-        public Func<TParam1, TParam2, TParam3, TResult> BuildFuncStatic<TParam1, TParam2, TParam3, TResult>(MethodInfo methodInfo)
-        {
-            return (Func<TParam1, TParam2, TParam3, TResult>)BuildFromTypes(methodInfo, null, new[] { typeof(TParam1), typeof(TParam2), typeof(TParam3) }, typeof(TResult));
         }
 
         #endregion Typed Builders

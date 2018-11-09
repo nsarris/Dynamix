@@ -108,8 +108,6 @@ namespace Dynamix.Reflection
     {
         private readonly Func<TArgument, T> constructor;
 
-
-
         public TypeConstructor(Type concreteType = null, Action<T> initializer = null)
             : base(concreteType, initializer)
         {
@@ -119,63 +117,6 @@ namespace Dynamix.Reflection
         public T Construct(TArgument argument)
         {
             var r = constructor(argument);
-            initializer?.Invoke(r);
-            return r;
-        }
-    }
-
-    public class TypeConstructor<T, TArgument1, TArgument2> : TypeConstructor<T>
-        where T : class
-    {
-        private readonly Func<TArgument1, TArgument2, T> constructor;
-
-        public TypeConstructor(Type concreteType = null, Action<T> initializer = null)
-            : base(concreteType, initializer)
-        {
-            constructor = MemberAccessorDelegateBuilder.CachedConstructorBuilder.Build<TArgument1, TArgument2, T>(GetConstructor(typeof(TArgument1), typeof(TArgument2)));
-        }
-
-        public T Construct(TArgument1 argument1, TArgument2 argument2)
-        {
-            var r = constructor(argument1, argument2);
-            initializer?.Invoke(r);
-            return r;
-        }
-    }
-
-    public class TypeConstructor<T, TArgument1, TArgument2, TArgument3> : TypeConstructor<T>
-        where T : class
-    {
-        private readonly Func<TArgument1, TArgument2, TArgument3, T> constructor;
-
-        public TypeConstructor(Type concreteType = null, Action<T> initializer = null)
-            : base(concreteType, initializer)
-        {
-            constructor = MemberAccessorDelegateBuilder.CachedConstructorBuilder.Build<TArgument1, TArgument2, TArgument3, T>(GetConstructor(typeof(TArgument1), typeof(TArgument2), typeof(TArgument3)));
-        }
-
-        public T Construct(TArgument1 argument1, TArgument2 argument2, TArgument3 argument3)
-        {
-            var r = constructor(argument1, argument2, argument3);
-            initializer?.Invoke(r);
-            return r;
-        }
-    }
-
-    public class TypeConstructor<T, TArgument1, TArgument2, TArgument3, TArgument4> : TypeConstructor<T>
-        where T : class
-    {
-        private readonly Func<TArgument1, TArgument2, TArgument3, TArgument4, T> constructor;
-
-        public TypeConstructor(Type concreteType = null, Action<T> initializer = null)
-            : base(concreteType, initializer)
-        {
-            constructor = MemberAccessorDelegateBuilder.CachedConstructorBuilder.Build<TArgument1, TArgument2, TArgument3, TArgument4, T>(GetConstructor(typeof(TArgument1), typeof(TArgument2), typeof(TArgument3), typeof(TArgument4)));
-        }
-
-        public T Construct(TArgument1 argument1, TArgument2 argument2, TArgument3 argument3, TArgument4 argument4)
-        {
-            var r = constructor(argument1, argument2, argument3, argument4);
             initializer?.Invoke(r);
             return r;
         }

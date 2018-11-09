@@ -1,0 +1,26 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+<# var numOfGenericParameters = 16; #>
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+
+namespace Dynamix.Reflection.DelegateBuilders
+{
+	public partial class ConstructorInvokerDelegateBuilder
+    {
+<# for (var i = 1; i <= numOfGenericParameters; i++) { 
+	var generics = string.Join(", ",Enumerable.Range(1, i).Select(x => "TParam" + x));
+	var typeofs = string.Join(", ",Enumerable.Range(1, i).Select(x => $"typeof(TParam{x})"));
+#>		public Func<<#= generics #>, TResult> Build<<#= generics #>, TResult>(ConstructorInfo ctorInfo)
+		{
+			return (Func<<#= generics #>, TResult>)BuildFromTypes(ctorInfo, typeof(TResult), new[] { <#= typeofs #> });
+		}
+<# } #>
+	}
+}

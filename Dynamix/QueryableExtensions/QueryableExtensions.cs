@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Dynamix.QueryableExtensions
 {
-    public static class QyerableExtensions
+    public static class QueryableExtensions
     {
         public static SingleQueryable<T> ToSingleQueryable<T>(this IQueryable<T> queryable)
         {

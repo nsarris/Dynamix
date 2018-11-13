@@ -126,8 +126,8 @@
     <Compile Include="Helpers\NumericTypeHelper.cs" />
     <Compile Include="Helpers\StringExtensions.cs" />
     <Compile Include="Helpers\With.cs" />
-    <Compile Include="QyeryableExtensions\QyerableExtensions.cs" />
-    <Compile Include="QyeryableExtensions\SingleQueryable.cs" />
+    <Compile Include="QueryableExtensions\QueryableExtensions.cs" />
+    <Compile Include="QueryableExtensions\SingleQueryable.cs" />
     <Compile Include="Reflection\Assembly\AssemblyArchitectureResolver.cs" />
     <Compile Include="Reflection\Assembly\AssemblyReflectionManager.cs" />
     <Compile Include="Reflection\Assembly\AssemblyReflectionProxy.cs" />

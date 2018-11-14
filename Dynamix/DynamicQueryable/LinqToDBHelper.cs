@@ -17,12 +17,25 @@ namespace Dynamix
 
         static LinqToDBMethods linqToDBMethods;
         static readonly object l2dblock = new object();
+        static Lazy<Type> linq2dbDataType = new Lazy<Type>(() =>
+        AssemblyReflector.FindTypeInAssembly("linq2db", "LinqToDB.Data.DataConnection"));
+
         public static DynamicQueryable FromLinqToDBDataConnection(object dataConnection, Type modelType)
         {
             if (dataConnection == null)
                 throw new ArgumentNullException(nameof(dataConnection));
 
-            if (dataConnection.GetType().FullName != "LinqToDB.Data.DataConnection")
+            Type connectionType = null;
+            try
+            {
+                connectionType = linq2dbDataType.Value;
+            }
+            catch (Exception e)
+            {
+                throw new InvalidOperationException("Linq2db is not loaded");
+            }
+
+            if (!dataConnection.GetType().IsOrSubclassOf(connectionType))
                 throw new ArgumentException("Object is not a LinqToDB DataConnection", nameof(dataConnection));
 
             if (linqToDBMethods == null)

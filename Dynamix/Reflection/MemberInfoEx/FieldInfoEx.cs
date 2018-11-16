@@ -74,13 +74,13 @@ namespace Dynamix.Reflection
         private void ValidateGetter(bool asStatic = false)
         {
             if (asStatic && !IsStatic)
-                throw new Exception("Property " + this.FieldInfo.Name + " of " + this.FieldInfo.DeclaringType.FullName + " is not static");
+                throw new InvalidOperationException("Property " + this.FieldInfo.Name + " of " + this.FieldInfo.DeclaringType.FullName + " is not static");
         }
 
         private void ValidateSetter(bool asStatic = false)
         {
             if (asStatic && !IsStatic)
-                throw new Exception("Property " + this.FieldInfo.Name + " of " + this.FieldInfo.DeclaringType.FullName + " is not static");
+                throw new InvalidOperationException("Property " + this.FieldInfo.Name + " of " + this.FieldInfo.DeclaringType.FullName + " is not static");
         }
 
         //General purpose
@@ -93,7 +93,7 @@ namespace Dynamix.Reflection
         public void Set(object instance, object value)
         {
             ValidateSetter();
-            this.Setter(instance, value);
+            this.Setter(instance, ConvertEx.ConvertTo(value, this.Type));
         }
 
         public T Get<T>(object instance)
@@ -111,7 +111,7 @@ namespace Dynamix.Reflection
         public void Set(object value)
         {
             ValidateSetter(true);
-            this.Setter(null, value);
+            this.Setter(null, ConvertEx.ConvertTo(value, this.Type));
         }
 
         public T Get<T>(bool allowPrivate = false)

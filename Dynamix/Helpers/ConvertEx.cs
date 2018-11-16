@@ -52,8 +52,8 @@ namespace Dynamix.Helpers
 
         public static object ConvertTo(object value, Type targetType)
         {
-            if (value == null)
-                return null;
+            if (value == null || value.GetType() == targetType)
+                return value;
 
             if (value.GetType().IsAssignableTo(targetType))
                 return CastTo(value, targetType);
@@ -83,6 +83,9 @@ namespace Dynamix.Helpers
                 else
                     throw new InvalidCastException("Null cannot be casted to non nullable value type");
             }
+
+            if (value is T || value.GetType() == typeof(T))
+                return (T)value;
 
             if (value is IConvertible && IsConvertSupported(targetType))
                 return (T)System.Convert.ChangeType(value, targetType);

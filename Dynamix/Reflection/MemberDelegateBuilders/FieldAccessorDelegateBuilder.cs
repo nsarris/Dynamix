@@ -7,7 +7,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Dynamix.Expressions;
 using System.Reflection.Emit;
-using Dynamix.Reflection.Emit;
 using System.Collections.Concurrent;
 using Dynamix.Expressions.LambdaBuilders;
 
@@ -143,7 +142,11 @@ namespace Dynamix.Reflection.DelegateBuilders
             if (!fieldInfo.IsInitOnly)
                 _delegate = builder.BuildStaticGetter(fieldInfo, valueType).Compile();
             else
-                _delegate = FieldAccessorMethodEmitter.GetFieldSetter(fieldInfo, GenericTypeExtensions.GetActionGenericType(valueType ?? fieldInfo.FieldType));
+#if NET45
+                _delegate = Emit.FieldAccessorMethodEmitter.GetFieldSetter(fieldInfo, GenericTypeExtensions.GetActionGenericType(valueType ?? fieldInfo.FieldType));
+#else
+                throw new InvalidOperationException($"Field {fieldInfo.Name} is InitOnly and cannot be set.");
+#endif
 
             if (EnableCaching)
                 getterCache.TryAdd(cacheKey, _delegate);
@@ -169,9 +172,9 @@ namespace Dynamix.Reflection.DelegateBuilders
             return _delegate;
         }
 
-        #endregion Static Builders
+#endregion Static Builders
 
-        #region Instance Getters and Setters
+#region Instance Getters and Setters
 
         public Func<object, object> BuildInstanceGetter(FieldInfo fieldInfo)
         {
@@ -203,9 +206,9 @@ namespace Dynamix.Reflection.DelegateBuilders
             return (Action<T, TField>)BuildInstanceSetter(fieldInfo, typeof(T), typeof(TField));
         }
 
-        #endregion Instance Getters and Setters
+#endregion Instance Getters and Setters
 
-        #region Static Getters and Setters
+#region Static Getters and Setters
 
         public Func<object> BuildStaticGetter(FieldInfo fieldInfo)
         {
@@ -227,6 +230,6 @@ namespace Dynamix.Reflection.DelegateBuilders
             return (Action<TField>)BuildStaticSetter(fieldInfo, typeof(TField));
         }
 
-        #endregion Static Getters and Setters
+#endregion Static Getters and Setters
     }
 }

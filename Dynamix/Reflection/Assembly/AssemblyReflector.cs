@@ -10,9 +10,30 @@ namespace Dynamix.Reflection
 {
     public static class AssemblyReflector
     {
+#if NET45
+        static AssemblyReflectionManager manager = new AssemblyReflectionManager();
+#endif
+
+        public static string GetSearchPath()
+        {
+            return (AppDomain.CurrentDomain.RelativeSearchPath == null)
+                    ? AppDomain.CurrentDomain.BaseDirectory
+                    : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, AppDomain.CurrentDomain.RelativeSearchPath);
+        }
+
+        public static string GetBasePath()
+        {
+            return AppDomain.CurrentDomain.BaseDirectory;
+        }
+
+        public static IEnumerable<Assembly> GetLoadedAssemblies()
+        {
+            return AppDomain.CurrentDomain.GetAssemblies();
+        }
+
         public static List<Type> FindTypesInAssemblies(Func<Type, bool> predicate, bool lookInBaseDirectory = true, params string[] extraPaths)
         {
-            var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var loadedAssemblies = GetLoadedAssemblies().ToList();
 
             var loadedTypes =
                      loadedAssemblies
@@ -22,37 +43,25 @@ namespace Dynamix.Reflection
 
             var loadedAssemblyNames = loadedAssemblies.Select(a => a.GetName().FullName).ToList();
 
-            var manager = new AssemblyReflectionManager();
-
-            var paths = (lookInBaseDirectory ? new[] { AppDomain.CurrentDomain.BaseDirectory } : Enumerable.Empty<string>())
+            var paths = (lookInBaseDirectory ? new[] { GetBasePath() } : Enumerable.Empty<string>())
                 .Concat(extraPaths ?? Enumerable.Empty<string>());
 
             foreach (var folder in paths)
             {
-                if (System.IO.Directory.Exists(folder))
+                if (Directory.Exists(folder))
                 {
-                    foreach (var fileName in System.IO.Directory.GetFiles(folder))
+                    foreach (var fileName in Directory.GetFiles(folder))
                     {
-                        var file = new System.IO.FileInfo(fileName);
+                        var file = new FileInfo(fileName);
                         if (file.Extension == ".dll")
                         {
                             try
                             {
                                 var assemblyName = AssemblyName.GetAssemblyName(file.FullName);
                                 if (!loadedAssemblyNames.Any(x => x == assemblyName.FullName)
-                                    && manager.LoadAssembly(file.FullName, "TypeSearchDomain"))
+                                 && ReflectionOnlyQuery(file.FullName, a => a.GetTypes().Any(predicate)))
                                 {
-                                    var results = manager.Reflect(file.FullName, (a) =>
-                                    {
-                                        return a.GetTypes();
-                                    });
-
-                                    if (results.Any(predicate))
-                                    {
-                                        loadedTypes.AddRange(Assembly.LoadFrom(file.FullName).GetTypes().Where(predicate));
-                                    }
-
-                                    manager.UnloadAssembly(fileName);
+                                    loadedTypes.AddRange(Assembly.LoadFrom(file.FullName).GetTypes().Where(predicate));
                                 }
                             }
                             catch
@@ -65,6 +74,25 @@ namespace Dynamix.Reflection
             }
 
             return loadedTypes;
+        }
+
+        public static TResult ReflectionOnlyQuery<TResult>(string assemblyPath, Func<Assembly, TResult> query)
+        {
+#if NET45
+            if (manager.LoadAssembly(assemblyPath, "TypeSearchDomain"))
+            {
+                var results = manager.Reflect(assemblyPath, query);
+
+                manager.UnloadAssembly(assemblyPath);
+
+                return results;
+            }
+            return default;
+#else
+            var proxy = new AssemblyReflectionProxy();
+            proxy.LoadAssembly(assemblyPath);
+            return proxy.Reflect(query);
+#endif
         }
 
         public static Type FindTypeInAssembly(string assemblyName, string typeName, bool lookInBaseDirectory = true, params string[] extraPaths)
@@ -87,18 +115,18 @@ namespace Dynamix.Reflection
 
         public static Assembly FindOrLoadAssembly(string name, bool lookInBaseDirectory = true, params string[] extraPaths)
         {
-            var loadedAssembly = AppDomain.CurrentDomain.GetAssemblies()
+            var loadedAssembly = GetLoadedAssemblies()
                 .FirstOrDefault(x => !x.IsDynamic && x.GetName().Name == name);
 
             if (loadedAssembly != null)
                 return loadedAssembly;
 
-            var paths = (lookInBaseDirectory ? new[] { AppDomain.CurrentDomain.BaseDirectory } : Enumerable.Empty<string>())
+            var paths = (lookInBaseDirectory ? new[] { GetBasePath() } : Enumerable.Empty<string>())
                 .Concat(extraPaths ?? Enumerable.Empty<string>());
 
             foreach (var folder in paths)
             {
-                if (System.IO.Directory.Exists(folder))
+                if (Directory.Exists(folder))
                 {
                     foreach (var fileName in Directory.GetFiles(folder, "*.dll", SearchOption.AllDirectories))
                     {
@@ -110,11 +138,12 @@ namespace Dynamix.Reflection
                                 || (assemblyName.ProcessorArchitecture == ProcessorArchitecture.X86 && !Environment.Is64BitProcess)
                                 || (assemblyName.ProcessorArchitecture == ProcessorArchitecture.Amd64 && Environment.Is64BitProcess)))
                             {
-
                                 return Assembly.LoadFrom(fileName);
                             }
                         }
-                        catch { }
+                        catch {
+                            //TODO: Add option to throw or consider return as out param
+                        }
                     }
                 }
             }
@@ -123,17 +152,17 @@ namespace Dynamix.Reflection
 
         public static void LoadAllAssemblies()
         {
-            LoadAllAssemblies(AppDomain.CurrentDomain.BaseDirectory);
+            LoadAllAssemblies(GetBasePath());
         }
 
         public static void LoadAllAssemblies(string path)
         {
-            var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies()
+            var loadedAssemblies = GetLoadedAssemblies()
                .Where(x => !x.IsDynamic).Select(x => x.GetName()).ToList();
 
-            foreach (var fileName in System.IO.Directory.GetFiles(path))
+            foreach (var fileName in Directory.GetFiles(path))
             {
-                var file = new System.IO.FileInfo(fileName);
+                var file = new FileInfo(fileName);
                 if (file.Extension == ".dll")
                 {
                     var assemblyName = AssemblyName.GetAssemblyName(file.FullName);
@@ -143,7 +172,9 @@ namespace Dynamix.Reflection
                         {
                             Assembly.LoadFrom(file.FullName);
                         }
-                        catch { }
+                        catch {
+                            //TODO: Add option to throw or consider return as out param
+                        }
                     }
                 }
             }

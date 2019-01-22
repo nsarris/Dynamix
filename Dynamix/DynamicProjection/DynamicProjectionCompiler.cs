@@ -90,7 +90,12 @@ namespace Dynamix.DynamicProjection
         private CompiledDynamicProjectionConfiguration Compile()
         {
             configuration.ProjectedType =
-                configuration.ProjectedType ?? BuildProjectedType();
+                configuration.ProjectedType ??
+#if NETSTANDARD2_0
+                throw new InvalidOperationException("Projected type not set. Dynamic type building in not supported in net standard.");
+#else
+                BuildProjectedType();
+#endif
 
             var compiledMembers = configuration.Members.Select(x => (Configuration: x, CompiledMember: CompileMember(x))).ToList();
             var compiledCtorParams = configuration.CtorParameters.Select(x => (Configuration: x, CompiledCtorParam: CompileCtorParameter(x))).ToList();
@@ -151,6 +156,7 @@ namespace Dynamix.DynamicProjection
                 compiledMemberTargets, memberInitAssignments, ctorParameterAssignments, defaultProjection);
         }
 
+#if !NETSTANDARD2_0
         private Type BuildProjectedType()
         {
             if (configuration.CtorParameters.Any())
@@ -187,7 +193,7 @@ namespace Dynamix.DynamicProjection
 
             return DynamicTypeBuilder.Instance.CreateType(typeBuilder);
         }
-
+#endif
 
         private string GetSourceMemberNameFromCtorParameter(string parameterName)
         {

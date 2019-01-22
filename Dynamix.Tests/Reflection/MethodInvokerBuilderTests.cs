@@ -70,7 +70,7 @@ namespace Dynamix.Tests.Reflection
         [Test]
         public void TestWrongUsage()
         {
-            var extm = typeof(List<int>).GetExtensionsMethods(AppDomain.CurrentDomain.GetAssemblies()).ToList();
+            var extm = typeof(List<int>).GetExtensionsMethods(AssemblyReflector.GetLoadedAssemblies()).ToList();
             var enumerableSumMethod = extm.Where(x => x.Name == "Sum" && !x.IsGenericMethod).FirstOrDefault();
             var builder = new MethodInvokerLambdaBuilder();
 
@@ -92,7 +92,7 @@ namespace Dynamix.Tests.Reflection
         [Test]
         public void TestNonGenericMethodBuilders()
         {
-            var extm = typeof(List<int>).GetExtensionsMethods(AppDomain.CurrentDomain.GetAssemblies()).ToList();
+            var extm = typeof(List<int>).GetExtensionsMethods(AssemblyReflector.GetLoadedAssemblies()).ToList();
             var enumerableSumMethod = extm.Where(x => x.Name == "Sum" && !x.IsGenericMethod).FirstOrDefault();
             var enumerableAddMethod = extm.Where(x => x.Name == "Add").FirstOrDefault();
             var l = new List<int>() { 1, 2, 3 };

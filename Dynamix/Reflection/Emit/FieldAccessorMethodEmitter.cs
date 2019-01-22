@@ -13,8 +13,7 @@ namespace Dynamix.Reflection.Emit
         public static TDelegate GetFieldSetter<TDelegate>(FieldInfo field)
             where TDelegate : class
         {
-            var ret = GetFieldSetter(field, typeof(TDelegate)) as TDelegate;
-            if (ret == null)
+            if (!(GetFieldSetter(field, typeof(TDelegate)) is TDelegate ret))
                 throw new InvalidCastException("Constructed field setter cannot be casted to requested delegate type");
             return ret;
         }
@@ -62,8 +61,7 @@ namespace Dynamix.Reflection.Emit
         public static TDelegate GetFieldGetter<TDelegate>(FieldInfo field)
             where TDelegate : class
         {
-            var ret = GetFieldGetter(field, typeof(TDelegate)) as TDelegate;
-            if (ret == null)
+            if (!(GetFieldGetter(field, typeof(TDelegate)) is TDelegate ret))
                 throw new InvalidCastException("Constructed field getter cannot be casted to requested delegate type");
             return ret;
         }

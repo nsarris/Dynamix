@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net45;netstandard2.0;netcoreapp2.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="DynamicLinq\DynamicLinq.cs" />
+    <Compile Remove="DynamicLinq\DynamicLinqExtensions.cs" />
+    <Compile Remove="DynamicLinq\DynamicLinqParser.cs" />
+    <Compile Remove="Properties\AssemblyInfo.cs" />
+    <Compile Condition="'$(TargetFramework)' == 'netstandard2.0'" Remove="DynamicType\**\*" />
+    <Compile Condition="'$(TargetFramework)' == 'netstandard2.0'" Remove="Reflection\Emit\**\*" />
+    <Compile Condition="'$(TargetFramework)' != 'net45'" Remove="Reflection\Assembly\AssemblyReflectionManager.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="system.linq.dynamic.core" Version="1.0.9.2" />
+    <PackageReference Include="system.valuetuple" Version="4.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
+</Project>

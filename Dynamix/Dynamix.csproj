@@ -21,4 +21,71 @@
     <Folder Include="Properties\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Reflection\MemberDelegateBuilders\ConstructorInvokerDelegateBuilder_TypedBuilders.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>ConstructorInvokerDelegateBuilder_TypedBuilders.cs</LastGenOutput>
+    </None>
+    <None Update="Reflection\MemberDelegateBuilders\MethodInvokerDelegateBuilder_TypedBuilders.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>MethodInvokerDelegateBuilder_TypedBuilders.cs</LastGenOutput>
+    </None>
+    <None Update="Reflection\TypeConstructors.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>TypeConstructors.cs</LastGenOutput>
+    </None>
+    <None Update="Reflection\Wrappers\ActionWrapper.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>ActionWrapper.cs</LastGenOutput>
+    </None>
+    <None Update="Reflection\Wrappers\FuncWrapper.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>FuncWrapper.cs</LastGenOutput>
+    </None>
+    <Content Include="Reflection\MemberDelegateBuilders\MethodInvokerDelegateBuilder_TypedBuilders.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>MethodInvokerDelegateBuilder_TypedBuilders.cs</LastGenOutput>
+    </Content>
+    <Content Include="Reflection\MemberDelegateBuilders\ConstructorInvokerDelegateBuilder_TypedBuilders.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>ConstructorInvokerDelegateBuilder_TypedBuilders.cs</LastGenOutput>
+    </Content>
+    <Content Include="Reflection\TypeConstructors.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>TypeConstructors.cs</LastGenOutput>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Reflection\MemberDelegateBuilders\ConstructorInvokerDelegateBuilder_TypedBuilders.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ConstructorInvokerDelegateBuilder_TypedBuilders.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Reflection\MemberDelegateBuilders\MethodInvokerDelegateBuilder_TypedBuilders.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>MethodInvokerDelegateBuilder_TypedBuilders.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Reflection\TypeConstructors.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>TypeConstructors.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Reflection\Wrappers\ActionWrapper.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ActionWrapper.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Reflection\Wrappers\FuncWrapper.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>FuncWrapper.tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
 </Project>

@@ -30,7 +30,7 @@ namespace Dynamix
             {
                 connectionType = linq2dbDataType.Value;
             }
-            catch (Exception e)
+            catch
             {
                 throw new InvalidOperationException("Linq2db is not loaded");
             }

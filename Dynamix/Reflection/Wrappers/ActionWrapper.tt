@@ -1,0 +1,87 @@
+<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+<# var numOfGenericParameters = 16; #>
+using System;
+using System.Threading.Tasks;
+using Dynamix.Helpers;
+
+namespace Dynamix.Reflection
+{
+<# for (var i = 0; i <= numOfGenericParameters; i++) { 
+	var generics = string.Join(", ",Enumerable.Range(1, i).Select(x => "TArg" + x));
+	var contraVariantGenerics = string.Join(", ",Enumerable.Range(1, i).Select(x => "in TArg" + x));
+	var interfaceName = i > 0 ? $"ActionWrapper<{contraVariantGenerics}>" : "ActionWrapper";
+	var className = i > 0 ? $"ActionWrapper<{generics}>" : "ActionWrapper";
+	var action = i > 0 ? $"Action<{generics}>" : "Action";
+	var actionAsync = i > 0 ? $"Func<{generics}, Task>" : "Func<Task>";
+	var executeArgs = string.Join(", ",Enumerable.Range(1, i).Select(x => $"TArg{x} arg{x}"));
+	var args = string.Join(", ",Enumerable.Range(1, i).Select(x => $"arg{x}"));
+#>	public interface I<#= interfaceName #>
+	{
+		Delegate Delegate { get; }
+		void Invoke(<#= executeArgs #>);
+		Task InvokeAsync(<#= executeArgs #>);
+	}
+
+	public class <#= className #> : I<#= className #>
+    {
+        private readonly <#= action #> operation;
+
+		public Delegate Delegate => operation;
+
+        public ActionWrapper(<#= action #> operation)
+        {
+            this.operation = operation ?? throw new ArgumentNullException(nameof(operation));
+        }
+
+        public void Invoke(<#= executeArgs #>)
+        {
+            operation(<#= args #>);
+        }
+
+        public Task InvokeAsync(<#= executeArgs #>)
+        {
+            try
+            {
+                operation(<#= args #>);
+                return TaskCompatibility.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                return TaskCompatibility.FromException(ex);
+            }
+		}
+
+		public static implicit operator Delegate(<#= className #> actionWrapper) => actionWrapper.Delegate;
+    }
+
+	public class Async<#= className #> : I<#= className #>
+    {
+        private readonly <#= actionAsync #> operation;
+        
+		public Delegate Delegate => operation;
+
+        public AsyncActionWrapper(<#= actionAsync #> operation)
+        {
+            this.operation = operation ?? throw new ArgumentNullException(nameof(operation));
+        }
+
+        public void Invoke(<#= executeArgs #>)
+        {
+            AsyncTaskHelper.RunSync(() => operation(<#= args #>));
+        }
+
+        public Task InvokeAsync(<#= executeArgs #>)
+        {
+            return operation(<#= args #>);
+        }
+
+		public static implicit operator Delegate(Async<#= className #> actionWrapper) => actionWrapper.Delegate;
+    }
+
+<# } #>
+}

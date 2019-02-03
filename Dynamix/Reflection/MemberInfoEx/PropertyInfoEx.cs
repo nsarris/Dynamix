@@ -113,21 +113,21 @@ namespace Dynamix.Reflection
         private void ValidateGetter(object[] indexers = null, bool asStatic = false)
         {
             if (!CanGet)
-                throw new Exception("Property " + this.PropertyInfo.Name + " of " + this.PropertyInfo.DeclaringType.FullName + " has no get accessor.");
+                throw new InvalidOperationException("Property " + this.PropertyInfo.Name + " of " + this.PropertyInfo.DeclaringType.FullName + " has no get accessor.");
             if (indexers != null && indexers.Count() != IndexerCount)
-                throw new Exception("Property " + this.PropertyInfo.Name + " of " + this.PropertyInfo.DeclaringType.FullName + " has " + IndexerCount + " index parameters but " + indexers.Count() + "where provided");
+                throw new InvalidOperationException("Property " + this.PropertyInfo.Name + " of " + this.PropertyInfo.DeclaringType.FullName + " has " + IndexerCount + " index parameters but " + indexers.Count() + "where provided");
             if (asStatic && !IsStatic)
-                throw new Exception("Property " + this.PropertyInfo.Name + " of " + this.PropertyInfo.DeclaringType.FullName + " is not static");
+                throw new InvalidOperationException("Property " + this.PropertyInfo.Name + " of " + this.PropertyInfo.DeclaringType.FullName + " is not static");
         }
 
         private void ValidateSetter(object[] indexers = null, bool asStatic = false)
         {
             if (!CanSet)
-                throw new Exception("Property " + this.PropertyInfo.Name + " of " + this.PropertyInfo.DeclaringType.FullName + " has no set accessor.");
+                throw new InvalidOperationException("Property " + this.PropertyInfo.Name + " of " + this.PropertyInfo.DeclaringType.FullName + " has no set accessor.");
             if (indexers != null && indexers.Count() != IndexerCount)
-                throw new Exception("Property " + this.PropertyInfo.Name + " of " + this.PropertyInfo.DeclaringType.FullName + " has " + IndexerCount + " index parameters but " + indexers.Count() + "where provided");
+                throw new InvalidOperationException("Property " + this.PropertyInfo.Name + " of " + this.PropertyInfo.DeclaringType.FullName + " has " + IndexerCount + " index parameters but " + indexers.Count() + "where provided");
             if (asStatic && !IsStatic)
-                throw new Exception("Property " + this.PropertyInfo.Name + " of " + this.PropertyInfo.DeclaringType.FullName + " is not static");
+                throw new InvalidOperationException("Property " + this.PropertyInfo.Name + " of " + this.PropertyInfo.DeclaringType.FullName + " is not static");
         }
 
         //General purpose
@@ -140,7 +140,7 @@ namespace Dynamix.Reflection
         public void Set(object instance, object value)
         {
             ValidateSetter();
-            this.Setter(instance, value);
+            this.Setter(instance, ConvertEx.ConvertTo(value, this.Type));
         }
 
         public T Get<T>(object instance)
@@ -158,7 +158,7 @@ namespace Dynamix.Reflection
         public void Set(object value)
         {
             ValidateSetter(null, true);
-            this.Setter(null, value);
+            this.Setter(null, ConvertEx.ConvertTo(value, this.Type));
         }
 
         public T Get<T>(bool allowPrivate = false)
@@ -177,7 +177,7 @@ namespace Dynamix.Reflection
         public void Set(object instance, object[] indexers, object value)
         {
             ValidateSetter(indexers);
-            this.Setter(instance, value, indexers);
+            this.Setter(instance, ConvertEx.ConvertTo(value, this.Type), indexers);
         }
 
         public T Get<T>(object instance, object[] indexers)
@@ -197,7 +197,7 @@ namespace Dynamix.Reflection
         public void Set(object instance, object value, object indexer)
         {
             ValidateSetter();
-            this.Setter(instance, value, indexer);
+            this.Setter(instance, ConvertEx.ConvertTo(value, this.Type), indexer);
         }
 
         public T Get<T>(object instance, object indexer)
@@ -216,7 +216,7 @@ namespace Dynamix.Reflection
         public void Set(object instance, object value, object indexer1, object indexer2)
         {
             ValidateSetter();
-            this.Setter(instance, value, indexer1, indexer2);
+            this.Setter(instance, ConvertEx.ConvertTo(value, this.Type), indexer1, indexer2);
         }
 
         public T Get<T>(object instance, object indexer1, object indexer2)
@@ -235,7 +235,7 @@ namespace Dynamix.Reflection
         public void Set(object instance, object value, object indexer1, object indexer2, object indexer3)
         {
             ValidateSetter();
-            this.Setter(instance, value, indexer1, indexer2, indexer3);
+            this.Setter(instance, ConvertEx.ConvertTo(value, this.Type), indexer1, indexer2, indexer3);
         }
 
         public T Get<T>(object instance, object indexer1, object indexer2, object indexer3)

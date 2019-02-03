@@ -1,231 +1,28 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{8CD44B0C-C50D-4328-8EFD-9B0B4DD9BDD2}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Dynamix</RootNamespace>
-    <AssemblyName>Dynamix</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
-    <TargetFrameworkProfile />
+    <TargetFrameworks>net45;netstandard2.0;netcoreapp2.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <LangVersion>7.3</LangVersion>
-    <CodeAnalysisRuleSet>Dynamix.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <LangVersion>7.3</LangVersion>
-    <CodeAnalysisRuleSet>Dynamix.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Data.Entity" />
-    <Reference Include="System.Linq.Dynamic, Version=1.0.6132.35681, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\System.Linq.Dynamic.1.0.7\lib\net40\System.Linq.Dynamic.dll</HintPath>
-    </Reference>
-    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>$(SolutionDir)\packages\System.ValueTuple.4.5.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
-    </Reference>
+    <Compile Remove="DynamicLinq\DynamicLinq.cs" />
+    <Compile Remove="DynamicLinq\DynamicLinqExtensions.cs" />
+    <Compile Remove="DynamicLinq\DynamicLinqParser.cs" />
+    <Compile Remove="Properties\AssemblyInfo.cs" />
+    <Compile Condition="'$(TargetFramework)' == 'netstandard2.0'" Remove="DynamicType\**\*" />
+    <Compile Condition="'$(TargetFramework)' == 'netstandard2.0'" Remove="Reflection\Emit\**\*" />
+    <Compile Condition="'$(TargetFramework)' != 'net45'" Remove="Reflection\Assembly\AssemblyReflectionManager.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="DynamicLinq\DynamicExpressionParser.cs" />
-    <Compile Include="DynamicProjection\DefaultMemberNameMatchStrategy.cs" />
-    <Compile Include="DynamicProjection\DynamicProjection.cs" />
-    <Compile Include="DynamicProjection\CtorParamTargetConfiguration.cs" />
-    <Compile Include="DynamicProjection\CompiledDynamicProjectionConfiguration.cs" />
-    <Compile Include="DynamicProjection\DynamicProjectionCompiler.cs" />
-    <Compile Include="DynamicProjection\DynamicProjectionConfiguration.cs" />
-    <Compile Include="DynamicProjection\DynamicProjectionPredicateMemberVisitor.cs" />
-    <Compile Include="DynamicProjection\DynamicProjectionOperationTarget.cs" />
-    <Compile Include="DynamicProjection\DynamicProjectionPredicateVisitor.cs" />
-    <Compile Include="DynamicProjection\IMemberNameMatchStrategy.cs" />
-    <Compile Include="DynamicProjection\TargetBuilders.cs" />
-    <Compile Include="DynamicProjection\MemberTargetConfiguration.cs" />
-    <Compile Include="DynamicProjection\ProjectedMember.cs" />
-    <Compile Include="DynamicProjection\ProjectionBuilder.cs" />
-    <Compile Include="DynamicProjection\ProjectionBuilder_TSource.cs" />
-    <Compile Include="DynamicProjection\ProjectionBuilder_TSource_TDestination.cs" />
-    <Compile Include="DynamicProjection\ProjectionBuilderBase.cs" />
-    <Compile Include="DynamicProjection\ProjectionSource.cs" />
-    <Compile Include="DynamicProjection\ValueMap.cs" />
-    <Compile Include="DynamicQueryable\DynamicEnumerable.cs" />
-    <Compile Include="DynamicQueryable\DynamicOrderedEnumerable.cs" />
-    <Compile Include="DynamicQueryable\DynamicOrderedQueryable.cs" />
-    <Compile Include="DynamicQueryable\DynamicQueryable.cs" />
-    <Compile Include="DynamicQueryable\EntityFrameworkHelper.cs" />
-    <Compile Include="DynamicQueryable\LinqToDBHelper.cs" />
-    <Compile Include="DynamicQueryable\OrderByExpressionParser.cs" />
-    <Compile Include="DynamicQueryable\OrderItem.cs" />
-    <Compile Include="DynamicType\DynamicTypeDescriptorBuilder.cs" />
-    <Compile Include="DynamicType\DynamicTypeField.cs" />
-    <Compile Include="DynamicType\DynamicTypeFieldBuilder.cs" />
-    <Compile Include="DynamicType\DynamicTypeProperty.cs" />
-    <Compile Include="DynamicType\CustomAttributeBuilderFactory.cs" />
-    <Compile Include="DynamicType\DynamicDTODescriptor.cs" />
-    <Compile Include="DynamicType\DynamicType.cs" />
-    <Compile Include="DynamicType\DynamicTypeBuilder.cs" />
-    <Compile Include="DynamicType\DynamicTypeDescriptor.cs" />
-    <Compile Include="DynamicType\DynamicTypePropertyBuilder.cs" />
-    <Compile Include="DynamicType\GetSetAccessModifier.cs" />
-    <Compile Include="DynamicType\MemberAccessModifier.cs" />
-    <Compile Include="Expressions\Builders\ConstructorInvokerLambdaBuilder.cs" />
-    <Compile Include="Expressions\Builders\MethodInvokerLambdaBuilder.cs" />
-    <Compile Include="Expressions\Define.cs" />
-    <Compile Include="Expressions\EqualityComparison\EqualityExpressionVisitor.cs" />
-    <Compile Include="Expressions\EqualityComparison\ExpressionComparisonVisitor.cs" />
-    <Compile Include="Expressions\EqualityComparison\ExpressionEqualityComparer.cs" />
-    <Compile Include="Expressions\EqualityComparison\ExpressionHashCodeCalculationVisitor.cs" />
-    <Compile Include="Expressions\Extensions\LambdaExpressionExtensions.cs" />
-    <Compile Include="Expressions\MemberPredicateExpressionBuilder.cs" />
-    <Compile Include="Expressions\PredicateBuilder\ComplexNode.cs" />
-    <Compile Include="Expressions\PredicateBuilder\ExpressionNodeVisitor.cs" />
-    <Compile Include="Expressions\PredicateBuilder\ExpressionNodeVisitorInput.cs" />
-    <Compile Include="Expressions\PredicateBuilder\ExpressionOperator.cs" />
-    <Compile Include="Expressions\PredicateBuilder\INodeVisitor.cs" />
-    <Compile Include="Expressions\PredicateBuilder\LogicalOperator.cs" />
-    <Compile Include="Expressions\PredicateBuilder\NodeBase.cs" />
-    <Compile Include="Expressions\PredicateBuilder\PredicateBuilder.cs" />
-    <Compile Include="Expressions\PredicateBuilder\PredicateBuilderConfiguration.cs" />
-    <Compile Include="Expressions\PredicateBuilder\PredicateDataType.cs" />
-    <Compile Include="Expressions\PredicateBuilder\PredicateTreeBuilder.cs" />
-    <Compile Include="Expressions\PredicateBuilder\BinaryNode.cs" />
-    <Compile Include="Expressions\EqualityComparison\ExpressionEnumaration.cs" />
-    <Compile Include="Expressions\Visitors\ExpressionForEachOfTypeVisitor.cs" />
-    <Compile Include="Expressions\Visitors\ParameterReplacerOfNameVisitor.cs" />
-    <Compile Include="Expressions\Visitors\ParameterReplacerOfTypeVisitor.cs" />
-    <Compile Include="Expressions\Visitors\ParameterReplacerVisitor.cs" />
-    <Compile Include="Helpers\ConvertEx.cs" />
-    <Compile Include="Helpers\EnumerableExtensions.cs" />
-    <Compile Include="Helpers\EnumParser.cs" />
-    <Compile Include="Helpers\SystemEnumParser.cs" />
-    <Compile Include="Helpers\NumericValueParser.cs" />
-    <Compile Include="Helpers\NumericTypeHelper.cs" />
-    <Compile Include="Helpers\StringExtensions.cs" />
-    <Compile Include="Helpers\With.cs" />
-    <Compile Include="QueryableExtensions\QueryableExtensions.cs" />
-    <Compile Include="QueryableExtensions\SingleQueryable.cs" />
-    <Compile Include="Reflection\Assembly\AssemblyArchitectureResolver.cs" />
-    <Compile Include="Reflection\Assembly\AssemblyReflectionManager.cs" />
-    <Compile Include="Reflection\Assembly\AssemblyReflectionProxy.cs" />
-    <Compile Include="Reflection\Assembly\AssemblyReflector.cs" />
-    <Compile Include="Reflection\Cache\ConstructorInfoExCache.cs" />
-    <Compile Include="Reflection\Cache\MethodInfoExCache.cs" />
-    <Compile Include="Reflection\Extensions\ConstructorInfoExTypeExtensions.cs" />
-    <Compile Include="Reflection\Extensions\MethodInfoExTypeExtensions.cs" />
-    <Compile Include="Reflection\MemberDelegateBuilders\CompiledExpressionCache.cs" />
-    <Compile Include="Expressions\MemberExpressionBuilder.cs" />
-    <Compile Include="Expressions\ExpressionEx.cs" />
-    <Compile Include="Expressions\Extensions\ExpressionExtensions.cs" />
-    <Compile Include="Expressions\Visitors\ExpressionForEachVisitor.cs" />
-    <Compile Include="Expressions\InitExpressionParser.cs" />
-    <Compile Include="Expressions\Visitors\ExpressionParameterReplacer.cs" />
-    <Compile Include="Helpers\HashKey.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Reflection\ActivatorEx.cs" />
-    <Compile Include="Reflection\Emit\FieldAccessorMethodEmitter.cs" />
-    <Compile Include="Reflection\EnumerableTypeDescriptor.cs" />
-    <Compile Include="Reflection\MemberDelegateBuilders\MethodInvokerDelegateBuilder_TypedBuilders.cs">
-      <DependentUpon>MethodInvokerDelegateBuilder_TypedBuilders.tt</DependentUpon>
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-    </Compile>
-    <Compile Include="Reflection\MemberDelegateBuilders\ConstructorInvokerDelegateBuilder_TypedBuilders.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>ConstructorInvokerDelegateBuilder_TypedBuilders.tt</DependentUpon>
-    </Compile>
-    <Compile Include="Reflection\MemberInfoEx\ConstructorInfoEx.cs" />
-    <Compile Include="Reflection\MemberInfoEx\InvocationHelper.cs" />
-    <Compile Include="Reflection\MemberInfoEx\_Enums.cs" />
-    <Compile Include="Reflection\TypeConstructor.cs" />
-    <Compile Include="Reflection\TypeConstructors.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>TypeConstructors.tt</DependentUpon>
-    </Compile>
-    <Compile Include="Reflection\Wrappers\AnonymousTypeWrapper.cs" />
-    <Compile Include="Reflection\Cache\GenericMethodCache.cs" />
-    <Compile Include="Reflection\Cache\GenericTypeCache.cs" />
-    <Compile Include="Reflection\MemberInfoEx\_Interfaces.cs" />
-    <Compile Include="Expressions\Builders\MemberAccessorLambdaBuilder.cs" />
-    <Compile Include="Helpers\LINQExtensions.cs" />
-    <Compile Include="Expressions\Builders\FieldAccessorLambdaBuilder.cs" />
-    <Compile Include="Expressions\Builders\PropertyAccessorLambdaBuilder.cs" />
-    <Compile Include="Reflection\MemberDelegateBuilders\ConstructorInvokerDelegateBuilder.cs" />
-    <Compile Include="Reflection\MemberDelegateBuilders\FieldAccessorDelegateBuilder.cs" />
-    <Compile Include="Reflection\MemberDelegateBuilders\MemberAccessorDelegateBuilder.cs" />
-    <Compile Include="Reflection\MemberDelegateBuilders\MethodInvokerDelegateBuilder.cs" />
-    <Compile Include="Reflection\MemberDelegateBuilders\PropertyAccessorDelegateBuilder.cs" />
-    <Compile Include="Reflection\ComponentModel\PropertyDescriptorEx.cs" />
-    <Compile Include="Reflection\MemberInfoEx\FieldInfoEx.cs" />
-    <Compile Include="Reflection\MemberInfoEx\MethodInfoEx.cs" />
-    <Compile Include="Reflection\MemberInfoEx\PropertyInfoEx.cs" />
-    <Compile Include="Reflection\Cache\FieldInfoExCache.cs" />
-    <Compile Include="Reflection\Cache\PropertyInfoExCache.cs" />
-    <Compile Include="Reflection\Extensions\MemberInfoExtensions.cs" />
-    <Compile Include="Reflection\Extensions\FieldInfoExTypeExtensions.cs" />
-    <Compile Include="Reflection\Extensions\PropertyInfoExTypeExtensions.cs" />
-    <Compile Include="Reflection\Wrappers\MethodInfoExWrapper.cs" />
-    <Compile Include="Reflection\Wrappers\FieldInfoExWrapper.cs" />
-    <Compile Include="Reflection\Wrappers\ValueMemberInfoExWrapper.cs" />
-    <Compile Include="Reflection\Wrappers\PropertyInfoExWrapper.cs" />
-    <Compile Include="Reflection\ReflectionHelper.cs" />
-    <Compile Include="Reflection\Extensions\TypeExtensions.cs" />
+    <PackageReference Include="system.linq.dynamic.core" Version="1.0.9.2" />
+    <PackageReference Include="system.valuetuple" Version="4.5.0" />
   </ItemGroup>
+
   <ItemGroup>
-    <None Include="Dynamix.ruleset" />
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
-    </None>
+    <Folder Include="Properties\" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="Reflection\MemberDelegateBuilders\MethodInvokerDelegateBuilder_TypedBuilders.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>MethodInvokerDelegateBuilder_TypedBuilders.cs</LastGenOutput>
-    </Content>
-    <Content Include="Reflection\MemberDelegateBuilders\ConstructorInvokerDelegateBuilder_TypedBuilders.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>ConstructorInvokerDelegateBuilder_TypedBuilders.cs</LastGenOutput>
-    </Content>
-    <Content Include="Reflection\TypeConstructors.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>TypeConstructors.cs</LastGenOutput>
-    </Content>
-    <Content Include="TODO.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>

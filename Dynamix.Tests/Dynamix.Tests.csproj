@@ -62,18 +62,17 @@
     <Compile Include="Setup.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Dynamix\Dynamix.csproj">
-      <Project>{8cd44b0c-c50d-4328-8efd-9b0b4dd9bdd2}</Project>
-      <Name>Dynamix</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\Dynamix\Dynamix.csproj">
+      <Project>{8cd44b0c-c50d-4328-8efd-9b0b4dd9bdd2}</Project>
+      <Name>Dynamix</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

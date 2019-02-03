@@ -62,7 +62,7 @@ namespace Dynamix.Reflection
             {
                 if (!resolverDescriptors.ContainsKey(assemblyName))
                 {
-                    var executingAssembly = FindFile(AppDomain.CurrentDomain.BaseDirectory, Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location));
+                    var executingAssembly = FindFile(AssemblyReflector.GetBasePath(), Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location));
                     var assemblyDir = Path.GetDirectoryName(executingAssembly);
 
                     var a = new AssemblyResolverDescriptor

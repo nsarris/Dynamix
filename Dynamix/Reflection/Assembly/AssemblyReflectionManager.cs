@@ -3,15 +3,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Security.Policy;
 
 namespace Dynamix.Reflection
 {
+    //Reworked code from https://www.codeproject.com/Articles/453778/Loading-Assemblies-from-Anywhere-into-a-New-AppDom
     public class AssemblyReflectionManager : IDisposable
     {
-        Dictionary<string, AppDomain> _mapDomains = new Dictionary<string, AppDomain>();
-        Dictionary<string, AppDomain> _loadedAssemblies = new Dictionary<string, AppDomain>();
-        Dictionary<string, AssemblyReflectionProxy> _proxies = new Dictionary<string, AssemblyReflectionProxy>();
+        private readonly Dictionary<string, AppDomain> _mapDomains = new Dictionary<string, AppDomain>();
+        private readonly Dictionary<string, AppDomain> _loadedAssemblies = new Dictionary<string, AppDomain>();
+        private readonly Dictionary<string, AssemblyReflectionProxy> _proxies = new Dictionary<string, AssemblyReflectionProxy>();
 
         public bool LoadAssembly(string assemblyPath, string domainName)
         {
@@ -58,7 +58,9 @@ namespace Dynamix.Reflection
                 }
             }
             catch
-            { }
+            {
+                //Ignore exceptions
+            }
 
             return false;
         }
@@ -93,6 +95,7 @@ namespace Dynamix.Reflection
                 }
                 catch
                 {
+                    //Ignore exceptions
                 }
             }
 
@@ -137,6 +140,7 @@ namespace Dynamix.Reflection
                 }
                 catch
                 {
+                    //Ignore exceptions
                 }
             }
 
@@ -152,7 +156,7 @@ namespace Dynamix.Reflection
                 return _proxies[assemblyPath].Reflect(func);
             }
 
-            return default(TResult);
+            return default;
         }
 
         public void Dispose()
@@ -181,10 +185,9 @@ namespace Dynamix.Reflection
 
         private AppDomain CreateChildDomain(AppDomain parentDomain, string domainName)
         {
-            Evidence evidence = new Evidence(parentDomain.Evidence);
+            var evidence = new System.Security.Policy.Evidence(parentDomain.Evidence);
             AppDomainSetup setup = parentDomain.SetupInformation;
             return AppDomain.CreateDomain(domainName, evidence, setup);
         }
     }
-
 }

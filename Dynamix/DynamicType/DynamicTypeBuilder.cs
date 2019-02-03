@@ -44,7 +44,8 @@ namespace Dynamix
         {
             moduleBuilder = new Lazy<ModuleBuilder>(() =>
             {
-                var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Run);
+                var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Run);
+                
                 return assemblyBuilder.DefineDynamicModule(moduleName);
             });
         }
@@ -151,36 +152,36 @@ namespace Dynamix
             generator.Emit(OpCodes.Call, defaultConstructor);
 
             var i = 1;
-            foreach (var f in fields)
+            foreach (var (field,fieldBuilder) in fields)
             {
                 generator.Emit(OpCodes.Ldarg_0);
                 generator.Emit(OpCodes.Ldarg, i);
-                generator.Emit(OpCodes.Stfld, f.FieldBuilder);
+                generator.Emit(OpCodes.Stfld, fieldBuilder);
 
-                if (f.Field.HasConstructorDefaultValue)
+                if (field.HasConstructorDefaultValue)
                     constructor
-                        .DefineParameter(i, ParameterAttributes.Optional | ParameterAttributes.HasDefault, f.Field.CtorParameterName)
-                        .SetConstant(f.Field.ConstructorDefaultValue);
+                        .DefineParameter(i, ParameterAttributes.Optional | ParameterAttributes.HasDefault, field.CtorParameterName)
+                        .SetConstant(field.ConstructorDefaultValue);
                 else
                     constructor
-                        .DefineParameter(i, ParameterAttributes.Optional, f.Field.CtorParameterName);
+                        .DefineParameter(i, ParameterAttributes.Optional, field.CtorParameterName);
                 i++;
             }
 
-            foreach (var p in properties)
+            foreach (var (property, propertyBuilder, fieldBuilder) in properties)
             {
                 generator.Emit(OpCodes.Ldarg_0);
                 generator.Emit(OpCodes.Ldarg, i);
                 //generator.Emit(OpCodes.Call, p.PropertyBuilder.SetMethod);
-                generator.Emit(OpCodes.Stfld, p.FieldBuilder);
+                generator.Emit(OpCodes.Stfld, fieldBuilder);
 
-                if (p.Property.HasConstructorDefaultValue)
+                if (property.HasConstructorDefaultValue)
                     constructor
-                        .DefineParameter(i, ParameterAttributes.Optional | ParameterAttributes.HasDefault, p.Property.CtorParameterName)
-                        .SetConstant(p.Property.ConstructorDefaultValue);
+                        .DefineParameter(i, ParameterAttributes.Optional | ParameterAttributes.HasDefault, property.CtorParameterName)
+                        .SetConstant(property.ConstructorDefaultValue);
                 else
                     constructor
-                        .DefineParameter(i, ParameterAttributes.Optional, p.Property.CtorParameterName);
+                        .DefineParameter(i, ParameterAttributes.Optional, property.CtorParameterName);
 
                 i++;
             }

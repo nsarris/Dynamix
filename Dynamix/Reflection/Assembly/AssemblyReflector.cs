@@ -10,140 +10,172 @@ namespace Dynamix.Reflection
 {
     public static class AssemblyReflector
     {
-        public static List<Type> FindTypesInAssemblies(Func<Type, bool> predicate, bool lookInBaseDirectory = true, params string[] extraPaths)
+#if NET45
+        static AssemblyReflectionManager manager = new AssemblyReflectionManager();
+#endif
+        private static readonly string[] assemblyExtensions = new[] { "dll", "exe" };
+
+        public static string GetSearchPath()
         {
-            var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+            return (AppDomain.CurrentDomain.RelativeSearchPath == null)
+                    ? AppDomain.CurrentDomain.BaseDirectory
+                    : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, AppDomain.CurrentDomain.RelativeSearchPath);
+        }
+
+        public static string GetBasePath()
+        {
+            return AppDomain.CurrentDomain.BaseDirectory;
+        }
+
+        public static IEnumerable<Assembly> GetLoadedAssemblies()
+        {
+            return AppDomain.CurrentDomain.GetAssemblies();
+        }
+
+        private static IEnumerable<string> FindAssembliesInPath(string path, bool recursive)
+            => FindAssembliesInPaths(new[] { path }, recursive);
+
+        private static IEnumerable<string> FindAssembliesInPaths(IEnumerable<string> paths, bool recursive)
+        {
+            var searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+
+            return paths
+                    .Where(folder => Directory.Exists(folder))
+                    .SelectMany(folder =>
+                        assemblyExtensions
+                        .SelectMany(extension =>
+                            Directory.GetFiles(folder, $"*.{extension}", searchOption)))
+                    .Distinct()
+                    .ToList();
+        }
+
+        private static IEnumerable<string> GetLookupPaths(bool lookInBaseDirectory, string[] extraPaths)
+            => (lookInBaseDirectory ? new[] { GetBasePath() } : Enumerable.Empty<string>())
+                .Concat(extraPaths ?? Enumerable.Empty<string>());
+
+        public static List<Type> FindTypesInAssemblies(Func<Type, bool> predicate, bool lookInBaseDirectory = true, bool recursive = true, params string[] extraPaths)
+            => FindTypesInAssemblies(predicate, null, lookInBaseDirectory, recursive, extraPaths);
+
+        public static List<Type> FindTypesInAssemblies(Func<Type, bool> predicate, Func<AssemblyName, bool> assemblyPredicate, bool lookInBaseDirectory = true, bool recursive = true, params string[] extraPaths)
+        {
+            var loadedAssemblies = GetLoadedAssemblies().ToList();
 
             var loadedTypes =
                      loadedAssemblies
                     .Where(x => !x.IsDynamic)
+                    .Where(x => assemblyPredicate == null || assemblyPredicate(x.GetName()))
                     .SelectMany(x => { try { return x.GetTypes().Where(t => { try { return predicate(t); } catch { return false; } }); } catch { return Enumerable.Empty<Type>(); } })
                     .ToList();
 
             var loadedAssemblyNames = loadedAssemblies.Select(a => a.GetName().FullName).ToList();
 
-            var manager = new AssemblyReflectionManager();
+            var paths = GetLookupPaths(lookInBaseDirectory, extraPaths);
 
-            var paths = (lookInBaseDirectory ? new[] { AppDomain.CurrentDomain.BaseDirectory } : Enumerable.Empty<string>())
-                .Concat(extraPaths ?? Enumerable.Empty<string>());
-
-            foreach (var folder in paths)
+            foreach (var file in FindAssembliesInPaths(paths, recursive).Select(x => new FileInfo(x)))
             {
-                if (System.IO.Directory.Exists(folder))
+                try
                 {
-                    foreach (var fileName in System.IO.Directory.GetFiles(folder))
+                    var assemblyName = AssemblyName.GetAssemblyName(file.FullName);
+                    if ((assemblyPredicate == null || assemblyPredicate(assemblyName))
+                        && !loadedAssemblyNames.Any(x => x == assemblyName.FullName)
+                        && ReflectionOnlyQuery(file.FullName, a => a.GetTypes().Any(predicate)))
                     {
-                        var file = new System.IO.FileInfo(fileName);
-                        if (file.Extension == ".dll")
-                        {
-                            try
-                            {
-                                var assemblyName = AssemblyName.GetAssemblyName(file.FullName);
-                                if (!loadedAssemblyNames.Any(x => x == assemblyName.FullName)
-                                    && manager.LoadAssembly(file.FullName, "TypeSearchDomain"))
-                                {
-                                    var results = manager.Reflect(file.FullName, (a) =>
-                                    {
-                                        return a.GetTypes();
-                                    });
-
-                                    if (results.Any(predicate))
-                                    {
-                                        loadedTypes.AddRange(Assembly.LoadFrom(file.FullName).GetTypes().Where(predicate));
-                                    }
-
-                                    manager.UnloadAssembly(fileName);
-                                }
-                            }
-                            catch
-                            {
-                                //Ignore assemblies that can't be loaded, perhaps log them
-                            }
-                        }
+                        loadedTypes.AddRange(Assembly.LoadFrom(file.FullName).GetTypes().Where(predicate));
                     }
+                }
+                catch
+                {
+                    //Ignore assemblies that can't be loaded, perhaps log them
                 }
             }
 
             return loadedTypes;
         }
 
-        public static Type FindTypeInAssembly(string assemblyName, string typeName, bool lookInBaseDirectory = true, params string[] extraPaths)
+        public static TResult ReflectionOnlyQuery<TResult>(string assemblyPath, Func<Assembly, TResult> query)
         {
-            var assembly = FindOrLoadAssembly(assemblyName, lookInBaseDirectory, extraPaths);
-            if (assembly == null)
-                throw new InvalidOperationException("Cannot load assembly " + assemblyName);
+#if NET45
+            if (manager.LoadAssembly(assemblyPath, "TypeSearchDomain"))
+            {
+                var results = manager.Reflect(assemblyPath, query);
 
-            return assembly.GetType(typeName);
+                manager.UnloadAssembly(assemblyPath);
+
+                return results;
+            }
+            return default;
+#else
+            var proxy = new AssemblyReflectionProxy();
+            proxy.LoadAssembly(assemblyPath);
+            return proxy.Reflect(query);
+#endif
         }
 
-        public static List<Type> FindTypesInAssembly(string assemblyName, Func<Type, bool> predicate, bool lookInBaseDirectory = true, params string[] extraPaths)
+        public static Type FindTypeInAssembly(string assemblyName, string typeName, bool lookInBaseDirectory = true, bool recursive = true, params string[] extraPaths)
         {
-            var assembly = FindOrLoadAssembly(assemblyName, lookInBaseDirectory, extraPaths);
-            if (assembly == null)
-                throw new InvalidOperationException("Cannot load assembly " + assemblyName);
-
-            return assembly.GetTypes().Where(predicate).ToList();
+            return FindTypesInAssemblies(x => x.Name == typeName, x => x.Name == assemblyName, lookInBaseDirectory, recursive, extraPaths).FirstOrDefault();
         }
 
-        public static Assembly FindOrLoadAssembly(string name, bool lookInBaseDirectory = true, params string[] extraPaths)
+        public static List<Type> FindTypesInAssembly(string assemblyName, Func<Type, bool> predicate, bool lookInBaseDirectory = true, bool recursive = true, params string[] extraPaths)
         {
-            var loadedAssembly = AppDomain.CurrentDomain.GetAssemblies()
+            return FindTypesInAssemblies(predicate, x => x.Name == assemblyName, lookInBaseDirectory, recursive, extraPaths);
+        }
+
+        public static Assembly FindOrLoadAssembly(string name, bool lookInBaseDirectory = true, bool recursive = true, params string[] extraPaths)
+        {
+            var loadedAssembly = GetLoadedAssemblies()
                 .FirstOrDefault(x => !x.IsDynamic && x.GetName().Name == name);
 
             if (loadedAssembly != null)
                 return loadedAssembly;
 
-            var paths = (lookInBaseDirectory ? new[] { AppDomain.CurrentDomain.BaseDirectory } : Enumerable.Empty<string>())
+            var paths = (lookInBaseDirectory ? new[] { GetBasePath() } : Enumerable.Empty<string>())
                 .Concat(extraPaths ?? Enumerable.Empty<string>());
 
-            foreach (var folder in paths)
+            foreach (var fileName in FindAssembliesInPaths(paths, recursive))
             {
-                if (System.IO.Directory.Exists(folder))
+                try
                 {
-                    foreach (var fileName in Directory.GetFiles(folder, "*.dll", SearchOption.AllDirectories))
+                    var assemblyName = AssemblyName.GetAssemblyName(fileName);
+                    if (assemblyName.Name == name &&
+                        (assemblyName.ProcessorArchitecture == ProcessorArchitecture.MSIL
+                        || (assemblyName.ProcessorArchitecture == ProcessorArchitecture.X86 && !Environment.Is64BitProcess)
+                        || (assemblyName.ProcessorArchitecture == ProcessorArchitecture.Amd64 && Environment.Is64BitProcess)))
                     {
-                        try
-                        {
-                            var assemblyName = AssemblyName.GetAssemblyName(fileName);
-                            if (assemblyName.Name == name &&
-                                (assemblyName.ProcessorArchitecture == ProcessorArchitecture.MSIL
-                                || (assemblyName.ProcessorArchitecture == ProcessorArchitecture.X86 && !Environment.Is64BitProcess)
-                                || (assemblyName.ProcessorArchitecture == ProcessorArchitecture.Amd64 && Environment.Is64BitProcess)))
-                            {
-
-                                return Assembly.LoadFrom(fileName);
-                            }
-                        }
-                        catch { }
+                        return Assembly.LoadFrom(fileName);
                     }
                 }
+                catch
+                {
+                    //TODO: Add option to throw or consider return as out param
+                }
             }
+
             return null;
         }
 
-        public static void LoadAllAssemblies()
+        public static void LoadAllAssemblies(bool recursive = true)
         {
-            LoadAllAssemblies(AppDomain.CurrentDomain.BaseDirectory);
+            LoadAllAssemblies(GetBasePath(), recursive);
         }
 
-        public static void LoadAllAssemblies(string path)
+        public static void LoadAllAssemblies(string path, bool recursive = true)
         {
-            var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies()
+            var loadedAssemblies = GetLoadedAssemblies()
                .Where(x => !x.IsDynamic).Select(x => x.GetName()).ToList();
 
-            foreach (var fileName in System.IO.Directory.GetFiles(path))
+            foreach (var file in FindAssembliesInPath(path, recursive).Select(x => new FileInfo(x)))
             {
-                var file = new System.IO.FileInfo(fileName);
-                if (file.Extension == ".dll")
+                var assemblyName = AssemblyName.GetAssemblyName(file.FullName);
+                if (loadedAssemblies.Any(x => x.FullName != assemblyName.FullName))
                 {
-                    var assemblyName = AssemblyName.GetAssemblyName(file.FullName);
-                    if (loadedAssemblies.Any(x => x.FullName != assemblyName.FullName))
+                    try
                     {
-                        try
-                        {
-                            Assembly.LoadFrom(file.FullName);
-                        }
-                        catch { }
+                        Assembly.LoadFrom(file.FullName);
+                    }
+                    catch
+                    {
+                        //TODO: Add option to throw or consider return as out param
                     }
                 }
             }

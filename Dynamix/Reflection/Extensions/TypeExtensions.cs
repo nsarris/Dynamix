@@ -48,7 +48,7 @@ namespace Dynamix.Reflection
         public static IEnumerable<MethodInfo> GetExtensionsMethods(this Type type, IEnumerable<Assembly> assemblies = null)
         {
             return
-                (assemblies ?? AppDomain.CurrentDomain.GetAssemblies().Where(x => !x.IsDynamic))
+                (assemblies ?? AssemblyReflector.GetLoadedAssemblies().Where(x => !x.IsDynamic))
                 .SelectMany(x => x.GetTypes())
                 .Where(x => x.IsClass && !x.IsGenericTypeDefinition
                     && x.IsSealed && x.IsAbstract && x.GetConstructor(Type.EmptyTypes) == null)

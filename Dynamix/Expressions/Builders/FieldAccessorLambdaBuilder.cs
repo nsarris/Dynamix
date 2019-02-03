@@ -7,7 +7,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Dynamix.Expressions;
 using System.Reflection.Emit;
-using Dynamix.Reflection.Emit;
 using System.Collections.Concurrent;
 using Dynamix.Reflection;
 
@@ -132,10 +131,14 @@ namespace Dynamix.Expressions.LambdaBuilders
             }
             else
             {
-                var m = FieldAccessorMethodEmitter.GetFieldSetterMethod(fieldInfo, GenericTypeExtensions.GetActionGenericType(fieldInfo.DeclaringType, fieldInfo.FieldType));
+#if !NETSTANDARD2_0
+                var m = Reflection.Emit.FieldAccessorMethodEmitter.GetFieldSetterMethod(fieldInfo, GenericTypeExtensions.GetActionGenericType(fieldInfo.DeclaringType, fieldInfo.FieldType));
                 lambda = Expression.Lambda<Action<object, object>>(
                     Expression.Call(m, castedInstance, GetCastedValueExpression(value, fieldInfo.FieldType)),
                     instanceParameter, value);
+#else
+                throw new InvalidOperationException($"Field {fieldInfo.Name} is InitOnly and cannot be set.");
+#endif
             }
 
             if (EnableCaching)
@@ -144,9 +147,9 @@ namespace Dynamix.Expressions.LambdaBuilders
             return lambda;
         }
 
-        #endregion Untyped Builders
+#endregion Untyped Builders
 
-        #region Instance Builders
+#region Instance Builders
 
         public LambdaExpression BuildInstanceGetter(FieldInfo fieldInfo, Type instanceType = null, Type valueType = null)
         {
@@ -217,11 +220,15 @@ namespace Dynamix.Expressions.LambdaBuilders
             }
             else
             {
-                var m = FieldAccessorMethodEmitter.GetFieldSetterMethod(fieldInfo, delegateType);
+#if !NETSTANDARD2_0
+                var m = Reflection.Emit.FieldAccessorMethodEmitter.GetFieldSetterMethod(fieldInfo, delegateType);
                 lambda = Expression.Lambda(
                     delegateType,
                     Expression.Call(m, castedInstance, GetCastedValueExpression(value, fieldInfo.FieldType)),
                     expressionParameters);
+#else
+                throw new InvalidOperationException($"Field {fieldInfo.Name} is InitOnly and cannot be set.");
+#endif
             }
 
             if (EnableCaching)
@@ -230,9 +237,9 @@ namespace Dynamix.Expressions.LambdaBuilders
             return lambda;
         }
 
-        #endregion Instance Builders
+#endregion Instance Builders
 
-        #region Static Builders
+#region Static Builders
 
         public LambdaExpression BuildStaticGetter(FieldInfo fieldInfo, Type valueType = null)
         {
@@ -286,11 +293,15 @@ namespace Dynamix.Expressions.LambdaBuilders
             }
             else
             {
-                var m = FieldAccessorMethodEmitter.GetFieldSetterMethod(fieldInfo, delegateType);
+#if !NETSTANDARD2_0
+                var m = Reflection.Emit.FieldAccessorMethodEmitter.GetFieldSetterMethod(fieldInfo, delegateType);
                 lambda = Expression.Lambda(
                     delegateType,
                     Expression.Call(m, GetCastedValueExpression(value, fieldInfo.FieldType)),
                     value);
+#else
+                throw new InvalidOperationException($"Field {fieldInfo.Name} is InitOnly and cannot be set.");
+#endif
             }
 
             if (EnableCaching)
@@ -299,9 +310,9 @@ namespace Dynamix.Expressions.LambdaBuilders
             return lambda;
         }
 
-        #endregion Static Builders
+#endregion Static Builders
 
-        #region Instance Getters and Setters
+#region Instance Getters and Setters
 
         public Expression<Func<object, object>> BuildInstanceGetter(FieldInfo fieldInfo)
         {
@@ -333,9 +344,9 @@ namespace Dynamix.Expressions.LambdaBuilders
             return (Expression<Action<T, TField>>)BuildInstanceSetter(fieldInfo, typeof(T), typeof(TField));
         }
 
-        #endregion Instance Getters and Setters
+#endregion Instance Getters and Setters
 
-        #region Static Getters and Setters
+#region Static Getters and Setters
 
         public Expression<Func<object>> BuildStaticGetter(FieldInfo fieldInfo)
         {
@@ -357,6 +368,6 @@ namespace Dynamix.Expressions.LambdaBuilders
             return (Expression<Action<TField>>)BuildStaticSetter(fieldInfo, typeof(TField));
         }
 
-        #endregion Static Getters and Setters
+#endregion Static Getters and Setters
     }
 }

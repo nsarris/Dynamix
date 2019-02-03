@@ -7,11 +7,17 @@ using System.Threading.Tasks;
 
 namespace Dynamix.Reflection
 {
-    internal class AssemblyReflectionProxy : MarshalByRefObject
+    //Reworked code from https://www.codeproject.com/Articles/453778/Loading-Assemblies-from-Anywhere-into-a-New-AppDom
+
+
+    internal class AssemblyReflectionProxy
+#if NET45
+        : MarshalByRefObject
+#endif
     {
         private string _assemblyPath;
 
-        public void LoadAssembly(String assemblyPath)
+        public void LoadAssembly(string assemblyPath)
         {
             try
             {
@@ -26,14 +32,10 @@ namespace Dynamix.Reflection
 
         public TResult Reflect<TResult>(Func<Assembly, TResult> func)
         {
-            DirectoryInfo directory = new FileInfo(_assemblyPath).Directory;
-            ResolveEventHandler resolveEventHandler =
-                (s, e) =>
-                {
-                    return OnReflectionOnlyResolve(
-                 e, directory);
-                };
+            var directory = new FileInfo(_assemblyPath).Directory;
 
+            Assembly resolveEventHandler(object s, ResolveEventArgs e) => OnReflectionOnlyResolve(e, directory);
+            
             AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += resolveEventHandler;
 
             var assembly = AppDomain.CurrentDomain.ReflectionOnlyGetAssemblies().FirstOrDefault(a => a.Location.CompareTo(_assemblyPath) == 0);
@@ -54,23 +56,16 @@ namespace Dynamix.Reflection
                           StringComparison.OrdinalIgnoreCase));
 
             if (loadedAssembly != null)
-            {
                 return loadedAssembly;
-            }
-
-            AssemblyName assemblyName =
-                new AssemblyName(args.Name);
-            string dependentAssemblyFilename =
-                Path.Combine(directory.FullName,
-                assemblyName.Name + ".dll");
+        
+            var assemblyName = new AssemblyName(args.Name);
+            string dependentAssemblyFilename = Path.Combine(directory.FullName, assemblyName.Name + ".dll");
 
             if (File.Exists(dependentAssemblyFilename))
-            {
                 return Assembly.ReflectionOnlyLoadFrom(
                     dependentAssemblyFilename);
-            }
+            
             return Assembly.ReflectionOnlyLoad(args.Name);
         }
     }
-
 }

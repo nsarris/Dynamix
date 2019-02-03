@@ -73,6 +73,7 @@ namespace Dynamix.Expressions
         //Add a visited constant
         protected override void ConstantReference(object constant)
         {
+            if (constant == null) return;
             Add(constant.GetHashCode());
         }
 

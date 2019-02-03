@@ -30,6 +30,7 @@ namespace Dynamix.DynamicLinq
             //return System.Linq.Dynamic.DynamicExpression.ParseLambda(itType, resultType, expression, values);
             var parameter = Expression.Parameter(itType);
             var expr = new System.Linq.Dynamic.Core.Parser.ExpressionParser(new[] { parameter }, expression, values, config).Parse(resultType);
+            resultType = resultType ?? expr.Type;
             var delegateType = Expression.GetDelegateType(new[] { itType, resultType });
 
             return Expression.Lambda(delegateType, expr, parameter);
@@ -39,6 +40,7 @@ namespace Dynamix.DynamicLinq
         {
             //return System.Linq.Dynamic.DynamicExpression.ParseLambda(parameters, resultType, expression, values);
             var expr = new System.Linq.Dynamic.Core.Parser.ExpressionParser(parameters, expression, values, config).Parse(resultType);
+            resultType = resultType ?? expr.Type;
             var delegateType = Expression.GetDelegateType(parameters.Select(x => x.Type).Concat( new[] { resultType }).ToArray());
 
             return Expression.Lambda(delegateType, expr, parameters);

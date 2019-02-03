@@ -288,7 +288,7 @@ namespace Dynamix.Reflection
         {
             var openGenericType = GetTypeOrGenericTypeDefinition(genericType);
             
-            while (type != typeof(object))
+            while (type != typeof(object) && type != null)
             {
                 if (type == openGenericType ||
                     (type.IsGenericType && type.GetGenericTypeDefinition() == openGenericType))

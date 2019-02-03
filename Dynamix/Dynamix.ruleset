@@ -65,7 +65,7 @@
     <Rule Id="CA2242" Action="Warning" />
   </Rules>
   <Rules AnalyzerId="SonarAnalyzer.CSharp" RuleNamespace="SonarAnalyzer.CSharp">
-    <Rule Id="S3358" Action="Warning" />
-    <Rule Id="S3885" Action="Warning" />
+    <Rule Id="S3358" Action="None" />
+    <Rule Id="S3885" Action="None" />
   </Rules>
 </RuleSet>

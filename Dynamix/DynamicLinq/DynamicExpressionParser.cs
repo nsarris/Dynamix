@@ -21,13 +21,11 @@ namespace Dynamix.DynamicLinq
 
         public static Expression Parse(Type resultType, string expression, params object[] values)
         {
-            //return System.Linq.Dynamic.DynamicExpression.Parse(resultType, expression, values);
             return new System.Linq.Dynamic.Core.Parser.ExpressionParser(null, expression, values, config).Parse(resultType);
         }
 
         public static LambdaExpression ParseLambda(Type itType, Type resultType, string expression, params object[] values)
         {
-            //return System.Linq.Dynamic.DynamicExpression.ParseLambda(itType, resultType, expression, values);
             var parameter = Expression.Parameter(itType);
             var expr = new System.Linq.Dynamic.Core.Parser.ExpressionParser(new[] { parameter }, expression, values, config).Parse(resultType);
             resultType = resultType ?? expr.Type;
@@ -38,7 +36,6 @@ namespace Dynamix.DynamicLinq
 
         public static LambdaExpression ParseLambda(ParameterExpression[] parameters, Type resultType, string expression, params object[] values)
         {
-            //return System.Linq.Dynamic.DynamicExpression.ParseLambda(parameters, resultType, expression, values);
             var expr = new System.Linq.Dynamic.Core.Parser.ExpressionParser(parameters, expression, values, config).Parse(resultType);
             resultType = resultType ?? expr.Type;
             var delegateType = Expression.GetDelegateType(parameters.Select(x => x.Type).Concat( new[] { resultType }).ToArray());
@@ -48,7 +45,6 @@ namespace Dynamix.DynamicLinq
 
         public static LambdaExpression ParseLambda(Type delegateType, ParameterExpression[] parameters, Type resultType, string expression, params object[] values)
         {
-            //return System.Linq.Dynamic.DynamicExpression.ParseLambda(delegateType, parameters, resultType, expression, values);
             var expr = new System.Linq.Dynamic.Core.Parser.ExpressionParser(parameters, expression, values, config).Parse(resultType);
             
             return Expression.Lambda(delegateType, expr, parameters);
@@ -56,7 +52,6 @@ namespace Dynamix.DynamicLinq
 
         public static Expression<Func<T, S>> ParseLambda<T, S>(string expression, params object[] values)
         {
-            //return System.Linq.Dynamic.DynamicExpression.ParseLambda<T, S>(expression, values);
             var parameter = Expression.Parameter(typeof(T));
             var expr = new System.Linq.Dynamic.Core.Parser.ExpressionParser(new[] { parameter }, expression, values, config).Parse(typeof(S));
             

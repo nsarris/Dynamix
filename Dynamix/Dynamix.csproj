@@ -7,10 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="DynamicLinq\DynamicLinq.cs" />
-    <Compile Remove="DynamicLinq\DynamicLinqExtensions.cs" />
-    <Compile Remove="DynamicLinq\DynamicLinqParser.cs" />
-    <Compile Remove="Properties\AssemblyInfo.cs" />
     <Compile Condition="'$(TargetFramework)' == 'netstandard2.0'" Remove="DynamicType\**\*" />
     <Compile Condition="'$(TargetFramework)' == 'netstandard2.0'" Remove="Reflection\Emit\**\*" />
     <Compile Condition="'$(TargetFramework)' != 'net45'" Remove="Reflection\Assembly\AssemblyReflectionManager.cs" />

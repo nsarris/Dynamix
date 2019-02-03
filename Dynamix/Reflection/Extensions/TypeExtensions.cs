@@ -82,8 +82,8 @@ namespace Dynamix.Reflection
                 return false;
 
             return givenType == targetType
-              || givenType.MapsToGenericTypeDefinition(targetType)
-              || givenType.HasInterfaceThatMapsToGenericTypeDefinition(targetType)
+              || givenType.HasGenericTypeDefinition(targetType)
+              || givenType.ImplementsGeneric(targetType)
               || givenType.BaseType.IsAssignableToGenericType(targetType);
         }
 
@@ -92,15 +92,61 @@ namespace Dynamix.Reflection
             return targetType.IsAssignableFromGenericType(givenType);
         }
 
-        private static bool HasInterfaceThatMapsToGenericTypeDefinition(this Type givenType, Type genericType)
+        public static bool Implements(this Type givenType, Type interfaceType)
         {
+            AssertInterface(nameof(interfaceType), interfaceType);
+
+            return givenType
+              .GetInterfaces()
+              .Contains(interfaceType);
+        }
+
+        public static bool ImplementsGeneric(this Type givenType, Type genericInterfaceType)
+        {
+            AssertInterface(nameof(genericInterfaceType), genericInterfaceType);
+
             return givenType
               .GetInterfaces()
               .Where(it => it.IsGenericType)
-              .Any(it => it.GetGenericTypeDefinition() == genericType);
+              .Any(it => it.GetGenericTypeDefinition() == genericInterfaceType);
         }
 
-        private static bool MapsToGenericTypeDefinition(this Type givenType, Type genericType)
+        public static bool ImplementsGeneric(this Type givenType, Type genericInterfaceType, out Type actualType)
+        {
+            actualType = null;
+
+            AssertInterface(nameof(genericInterfaceType), genericInterfaceType);
+            AssertGenericType(nameof(genericInterfaceType), genericInterfaceType);
+
+            var interfaces = givenType
+              .GetInterfaces()
+              .Where(it => it.IsGenericType && it.GetGenericTypeDefinition() == genericInterfaceType)
+              .ToList();
+
+            if (!interfaces.Any())
+                return false;
+
+            if (interfaces.Count > 1)
+                throw new InvalidOperationException($"The generic interface {genericInterfaceType} is implemented {interfaces.Count} by type {givenType}.");
+
+            actualType = interfaces.First();
+
+            return true;
+        }
+
+        private static void AssertInterface(string paramName, Type type)
+        {
+            if (!type.IsInterface)
+                throw new ArgumentException($"The type {type} is not an interface", paramName);
+        }
+
+        private static void AssertGenericType(string paramName, Type type)
+        {
+            if (!type.IsGenericType)
+                throw new ArgumentException($"The type {type} is not a generic type", paramName);
+        }
+
+        private static bool HasGenericTypeDefinition(this Type givenType, Type genericType)
         {
             return genericType.IsGenericTypeDefinition
               && givenType.IsGenericType
@@ -142,6 +188,7 @@ namespace Dynamix.Reflection
         {
             return Nullable.GetUnderlyingType(type) ?? type;
         }
+
         public static Type ToNullable(this Type type)
         {
             if (type.IsNullable())

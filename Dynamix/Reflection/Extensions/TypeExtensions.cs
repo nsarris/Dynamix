@@ -146,7 +146,7 @@ namespace Dynamix.Reflection
                 throw new ArgumentException($"The type {type} is not a generic type", paramName);
         }
 
-        private static bool HasGenericTypeDefinition(this Type givenType, Type genericType)
+        public static bool HasGenericTypeDefinition(this Type givenType, Type genericType)
         {
             return genericType.IsGenericTypeDefinition
               && givenType.IsGenericType

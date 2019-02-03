@@ -28,9 +28,9 @@ namespace Dynamix.Reflection
 
         protected ConstructorInfo GetConstructor(params Type[] types)
         {
-            var ctor = ConcreteType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, types, null);
+            var ctor = ConcreteType.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, types, null);
             if (ctor == null)
-                throw new InvalidOperationException($"Type {ConcreteType.Name} does not have a public constructor that with the specified argument");
+                throw new InvalidOperationException($"Type {ConcreteType.Name} does not have a constructor with the specified argument");
             return ctor;
         }
 
@@ -77,7 +77,7 @@ namespace Dynamix.Reflection
                 arguments.All(x => c.Signature.Keys.Contains(x.name)));
 
             if (ctor == null)
-                throw new InvalidOperationException($"Type {ConcreteType.Name} does not have a public constructor that has a constructor with given parameter names");
+                throw new InvalidOperationException($"Type {ConcreteType.Name} does not have a public constructor with given parameter names");
 
             var r = (T)ctor.Invoke(arguments);
             initializer?.Invoke(r);
@@ -95,7 +95,7 @@ namespace Dynamix.Reflection
                 arguments.All(x => c.Signature.Keys.Contains(x.name)));
 
             if (ctor == null)
-                throw new InvalidOperationException($"Type {ConcreteType.Name} does not have a public constructor that has a constructor with given parameter names");
+                throw new InvalidOperationException($"Type {ConcreteType.Name} does not have a public constructor with given parameter names");
 
             var r = (T)ctor.InvokeWithDefaults(arguments);
             initializer?.Invoke(r);

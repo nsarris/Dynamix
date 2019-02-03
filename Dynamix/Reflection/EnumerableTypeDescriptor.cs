@@ -81,7 +81,6 @@ namespace Dynamix.Reflection
             this.IsGeneric = false;
             this.IsIndexed = true;
             this.ElementType = this.Type.GetElementType();
-            return;
         }
 
         private void ConstructInterfaceType()
@@ -91,8 +90,12 @@ namespace Dynamix.Reflection
             if (Type.IsGenericType)
                 GenericType = Type.GetGenericTypeDefinition();
 
-            if (!Types.TryGetValue(IsGeneric ? GenericType : Type, out var typeDescriptor))
-                throw new Exception("Type is not an enumerable type");
+
+            var typeDescriptor = Types.FirstOrDefault(x => IsGeneric ? x.Key.IsAssignableFromGenericType(GenericType) : x.Key.IsAssignableFrom(Type)).Value;
+
+            //if (!Types.TryGetValue(IsGeneric ? GenericType : Type, out var typeDescriptor))
+            if (typeDescriptor == null)
+                throw new InvalidOperationException("Type is not an enumerable type");
 
             IsReadOnly = typeDescriptor.IsReadOnly;
             IsDictionary = typeDescriptor.EnumerableType == EnumerableTypeEnum.Dictionary;
@@ -127,7 +130,7 @@ namespace Dynamix.Reflection
         private void ConstructClassType()
         {
             if (Type == typeof(string))
-                throw new Exception("System.String is not supported as an enumerable class");
+                throw new InvalidOperationException("System.String is not supported as an enumerable class");
 
             var interfaces = Type.GetInterfaces()
                 .Where(x => x.IsGenericType ? Types.ContainsKey(x.GetGenericTypeDefinition()) : Types.ContainsKey(x))
@@ -136,14 +139,14 @@ namespace Dynamix.Reflection
 
             var enumerable = interfaces.Any(x => x.Type == typeof(IEnumerable));
             if (!enumerable)
-                throw new Exception("Type is not an enumerable type");
+                throw new InvalidOperationException("Type is not an enumerable type");
 
-            var enumeratorMethods = Type.GetMethods().Where(x => x.Name == "GetEnumerator" && x.GetParameters().Count() == 0).ToList();
+            var enumeratorMethods = Type.GetMethods().Where(x => x.Name == "GetEnumerator" && !x.GetParameters().Any()).ToList();
             //TODO: Check if only explicit implementation!!
             enumeratorMethod = enumeratorMethods.FirstOrDefault();
 
             var enumeratorType = enumeratorMethod.ReturnType;
-            var genericEnumerator = enumeratorType.GetInterfaces().Where(x => x.HasGenericDefinition(typeof(IEnumerator<>))).FirstOrDefault();
+            var genericEnumerator = enumeratorType.GetInterfaces().FirstOrDefault(x => x.HasGenericDefinition(typeof(IEnumerator<>)));
 
             if (genericEnumerator != null)
             {
@@ -202,7 +205,16 @@ namespace Dynamix.Reflection
             if (t == typeof(string) || !t.GetInterfaces().Any(x => x == typeof(IEnumerable)))
                 return null;
             else
-                return new EnumerableTypeDescriptor(t);
+            {
+                try
+                {
+                    return new EnumerableTypeDescriptor(t);
+                }
+                catch
+                {
+                    return null;
+                }
+            }
         }
 
 
@@ -283,7 +295,7 @@ namespace Dynamix.Reflection
             if (typeof(T) == ElementType)
                 return (IEnumerator<T>)enumerator;
             else
-                throw new Exception("ElementType does not match requested enumerator type");
+                throw new InvalidOperationException("ElementType does not match requested enumerator type");
         }
 
         public IEnumerable AsEnumerable(object enumerable)
@@ -319,7 +331,7 @@ namespace Dynamix.Reflection
         {
             if (elementType != null)
                 return (IList)typeof(EnumerableTypeDescriptor).GetMethods()
-                    .Where(x => x.Name == nameof(BuildListFromEnumerable) && x.IsGenericMethod).FirstOrDefault()
+                    .Single(x => x.Name == nameof(BuildListFromEnumerable) && x.IsGenericMethod)
                     .MakeGenericMethodCached(elementType).Invoke(null, new object[] { enumerable, readOnly });
 
             if (readOnly)
@@ -364,8 +376,8 @@ namespace Dynamix.Reflection
                     {
                         if (IsGeneric)
                         {
-                            if (!typeof(IList<>).MakeGenericType(ElementType).IsAssignableFrom(enumerable.GetType()))
-                                throw new Exception("Input enumerable is a not a proper IList<>");
+                            if (!typeof(IList<>).MakeGenericType(ElementType).IsInstanceOfType(enumerable))
+                                throw new InvalidOperationException("Input enumerable is a not a proper IList<>");
 
                             var returnType = typeof(ReadOnlyCollection<>).MakeGenericType(ElementType);
                             return (IEnumerable)Activator.CreateInstance(returnType, enumerable);
@@ -382,15 +394,15 @@ namespace Dynamix.Reflection
                             //if (!enumerable.GetType().GetInterfaces().Any(x => x.HasGenericSignature(typeof(IDictionary<,>), DictionaryKeyType,DictionaryElementType)))
                             var dictionaryInterface = typeof(IDictionary<,>).MakeGenericType(DictionaryKeyType, DictionaryElementType);
 
-                            if (!dictionaryInterface.IsAssignableFrom(enumerable.GetType()))
-                                throw new Exception("Input enumerable is a not a proper dictionary");
+                            if (!dictionaryInterface.IsInstanceOfType(enumerable))
+                                throw new InvalidOperationException("Input enumerable is a not a proper dictionary");
 
                             return (IEnumerable)Activator.CreateInstance(typeof(ReadOnlyDictionary<,>).MakeGenericType(DictionaryKeyType, DictionaryElementType), enumerable);
                         }
                         else
                         {
-                            if (!typeof(IDictionary).IsAssignableFrom(enumerable.GetType()))
-                                throw new Exception("Input enumerable is a not a proper dictionary");
+                            if (!(enumerable is IDictionary))
+                                throw new InvalidOperationException("Input enumerable is a not a proper dictionary");
 
                             return (IEnumerable)Activator.CreateInstance(typeof(ReadOnlyDictionary<object, object>), enumerable);
                         }
@@ -418,7 +430,7 @@ namespace Dynamix.Reflection
                 return CreateConcreteEnumerable(enumerable);
             }
 
-            throw new Exception("Unexpected case");
+            throw new InvalidOperationException("Unexpected case");
         }
 
         private IEnumerable CreateConcreteEnumerable(IEnumerable enumerable)
@@ -430,14 +442,14 @@ namespace Dynamix.Reflection
             {
                 var genericEnumerableType = typeof(IEnumerable<>).MakeGenericType(new[] { ElementType });
 
-                if (!genericEnumerableType.IsAssignableFrom(enumerable.GetType()))
-                    throw new Exception("Source enumerable is not of same element type.");
+                if (!genericEnumerableType.IsInstanceOfType(enumerable))
+                    throw new InvalidOperationException("Source enumerable is not of same element type.");
 
                 enumerable = AsEnumerableOfElementType(enumerable);
             }
 
             var ctor = this.Type.GetConstructors().Select(x => new { Ctor = x, Parameters = x.GetParameters() })
-                    .Where(x => x.Parameters.Length == 1 && x.Parameters[0].ParameterType.IsAssignableFrom(enumerable.GetType()))
+                    .Where(x => x.Parameters.Length == 1 && x.Parameters[0].ParameterType.IsInstanceOfType(enumerable))
                     .Select(x => x.Ctor)
                     .FirstOrDefault();
 
@@ -455,7 +467,7 @@ namespace Dynamix.Reflection
                     return (IEnumerable)ctor.Invoke(new object[] { ToList(enumerable) });
                 else
                 {
-                    var addMethod = this.Type.GetMethods().Where(x => x.Name == "Add" && x.GetParameters().Length == 1 && x.GetParameters()[0].ParameterType.IsAssignableFrom(ElementType)).FirstOrDefault();
+                    var addMethod = this.Type.GetMethods().FirstOrDefault(x => x.Name == "Add" && x.GetParameters().Length == 1 && x.GetParameters()[0].ParameterType.IsAssignableFrom(ElementType));
                     ctor = this.Type.GetConstructor(new Type[] { });
                     if (ctor != null && addMethod != null)
                     {
@@ -465,7 +477,7 @@ namespace Dynamix.Reflection
                         return (IEnumerable)r;
                     }
                     else
-                        throw new Exception("Cannot construct Enumerable Type. No valid constructor or no Add method found.");
+                        throw new InvalidOperationException("Cannot construct Enumerable Type. No valid constructor or no Add method found.");
                 }
             }
         }

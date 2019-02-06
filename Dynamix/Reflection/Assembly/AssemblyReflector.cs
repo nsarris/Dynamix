@@ -166,17 +166,15 @@ namespace Dynamix.Reflection
 
             foreach (var file in FindAssembliesInPath(path, recursive).Select(x => new FileInfo(x)))
             {
-                var assemblyName = AssemblyName.GetAssemblyName(file.FullName);
-                if (loadedAssemblies.Any(x => x.FullName != assemblyName.FullName))
+                try
                 {
-                    try
-                    {
+                    var assemblyName = AssemblyName.GetAssemblyName(file.FullName);
+                    if (loadedAssemblies.Any(x => x.FullName != assemblyName.FullName))
                         Assembly.LoadFrom(file.FullName);
-                    }
-                    catch
-                    {
-                        //TODO: Add option to throw or consider return as out param
-                    }
+                }
+                catch
+                {
+                    //TODO: Add option to throw or consider return as out param
                 }
             }
         }

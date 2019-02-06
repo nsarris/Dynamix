@@ -80,7 +80,8 @@ namespace Dynamix.Reflection
             this.IsArray = true;
             this.IsGeneric = false;
             this.IsIndexed = true;
-            this.ElementType = this.Type.GetElementType();
+            this.ElementType = this.Type.GetElementType() ?? typeof(object);
+            enumeratorMethod = typeof(IEnumerable).GetMethod("GetEnumerator");
         }
 
         private void ConstructInterfaceType()
@@ -90,7 +91,15 @@ namespace Dynamix.Reflection
             if (Type.IsGenericType)
                 GenericType = Type.GetGenericTypeDefinition();
 
-
+            //const BindingFlags flags = BindingFlags.Public | BindingFlags.FlattenHierarchy | BindingFlags.Instance;
+            //var a = Type.GetMethods(flags);
+            //var b = Type.GetInterfaces()
+            //    .Flatten(x => x.GetInterfaces())
+            //    .SelectMany(x => x.GetMethods(flags))
+            //    .Distinct()
+            //    .ToList();
+            
+            //var typeDescriptors = Types.Where(x => IsGeneric ? x.Key.IsAssignableFromGenericType(GenericType) : x.Key.IsAssignableFrom(Type)).Select(x => x.Value).ToList();
             var typeDescriptor = Types.FirstOrDefault(x => IsGeneric ? x.Key.IsAssignableFromGenericType(GenericType) : x.Key.IsAssignableFrom(Type)).Value;
 
             //if (!Types.TryGetValue(IsGeneric ? GenericType : Type, out var typeDescriptor))
@@ -121,7 +130,6 @@ namespace Dynamix.Reflection
 
                 enumerableOfElementType = typeof(IEnumerable<>).MakeGenericType(new[] { ElementType });
                 enumeratorMethod = enumerableOfElementType.GetMethod("GetEnumerator");
-
             }
         }
 
@@ -192,7 +200,7 @@ namespace Dynamix.Reflection
         {
             this.Type = t;
 
-            if (t.IsArray)
+            if (t.IsArray || t == typeof(Array))
                 ConstructArrayType();
             else if (t.IsInterface)
                 ConstructInterfaceType();
@@ -217,43 +225,48 @@ namespace Dynamix.Reflection
             }
         }
 
+        #region Reducer Methods
 
-        private class EnumerableMethods
+        private class ReducerMethods
         {
-            public MethodInfo ToList { get; set; }
-            public MethodInfo ToArray { get; set; }
-            public MethodInfo AsEnumerable { get; set; }
+            public MethodInfoEx ToList { get; set; }
+            public MethodInfoEx ToArray { get; set; }
+            public MethodInfoEx AsEnumerable { get; set; }
         }
 
-        private static ConcurrentDictionary<Type, EnumerableMethods> toListMethods = new ConcurrentDictionary<Type, EnumerableMethods>();
+        private static ConcurrentDictionary<Type, ReducerMethods> reducerMethodCache = new ConcurrentDictionary<Type, ReducerMethods>();
 
-        private static EnumerableMethods GetEnumerableMethods(Type elementType)
+        private static ReducerMethods GetReducerMethods(Type elementType)
         {
-            if (!toListMethods.TryGetValue(elementType, out var methods))
+            if (!reducerMethodCache.TryGetValue(elementType, out var methods))
             {
-                methods = new EnumerableMethods
+                methods = new ReducerMethods
                 {
-                    ToList = typeof(Enumerable).GetMethod("ToList").MakeGenericMethod(new[] { elementType }),
-                    ToArray = typeof(Enumerable).GetMethod("ToArray").MakeGenericMethod(new[] { elementType }),
-                    AsEnumerable = typeof(Enumerable).GetMethod("AsEnumerable").MakeGenericMethod(new[] { elementType }),
+                    ToList = new MethodInfoEx(typeof(Enumerable).GetMethod("ToList").MakeGenericMethod(new[] { elementType })),
+                    ToArray = new MethodInfoEx(typeof(Enumerable).GetMethod("ToArray").MakeGenericMethod(new[] { elementType })),
+                    AsEnumerable = new MethodInfoEx(typeof(Enumerable).GetMethod("AsEnumerable").MakeGenericMethod(new[] { elementType })),
                 };
-                toListMethods.TryAdd(elementType, methods);
+                reducerMethodCache.TryAdd(elementType, methods);
             }
             return methods;
         }
 
-        private EnumerableMethods enumerableMethods;
+        private ReducerMethods reducerMethods;
 
-        private EnumerableMethods GetEnumerableMethods()
+        private ReducerMethods GetReducerMethods()
         {
-            if (enumerableMethods == null)
-                enumerableMethods = GetEnumerableMethods(ElementType);
-            return enumerableMethods;
+            if (reducerMethods == null)
+                reducerMethods = GetReducerMethods(ElementType);
+            return reducerMethods;
         }
+
+        #endregion Reducer Methods
+
+        #region Public Reducers
 
         public IList ToList(object enumerable)
         {
-            return (IList)GetEnumerableMethods(ElementType).ToList.Invoke(null, new[] { enumerable });
+            return (IList)GetReducerMethods(ElementType).ToList.Invoke(null, new[] { enumerable });
         }
 
         public List<T> ToList<T>(object enumerable)
@@ -265,15 +278,15 @@ namespace Dynamix.Reflection
                 return list.Cast<T>().ToList();
         }
 
-        public IReadOnlyCollection<T> ToReadOnlyCollection<T>(object enumerable)
+        public IReadOnlyList<T> ToReadOnlyList<T>(object enumerable)
         {
             var list = ToList<T>(enumerable);
-            return (IReadOnlyCollection<T>)Activator.CreateInstance(typeof(ReadOnlyCollection<T>), new object[] { list });
+            return (IReadOnlyList<T>)Activator.CreateInstance(typeof(ReadOnlyCollection<T>), new object[] { list });
         }
 
         public Array ToArray(object enumerable)
         {
-            return (Array)GetEnumerableMethods().ToArray.Invoke(null, new[] { enumerable });
+            return (Array)GetReducerMethods().ToArray.Invoke(null, new[] { enumerable });
         }
 
         public T[] ToArray<T>(object enumerable)
@@ -289,6 +302,7 @@ namespace Dynamix.Reflection
         {
             return (IEnumerator)enumeratorMethod.Invoke(enumerable, new object[] { });
         }
+
         public IEnumerator<T> GetEnumerator<T>(object enumerable)
         {
             var enumerator = (IEnumerator)enumeratorMethod.Invoke(enumerable, new object[] { });
@@ -305,14 +319,15 @@ namespace Dynamix.Reflection
 
         public IEnumerable AsEnumerableOfElementType(object enumerable)
         {
-            return (IEnumerable)GetEnumerableMethods().AsEnumerable.Invoke(null, new[] { enumerable });
+            return (IEnumerable)GetReducerMethods().AsEnumerable.Invoke(null, new[] { enumerable });
         }
 
         public IEnumerable<T> AsEnumerable<T>(object enumerable)
         {
-            return (IEnumerable<T>)GetEnumerableMethods().AsEnumerable.Invoke(null, new[] { enumerable });
+            return (IEnumerable<T>)GetReducerMethods().AsEnumerable.Invoke(null, new[] { enumerable });
         }
 
+        #endregion Public Reducers
 
         public enum MatchEnumerableTypeEnum
         {

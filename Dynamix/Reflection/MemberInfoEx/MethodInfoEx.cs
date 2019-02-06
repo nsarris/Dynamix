@@ -121,6 +121,9 @@ namespace Dynamix.Reflection
 
         public object Invoke(object instance, params object[] arguments)
         {
+            if (instance == null && staticInvoker != null)
+                return staticInvoker(arguments);
+
             if (arguments != null && arguments.Count() == 1
                 && arguments[0] != null &&
                 arguments[0].GetType().Namespace == null)

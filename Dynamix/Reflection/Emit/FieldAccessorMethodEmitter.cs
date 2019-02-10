@@ -22,7 +22,7 @@ namespace Dynamix.Reflection.Emit
         {
             var method = GetFieldSetterMethod(field, delegateType);
             if (delegateType == null)
-                delegateType = GenericTypeExtensions.GetFuncGenericType((field.IsStatic ? new[] { field.DeclaringType } : new Type[] { }).Concat(new[] { field.FieldType }));
+                delegateType = GenericTypeExtensions.GetFuncGenericType((field.IsStatic ? new[] { field.DeclaringType } : Type.EmptyTypes).Concat(new[] { field.FieldType }));
             return method.CreateDelegate(delegateType);
         }
 
@@ -31,7 +31,7 @@ namespace Dynamix.Reflection.Emit
             //TODO check delegate type compatibility, must be Action<castedT,castedTProp>
 
             var paramTypes = delegateType == null ?
-                (!field.IsStatic ? new Type[] { field.DeclaringType } : new Type[] { }).Concat(new[] { field.FieldType }) :
+                (!field.IsStatic ? new Type[] { field.DeclaringType } : Type.EmptyTypes).Concat(new[] { field.FieldType }) :
                 delegateType.GetMethod("Invoke").GetParameters().Select(x => x.ParameterType).ToArray();
 
             var instanceType = !field.IsStatic ? paramTypes.First() : null;
@@ -80,7 +80,7 @@ namespace Dynamix.Reflection.Emit
             var delMethod = delegateType?.GetMethod("Invoke");
 
             var paramTypes = delegateType == null ?
-                !field.IsStatic ? new Type[] { field.DeclaringType } : new Type[] { } :
+                !field.IsStatic ? new Type[] { field.DeclaringType } : Type.EmptyTypes :
                 delMethod.GetParameters().Select(x => x.ParameterType).ToArray();
 
             var instanceType = !field.IsStatic ? paramTypes.First() : null;

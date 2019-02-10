@@ -38,6 +38,14 @@ namespace Dynamix.Reflection
             return GetConstructorEx(type, signature, (BindingFlags)bindingFlags, enableCaching);
         }
 
+        public static IEnumerable<ConstructorInfoEx> GetConstructorsEx(this Type type, BindingFlagsEx bindingFlags, bool enableCaching = true)
+        {
+            if (enableCaching)
+                return ConstructorInfoExCache.GetConstructorsExDic(type, (BindingFlags)bindingFlags).Values;
+            else
+                return type.GetConstructors((BindingFlags)bindingFlags).Select(x => new ConstructorInfoEx(x, false));
+        }
+
         public static IReadOnlyDictionary<string, ConstructorInfoEx> GetConstructorsExDic(this Type type, BindingFlags bindingFlags = PUBLIC_ISTANCE_STATIC, bool enableCaching = true)
         {
 

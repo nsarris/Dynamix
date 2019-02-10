@@ -38,8 +38,12 @@ namespace Dynamix.Reflection
         public MethodInfoEx(MethodInfo method, bool enableDelegateCaching = true)
         {
             this.MethodInfo = method ?? throw new ArgumentNullException(nameof(method));
+
+            if (method.ContainsGenericParameters)
+                throw new ArgumentException("Dynamix MethodInfoEx wrappers do not support generic parameters");
+
             this.IsExtension = method.IsExtension();
-            parameters = method.GetParameters().ToDictionary(x => x.Name);
+            parameters = method.GetParameters().Select((parameter, index) => (parameter, index)).ToDictionary(x => x.parameter.Name ?? $"<unnamed_param{x.index}>", x => x.parameter);
             this.Signature = new ReadOnlyCollection<Type>(parameters.Values.Select(x => x.ParameterType).ToList());
 
             if (enableDelegateCaching)
@@ -54,7 +58,6 @@ namespace Dynamix.Reflection
                 instanceInvoker = builder.BuildGenericInstance(method).Compile();
                 if (method.IsStatic)
                     staticInvoker = builder.BuildGenericStatic(method).Compile();
-
             }
         }
 
@@ -64,6 +67,11 @@ namespace Dynamix.Reflection
         {
             if (!MethodInfo.IsStatic)
                 throw new InvalidOperationException("Cannot use InvokeStatic on non static method");
+        }
+
+        public object InvokeStatic()
+        {
+            return InvokeStatic(Constants.EmptyObjectArray);
         }
 
         public object InvokeStatic(params object[] arguments)
@@ -118,6 +126,11 @@ namespace Dynamix.Reflection
         #endregion
 
         #region Instance Invokers
+
+        public object Invoke(object instance)
+        {
+            return Invoke(instance, Constants.EmptyObjectArray);
+        }
 
         public object Invoke(object instance, params object[] arguments)
         {

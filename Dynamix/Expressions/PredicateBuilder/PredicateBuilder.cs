@@ -16,7 +16,6 @@ namespace Dynamix.Expressions.PredicateBuilder
         #region Fields and Properties
 
         private Type enumUnderlyingType;
-        private EnumerableTypeDescriptor enumerableTypeDescriptor;
         private NumericTypeDescriptor numericTypeDescriptor;
 
 
@@ -102,7 +101,7 @@ namespace Dynamix.Expressions.PredicateBuilder
                     PredicateDataType.Enum :
                 type.IsNumericOrNullableNumeric(out numericTypeDescriptor) ?
                     PredicateDataType.Number :
-                type.IsEnumerable(out enumerableTypeDescriptor) ?
+                type.IsEnumerable() ?
                     PredicateDataType.Collection :
 
                     PredicateDataType.Unsupported;
@@ -511,7 +510,10 @@ namespace Dynamix.Expressions.PredicateBuilder
             {
                 if (Value != null)
                 {
-                    var elementType = EnumerableTypeDescriptor.Get(Value.GetType())?.ElementType;
+                    var valueEnumerableTypeDescriptor = EnumerableTypeDescriptor.Get(Value.GetType());
+                    var elementType =
+                        valueEnumerableTypeDescriptor.ExplicitImplementation.ElementType
+                        ?? valueEnumerableTypeDescriptor.EnumerableInterfaces.Select(x => x.ElementType).FirstOrDefault();
 
                     if (elementType == null)
                     {
@@ -684,7 +686,10 @@ namespace Dynamix.Expressions.PredicateBuilder
 
         private Expression BuildIsContainedInValuesExpression(Expression expression, IEnumerable values)
         {
-            var elementType = EnumerableTypeDescriptor.Get(values.GetType()).ElementType;
+            var valueEnumerableTypeDescriptor = EnumerableTypeDescriptor.Get(values.GetType());
+            var elementType =
+                valueEnumerableTypeDescriptor.ExplicitImplementation.ElementType
+                ?? valueEnumerableTypeDescriptor.EnumerableInterfaces.Select(x => x.ElementType).FirstOrDefault();
 
             var castedValues = values.Cast<object>().ToArray();
 

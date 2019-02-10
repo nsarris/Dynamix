@@ -108,7 +108,7 @@ namespace Dynamix.Expressions
 
                     e = Expression.Call(Expression.Constant(l2, ltype),
                             "Contains",
-                            new Type[] { },
+                            Type.EmptyTypes,
                             Expression.Property(p, prop.PropertyInfo));
                 }
             }

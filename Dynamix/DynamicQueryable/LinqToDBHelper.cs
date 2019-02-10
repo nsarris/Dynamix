@@ -46,7 +46,7 @@ namespace Dynamix
                     {
                         linqToDBMethods = new LinqToDBMethods()
                         {
-                            GetTableT = dataConnection.GetType().GetMethod("GetTable", new Type[] { })
+                            GetTableT = dataConnection.GetType().GetMethod("GetTable", Type.EmptyTypes)
                         };
                     }
                 }
@@ -56,7 +56,7 @@ namespace Dynamix
                 throw new InvalidOperationException("GetTable method not found on DataConnection");
             else
             {
-                return new DynamicQueryable((IQueryable)linqToDBMethods.GetTableT.MakeGenericMethodCached(modelType).Invoke(dataConnection, new object[0]));
+                return new DynamicQueryable((IQueryable)linqToDBMethods.GetTableT.MakeGenericMethodCached(modelType).Invoke(dataConnection, Constants.EmptyObjectArray));
             }
         }
     }

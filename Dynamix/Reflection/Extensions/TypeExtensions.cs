@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -83,7 +84,7 @@ namespace Dynamix.Reflection
 
             return givenType == targetType
               || givenType.HasGenericTypeDefinition(targetType)
-              || givenType.ImplementsGeneric(targetType)
+              || (givenType.IsInterface && givenType.ImplementsGeneric(targetType))
               || givenType.BaseType.IsAssignableToGenericType(targetType);
         }
 
@@ -241,12 +242,12 @@ namespace Dynamix.Reflection
         public static bool IsEnumerable(this Type type, out EnumerableTypeDescriptor enumerableTypeDescriptor)
         {
             enumerableTypeDescriptor = EnumerableTypeDescriptor.Get(type);
-            return (enumerableTypeDescriptor != null);
+            return enumerableTypeDescriptor.IsEnumerable;
         }
 
         public static bool IsEnumerable(this Type type)
         {
-            return EnumerableTypeDescriptor.Get(type) != null;
+            return typeof(IEnumerable).IsAssignableFrom(type);
         }
 
 
@@ -332,6 +333,101 @@ namespace Dynamix.Reflection
         public static Type GetTypeOrGenericTypeDefinition(this Type type)
         {
             return type.IsGenericType ? type.GetGenericTypeDefinition() : type;
+        }
+
+        public static IEnumerable<Type> GetInterfacesRecursive(this Type type)
+        {
+            return type.GetInterfaces().Flatten(x => x.GetInterfaces()).Distinct();
+        }
+
+        public static bool IsArrayOrArrayClass(this Type type)
+        {
+            return type.IsArray || type.IsOrSubclassOf(typeof(Array));
+        }
+
+        public static IEnumerable<Type> GetSelfAndDescendants(this Type type)
+        {
+            return new[] { type }.Concat(type.GetDescendants());
+        }
+
+        public static IEnumerable<Type> GetSelfAndAncestors(this Type type)
+        {
+            return new[] { type }.Concat(type.GetAncestors());
+        }
+
+        public static IEnumerable<Type> GetDescendants(this Type type)
+        {
+            return AssemblyReflector.GetLoadedAssemblies()
+                      .SelectMany(x => x.GetTypes())
+                      .Where(x => x.IsSubclassOf(type))
+                      .OrderBy(x => x.GetHierarchyDepth());
+        }
+
+        public static IEnumerable<Type> GetAncestors(this Type type)
+        {
+            while (type != null)
+            {
+                yield return type;
+                type = type.BaseType;
+            }
+        }
+
+        public static int GetHierarchyDepth(this Type type)
+        {
+            return GetAncestors(type).Count();
+        }
+
+        public static bool AreAssignableFrom(this IEnumerable<Type> types, IEnumerable<Type> otherTypes)
+        {
+            if (types.Count() != otherTypes.Count())
+                throw new InvalidOperationException("Type counts do not match.");
+
+            return types.Zip(otherTypes, (x,y) => (x,y)).All(x => x.x.IsAssignableFrom(x.y));
+        }
+
+        public static bool AreAssignableTo(this IEnumerable<Type> types, IEnumerable<Type> otherTypes)
+        {
+            if (types.Count() != otherTypes.Count())
+                throw new InvalidOperationException("Type counts do not match.");
+
+            if (!types.Any())
+                return true;
+
+            return types.Zip(otherTypes, (x, y) => (x, y)).All(x => x.x.IsAssignableTo(x.y));
+        }
+
+        public static bool CanBeInvokedWith(this IEnumerable<ParameterInfo> parameters, IEnumerable<Type> otherTypes)
+        {
+            if (parameters.Count() != otherTypes.Count())
+                return false;
+
+            if (!parameters.Any())
+                return true;
+
+            return parameters.Select(x => x.ParameterType).AreAssignableFrom(otherTypes);
+        }
+
+        public static IEnumerable<ConstructorInfo> GetConstructors(this Type type, IEnumerable<Type> parameterTypes, BindingFlags bindingFlags, bool includeDescendants = false)
+        {
+            return
+            (includeDescendants ?  type.GetSelfAndDescendants() : new[] { type })
+                    .Where(x => !x.IsAbstract)
+                    .SelectMany(x =>
+                        x.GetConstructors(bindingFlags)
+                        .Where(c => c.GetParameters().CanBeInvokedWith(parameterTypes)));
+        }
+
+        public static IEnumerable<Type> GetAllImplementations(this Type type)
+        {
+            if (!type.IsInterface)
+                throw new ArgumentException(nameof(type), $"Type {type.Name} is not an interface.");
+
+            return AssemblyReflector.GetLoadedAssemblies()
+                            .SelectMany(x => x.GetTypes())
+                            .Where(x =>
+                                !x.IsAbstract
+                                && !x.IsInterface
+                                && x.GetInterfaces().Contains(type));
         }
     }
 }

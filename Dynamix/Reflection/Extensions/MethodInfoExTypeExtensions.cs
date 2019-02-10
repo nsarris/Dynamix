@@ -45,7 +45,9 @@ namespace Dynamix.Reflection
                 return MethodInfoExCache.GetMethodsExDic(type, bindingFlags);
             else
                 return new ReadOnlyDictionary<string, MethodInfoEx>(
-                    type.GetMethods(bindingFlags).ToDictionary(x => x.Name, x => new MethodInfoEx(x, false)));
+                    type.GetMethods(bindingFlags)
+                    .Where(x => !x.ContainsGenericParameters)
+                    .ToDictionary(x => x.Name, x => new MethodInfoEx(x, false)));
         }
 
         public static IEnumerable<MethodInfoEx> GetMethodsEx(this Type type, BindingFlags bindingFlags = PUBLIC_ISTANCE_STATIC, bool enableCaching = true)
@@ -53,7 +55,9 @@ namespace Dynamix.Reflection
             if (enableCaching)
                 return MethodInfoExCache.GetMethodsEx(type, bindingFlags);
             else
-                return type.GetMethods(bindingFlags).Select(x => GetMethodEx(x, false));
+                return type.GetMethods(bindingFlags)
+                    .Where(x => !x.ContainsGenericParameters)
+                    .Select(x => GetMethodEx(x, false));
         }
 
 

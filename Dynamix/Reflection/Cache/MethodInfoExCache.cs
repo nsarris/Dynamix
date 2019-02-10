@@ -49,7 +49,9 @@ namespace Dynamix.Reflection
 
         public static IEnumerable<MethodInfoEx> GetMethodsEx(Type type, BindingFlags bindingFlags = PUBLIC_ISTANCE_STATIC)
         {
-            return type.GetMethods(bindingFlags).Select(x => GetMethodEx(x));
+            return type.GetMethods(bindingFlags)
+                .Where(x => !x.ContainsGenericParameters)
+                .Select(x => GetMethodEx(x));
         }
 
 

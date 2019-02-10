@@ -102,13 +102,13 @@ namespace Dynamix.Expressions.PredicateBuilder
 
         public PredicateBuilderConfiguration WithDataTimeFormats(IEnumerable<string> formats)
         {
-            DateTimeFormats = formats == null ? new string[] { } : formats.ToArray();
+            DateTimeFormats = formats == null ? Constants.EmptyStringArray : formats.ToArray();
             return this;
         }
 
         public PredicateBuilderConfiguration WithTimeSpanFormats(IEnumerable<string> formats)
         {
-            TimeSpanFormats = formats == null ? new string[] { } : formats.ToArray();
+            TimeSpanFormats = formats == null ? Constants.EmptyStringArray : formats.ToArray();
             return this;
         }
 

@@ -34,7 +34,7 @@ namespace Dynamix.Tests.DynamicType
             var type = DynamicTypeBuilder.Instance.CreateType(descriptor);
 
             
-            var ctor = Expression.Lambda<Func<object[],object>>(Expression.New(type.GetConstructor(new Type[] { })), Expression.Parameter(typeof(object[]))).Compile();
+            var ctor = Expression.Lambda<Func<object[],object>>(Expression.New(type.GetConstructor(Type.EmptyTypes)), Expression.Parameter(typeof(object[]))).Compile();
             var o = ctor(new object[] { });
         }
     }

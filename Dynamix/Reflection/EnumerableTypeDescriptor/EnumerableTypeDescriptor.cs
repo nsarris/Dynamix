@@ -112,10 +112,8 @@ namespace Dynamix.Reflection
         private IReadOnlyDictionary<Type, ConstructorInfoEx> DiscoverConstructors()
         {
             return Type.IsAbstract ? new Dictionary<Type, ConstructorInfoEx>() :
-               Type.GetConstructorsEx(BindingFlagsEx.AllInstance)
-               .Where(x => x.ConstructorInfo.GetParameters().Length == 1
-                   && x.ConstructorInfo.GetParameters().Single().ParameterType.Implements(typeof(IEnumerable)))
-               .ToDictionary(x => x.ConstructorInfo.GetParameters().Single().ParameterType);
+               Type.GetConstructors(new Type[] { typeof(IEnumerable) }, (BindingFlags)BindingFlagsEx.AllInstance)
+               .ToDictionary(x => x.GetParameters().Single().ParameterType, x => new ConstructorInfoEx(x));
         }
 
         private ConstructorInfoEx DiscoverParameterlessConstructor()

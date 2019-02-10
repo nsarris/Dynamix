@@ -47,7 +47,7 @@ namespace Dynamix.Reflection
             if (field.FieldType != typeof(string))
             {
                 this.EnumerableDescriptor = EnumerableTypeDescriptor.Get(field.FieldType);
-                this.IsEnumerable = this.EnumerableDescriptor != null;
+                this.IsEnumerable = this.EnumerableDescriptor.IsEnumerable;
             }
 
             if (FieldInfo.IsInitOnly && FieldInfo.Name.StartsWith("<") && FieldInfo.Name.EndsWith(">i__Field"))

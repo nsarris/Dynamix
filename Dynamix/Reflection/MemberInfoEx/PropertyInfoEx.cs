@@ -51,7 +51,7 @@ namespace Dynamix.Reflection
             if (property.PropertyType != typeof(string))
             {
                 this.EnumerableDescriptor = EnumerableTypeDescriptor.Get(property.PropertyType);
-                this.IsEnumerable = this.EnumerableDescriptor != null;
+                this.IsEnumerable = this.EnumerableDescriptor.IsEnumerable;
             }
 
             this.IndexerCount = PropertyInfo.GetIndexParameters().Count();

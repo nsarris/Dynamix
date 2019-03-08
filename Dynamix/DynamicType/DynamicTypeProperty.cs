@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Dynamix.Reflection;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
 
 namespace Dynamix
@@ -20,6 +22,16 @@ namespace Dynamix
         public IReadOnlyList<CustomAttributeBuilder> AttributeBuilders => attributeBuilders;
 
         private readonly List<CustomAttributeBuilder> attributeBuilders = new List<CustomAttributeBuilder>();
+
+        internal DynamicTypeProperty(PropertyInfo propertyInfo)
+        {
+            Name = propertyInfo.Name;
+            Type = propertyInfo.PropertyType;
+            GetAccessModifier = GetMethodAccessModifier(propertyInfo.GetMethod);
+            SetAccessModifier = GetMethodAccessModifier(propertyInfo.SetMethod);
+            attributeBuilders = propertyInfo.GetCustomAttributesData().Select(x => x.ToBuilder()).ToList();
+        }
+
         internal DynamicTypeProperty(string name, Type type, IEnumerable<CustomAttributeBuilder> attributeBuilders = null)
         {
             Name = name;
@@ -46,6 +58,22 @@ namespace Dynamix
                 GetAccessModifier = GetAccessModifier,
                 SetAccessModifier = SetAccessModifier
             };
+        }
+
+        private static GetSetAccessModifier GetMethodAccessModifier(MethodInfo methodInfo)
+        {
+            if (methodInfo is null)
+                return GetSetAccessModifier.None;
+            if (methodInfo.IsPrivate)
+                return GetSetAccessModifier.Private;
+            if (methodInfo.IsFamily)
+                return GetSetAccessModifier.Protected;
+            if (methodInfo.IsAssembly)
+                return GetSetAccessModifier.Internal;
+            if (methodInfo.IsPublic)
+                return GetSetAccessModifier.Public;
+
+            throw new ArgumentException("Did not find access modifier", "methodInfo");
         }
     }
 }

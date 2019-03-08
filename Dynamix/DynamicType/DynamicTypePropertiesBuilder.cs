@@ -1,93 +1,85 @@
 ﻿using Dynamix.Reflection;
 using System;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Dynamix
 {
-    public sealed class DynamicTypePropertyBuilder
+    public sealed class DynamicTypePropertiesBuilder
     {
         readonly DynamicTypeProperty property;
 
-        public DynamicTypePropertyBuilder(string name, Type type)
+        public DynamicTypePropertiesBuilder(string name, Type type)
         {
             property = new DynamicTypeProperty(name, type);
         }
 
-        public DynamicTypePropertyBuilder(DynamicTypeProperty property)
+        public DynamicTypePropertiesBuilder(PropertyInfo propertyInfo)
         {
-            this.property = property;
+            property = new DynamicTypeProperty(propertyInfo);
         }
 
-        public DynamicTypePropertyBuilder HasName(string name)
-        {
-            if (name.IsNullOrWhiteSpace())
-                throw new ArgumentNullException(nameof(name));
-
-            property.Name = name;
-            return this;
-        }
-
-        public DynamicTypePropertyBuilder HasType(Type type)
+        public DynamicTypePropertiesBuilder WithType(Type type)
         {
             property.Type = type ?? throw new ArgumentNullException(nameof(type));
             if (property.AsNullable) property.Type = property.Type.ToNullable();
             return this;
         }
 
-        public DynamicTypePropertyBuilder HasType<T>()
+        public DynamicTypePropertiesBuilder WithType<T>()
         {
-            return HasType(typeof(T));
+            return WithType(typeof(T));
         }
 
-        public DynamicTypePropertyBuilder HasAttribute(Expression<Func<Attribute>> builderExpression)
+        public DynamicTypePropertiesBuilder WithAttribute(Expression<Func<Attribute>> builderExpression)
         {
             property.AddAttributeBuilder(CustomAttributeBuilderFactory.FromExpression(builderExpression));
             return this;
         }
 
-        public DynamicTypePropertyBuilder IsInitializedInConstructor(string parameterName = null)
+        public DynamicTypePropertiesBuilder AreInitializedInConstructor()
         {
             property.InitializeInConstructor = true;
-            property.CtorParameterName = parameterName ?? property.CtorParameterName ?? property.Name.ToCamelCase();
+            property.CtorParameterName = property.CtorParameterName ?? property.Name.ToCamelCase();
             property.HasConstructorDefaultValue = false;
             return this;
         }
 
-        public DynamicTypePropertyBuilder IsInitializedInConstructorOptional(string parameterName = null)
+        public DynamicTypePropertiesBuilder AreInitializedInConstructorOptional()
         {
             property.InitializeInConstructor = true;
-            property.CtorParameterName = parameterName?? property.CtorParameterName ?? property.Name.ToCamelCase();
+            property.CtorParameterName = property.CtorParameterName ?? property.Name.ToCamelCase();
             property.ConstructorDefaultValue = property.Type.DefaultOf();
             property.HasConstructorDefaultValue = true;
             return this;
         }
 
-        public DynamicTypePropertyBuilder IsInitializedInConstructorOptional(object defaultValue, string parameterName = null)
+        public DynamicTypePropertiesBuilder AreInitializedInConstructorOptional(object defaultValue)
         {
             if ((defaultValue == null && property.Type.IsValueType && !property.Type.IsNullable())
                 || defaultValue != null && property.Type != defaultValue.GetType())
                 throw new InvalidOperationException($"Incompatible default value for member {property.Name}");
 
-            property.CtorParameterName = parameterName ?? property.CtorParameterName ?? property.Name.ToCamelCase();
+            property.CtorParameterName = property.CtorParameterName ?? property.Name.ToCamelCase();
             property.InitializeInConstructor = true;
             property.ConstructorDefaultValue = defaultValue;
             property.HasConstructorDefaultValue = true;
             return this;
         }
 
-        public DynamicTypePropertyBuilder HasGetter(GetSetAccessModifier accessModifier)
+        public DynamicTypePropertiesBuilder HaveGetter(GetSetAccessModifier accessModifier)
         {
             property.GetAccessModifier = accessModifier;
             return this;
         }
 
-        public DynamicTypePropertyBuilder HasSetter(GetSetAccessModifier accessModifier)
+        public DynamicTypePropertiesBuilder HaveSetter(GetSetAccessModifier accessModifier)
         {
             property.SetAccessModifier = accessModifier;
             return this;
         }
 
-        public DynamicTypePropertyBuilder AsNullable(bool nullable = true)
+        public DynamicTypePropertiesBuilder AsNullable(bool nullable = true)
         {
             property.AsNullable = nullable;
             if (property.AsNullable)

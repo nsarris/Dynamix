@@ -58,6 +58,7 @@
   <ItemGroup>
     <Compile Include="DynamicProjection\DynamicProjectionTests.cs" />
     <Compile Include="DynamicType\DynamicTypeTests.cs" />
+    <Compile Include="DynamicType\InterfaceInstanceBuilderTests.cs" />
     <Compile Include="Expressions\MemberInitExpressionParserTests.cs" />
     <Compile Include="Expressions\PredicateBuilder\PredicateTreeTests.cs" />
     <Compile Include="Expressions\VisitorTests.cs" />

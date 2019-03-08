@@ -187,8 +187,6 @@ namespace Dynamix.DynamicProjection
                         config.IsInitializedInConstructorOptional(member.CtorParameterName);
 
                     config.AsNullable(member.AsNullable);
-
-                    return config;
                 });
 
             return DynamicTypeBuilder.Instance.CreateType(typeBuilder);

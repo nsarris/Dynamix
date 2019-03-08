@@ -5,53 +5,39 @@ using System.Reflection;
 
 namespace Dynamix
 {
-    public sealed class DynamicTypeFieldBuilder
+    public sealed class DynamicTypeFieldsBuilder
     {
         private readonly DynamicTypeField field;
 
-        public DynamicTypeFieldBuilder(string name, Type type)
+        public DynamicTypeFieldsBuilder(string name, Type type)
         {
             field = new DynamicTypeField(name, type);
         }
 
-        public DynamicTypeFieldBuilder(FieldInfo fieldInfo)
+        public DynamicTypeFieldsBuilder(FieldInfo fieldInfo)
         {
             field = new DynamicTypeField(fieldInfo);
         }
 
-        public DynamicTypeFieldBuilder(DynamicTypeField field)
-        {
-            this.field = field;
-        }
-
-        public DynamicTypeFieldBuilder HasName(string name)
-        {
-            if (name.IsNullOrWhiteSpace())
-                throw new ArgumentNullException(nameof(name));
-
-            field.Name = name;
-            return this;
-        }
-
-        public DynamicTypeFieldBuilder HasType(Type type)
+        public DynamicTypeFieldsBuilder WithType(Type type)
         {
             field.Type = type ?? throw new ArgumentNullException(nameof(type));
             if (field.AsNullable) field.Type = field.Type.ToNullable();
             return this;
         }
 
-        public DynamicTypeFieldBuilder HasType<T>()
+        public DynamicTypeFieldsBuilder WithType<T>()
         {
-            return HasType(typeof(T));
+            return WithType(typeof(T));
         }
 
-        public DynamicTypeFieldBuilder HasAttribute(Expression<Func<Attribute>> builderExpression)
+        public DynamicTypeFieldsBuilder WithAttribute(Expression<Func<Attribute>> builderExpression)
         {
             field.AddAttributeBuilder(CustomAttributeBuilderFactory.FromExpression(builderExpression));
             return this;
         }
 
-        public DynamicTypeFieldBuilder IsInitializedInConstructor(string parameterName = null)
+        public DynamicTypeFieldsBuilder AreInitializedInConstructor(string parameterName = null)
         {
             field.InitializeInConstructor = true;
             field.CtorParameterName = parameterName ?? field.CtorParameterName ?? field.Name.ToCamelCase();
@@ -59,7 +45,7 @@ namespace Dynamix
             return this;
         }
 
-        public DynamicTypeFieldBuilder IsInitializedInConstructorOptional(string parameterName = null)
+        public DynamicTypeFieldsBuilder AreInitializedInConstructorOptional(string parameterName = null)
         {
             field.InitializeInConstructor = true;
             field.CtorParameterName = parameterName ?? field.CtorParameterName ?? field.Name.ToCamelCase();
@@ -68,7 +54,7 @@ namespace Dynamix
             return this;
         }
 
-        public DynamicTypeFieldBuilder IsInitializedInConstructorOptional(object defaultValue, string parameterName = null)
+        public DynamicTypeFieldsBuilder AreInitializedInConstructorOptional(object defaultValue, string parameterName = null)
         {
             if ((defaultValue == null && field.Type.IsValueType && !field.Type.IsNullable())
                 || defaultValue != null && field.Type != defaultValue.GetType())
@@ -81,13 +67,13 @@ namespace Dynamix
             return this;
         }
 
-        public DynamicTypeFieldBuilder HasAccessModifier(MemberAccessModifier accessModifier)
+        public DynamicTypeFieldsBuilder WithAccessModifier(MemberAccessModifier accessModifier)
         {
             field.AccessModifier = accessModifier;
             return this;
         }
 
-        public DynamicTypeFieldBuilder AsNullable(bool nullable = true)
+        public DynamicTypeFieldsBuilder AsNullable(bool nullable = true)
         {
             field.AsNullable = nullable;
             if (field.AsNullable)

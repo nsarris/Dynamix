@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Reflection.Emit;
 
 namespace Dynamix.Reflection
@@ -64,5 +65,21 @@ namespace Dynamix.Reflection
             else
                 throw new ArgumentException("Builder expression must be an attribute construction statement");
         }
+
+        public static CustomAttributeBuilder FromCustomAttributeData(CustomAttributeData x)
+        {
+            var fields = x.NamedArguments.Where(a => a.IsField).ToList();
+            var properties = x.NamedArguments.Where(a => !a.IsField).ToList();
+
+            return new CustomAttributeBuilder(x.Constructor,
+                    x.ConstructorArguments.Select(a => a.Value).ToArray(),
+                    properties.Select(a => (PropertyInfo)a.MemberInfo).ToArray(),
+                    properties.Where(a => !a.IsField).Select(a => a.TypedValue.Value).ToArray(),
+                    fields.Where(a => a.IsField).Select(a => (FieldInfo)a.MemberInfo).ToArray(),
+                    fields.Where(a => a.IsField).Select(a => a.TypedValue.Value).ToArray());
+        }
+
+        public static CustomAttributeBuilder ToBuilder(this CustomAttributeData x)
+            => FromCustomAttributeData(x);
     }
 }

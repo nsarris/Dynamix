@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Dynamix.Reflection;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
 
 namespace Dynamix
@@ -19,6 +21,7 @@ namespace Dynamix
         public IReadOnlyList<CustomAttributeBuilder> AttributeBuilders => attributeBuilders;
 
         private readonly List<CustomAttributeBuilder> attributeBuilders = new List<CustomAttributeBuilder>();
+
         internal DynamicTypeField(string name, Type type, IEnumerable<CustomAttributeBuilder> attributeBuilders = null)
         {
             Name = name;
@@ -26,6 +29,13 @@ namespace Dynamix
 
             if (attributeBuilders != null)
                 this.attributeBuilders = attributeBuilders.ToList();
+        }
+
+        internal DynamicTypeField(FieldInfo fieldInfo)
+        {
+            Name = fieldInfo.Name;
+            Type = fieldInfo.FieldType;
+            attributeBuilders = fieldInfo.GetCustomAttributesData().Select(x => x.ToBuilder()).ToList();
         }
 
         internal void AddAttributeBuilder(CustomAttributeBuilder attributeBuilder)

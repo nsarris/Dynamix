@@ -54,6 +54,13 @@ namespace Dynamix
 
         #region Type Creation and Registy Public API
 
+        public Type CreateType(Action<DynamicTypeDescriptorBuilder> descriptorBuilderAction)
+        {
+            var builder = new DynamicTypeDescriptorBuilder();
+            descriptorBuilderAction(builder);
+            return CreateType(builder.Build());
+        }
+
         public Type CreateType(DynamicTypeDescriptorBuilder descriptorBuilder)
         {
             return CreateType(descriptorBuilder.Build());
@@ -221,6 +228,8 @@ namespace Dynamix
                         MethodAttributes.Private :
                     property.GetAccessModifier == GetSetAccessModifier.Protected ?
                         MethodAttributes.Family :
+                    property.GetAccessModifier == GetSetAccessModifier.Internal ?
+                        MethodAttributes.Assembly :
                         MethodAttributes.Public) |
                     MethodAttributes.SpecialName |
                     MethodAttributes.HideBySig |
@@ -256,6 +265,8 @@ namespace Dynamix
                         MethodAttributes.Private :
                       property.SetAccessModifier == GetSetAccessModifier.Protected ?
                         MethodAttributes.Family :
+                      property.SetAccessModifier == GetSetAccessModifier.Internal ?
+                        MethodAttributes.Assembly :
                         MethodAttributes.Public) |
                       MethodAttributes.SpecialName |
                       MethodAttributes.HideBySig,

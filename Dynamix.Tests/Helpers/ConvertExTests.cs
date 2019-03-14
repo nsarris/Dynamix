@@ -54,5 +54,15 @@ namespace Dynamix.Tests.Helpers
             Assert.True(v1 is long l1 && l1 == 3);
             Assert.True(v2 == 3);
         }
+
+        [Test]
+        public void Should_Convert_String_To_LongNullable()
+        {
+            var v1 = ConvertEx.ConvertTo("3", typeof(long?));
+            var v2 = ConvertEx.Convert<long?>("3");
+
+            Assert.True(v1 is long l1 && l1 == 3);
+            Assert.True(v2 == 3);
+        }
     }
 }

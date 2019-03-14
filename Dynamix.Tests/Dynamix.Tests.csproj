@@ -62,6 +62,7 @@
     <Compile Include="Expressions\MemberInitExpressionParserTests.cs" />
     <Compile Include="Expressions\PredicateBuilder\PredicateTreeTests.cs" />
     <Compile Include="Expressions\VisitorTests.cs" />
+    <Compile Include="Helpers\ConvertExTests.cs" />
     <Compile Include="Helpers\EnumParserTests.cs" />
     <Compile Include="Reflection\EnumerableTypeDescriptorTests.cs" />
     <Compile Include="Reflection\MethodInvokerBuilderTests.cs" />

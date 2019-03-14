@@ -55,26 +55,35 @@ namespace Dynamix.Helpers
             if (value == null || value.GetType() == targetType)
                 return value;
 
-            if (value.GetType().IsAssignableTo(targetType))
+            if (targetType.IsInstanceOfType(value))
                 return CastTo(value, targetType);
+
+            var targetTypeToCast = targetType.StripNullable();
 
             //var implicitCoverter = GetImplicitCovertionMethod(value.GetType(), targetType);
             //if (implicitCoverter != null)
             //    return implicitCoverter.Invoke(value, new[] { targetType });
 
-            if (value is IConvertible && IsConvertSupported(targetType))
-                return System.Convert.ChangeType(value, targetType);
+            if(value is IConvertible && IsConvertSupported(targetTypeToCast))
+                value = System.Convert.ChangeType(value, targetTypeToCast);
+            else
+            {
+                var converter = TypeDescriptor.GetConverter(value);
+                if (converter != null && converter.CanConvertTo(targetTypeToCast))
+                    value = converter.ConvertTo(value, targetTypeToCast);
+            }
 
-            var converter = TypeDescriptor.GetConverter(value);
-            if (converter != null && converter.CanConvertTo(targetType))
-                return converter.ConvertTo(value, targetType);
-
-            return CastTo(value, targetType);
+            if (targetType == targetTypeToCast)
+                return CastTo(value, targetType);
+            else
+                return Activator.CreateInstance(targetType, new object[] { value });
+            
         }
 
         public static T Convert<T>(object value)
         {
             var targetType = typeof(T);
+            var targetTypeToCast = targetType.StripNullable();
 
             if (value == null)
             {
@@ -84,18 +93,25 @@ namespace Dynamix.Helpers
                     throw new InvalidCastException("Null cannot be casted to non nullable value type");
             }
 
-            if (value is T || value.GetType() == typeof(T))
+            if (value is T)
                 return (T)value;
 
-            if (value is IConvertible && IsConvertSupported(targetType))
-                return (T)System.Convert.ChangeType(value, targetType);
+            if (value is IConvertible && IsConvertSupported(targetTypeToCast))
+                value = System.Convert.ChangeType(value, targetTypeToCast);
+            else
+            {
+                var converter = TypeDescriptor.GetConverter(value);
+                if (converter != null && converter.CanConvertTo(targetTypeToCast))
+                    value = converter.ConvertTo(value, targetTypeToCast);
+            }
 
-            var converter = TypeDescriptor.GetConverter(value);
-            if (converter != null && converter.CanConvertTo(targetType))
-                return (T)converter.ConvertTo(value, targetType);
-
-            return Cast<T>(value);
+            if (targetType == targetTypeToCast)
+                return Cast<T>(value);
+            else
+                return (T)Activator.CreateInstance(targetType, new object[] { value });
         }
+
+        
 
         public static T Cast<T>(object value)
         {

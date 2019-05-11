@@ -164,11 +164,13 @@ namespace Dynamix.DynamicProjection
                     });
 
             //Append predicate and sort columns to projection if needed
-            var selectorColumns = columns;
+            var selectorColumns = columns ?? this.CompiledConfiguration.CompiledMembers.Select(x => x.Value.Member.MemberInfo?.Name);
+            
             if (predicateTarget == DynamicProjectionOperationTarget.Projection)
                 selectorColumns = columns.Concat(predicateMembers);
             if (sortTarget == DynamicProjectionOperationTarget.Projection)
                 selectorColumns = columns.Concat(sort.Select(x => x.Expression));
+
             selectorColumns = selectorColumns.Distinct().ToList();
 
             //Apply selector

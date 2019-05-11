@@ -96,18 +96,13 @@ namespace Dynamix.DynamicProjection
 #else
                 BuildProjectedType();
 #endif
+            configuration.Ctor = configuration.Ctor ?? FindMatchingConstructor();
+            
+            if (configuration.Ctor == null)
+                throw new InvalidOperationException($"No matching constructor found for type {configuration.ProjectedType.Name}");
 
             var compiledMembers = configuration.Members.Select(x => (Configuration: x, CompiledMember: CompileMember(x))).ToList();
             var compiledCtorParams = configuration.CtorParameters.Select(x => (Configuration: x, CompiledCtorParam: CompileCtorParameter(x))).ToList();
-
-            configuration.Ctor = configuration.Ctor ??
-                configuration.ProjectedType
-                .GetConstructors(BindingFlags.Instance | BindingFlags.Public)
-                .OrderByDescending(x => x.GetParameters().Length)
-                .FirstOrDefault();
-
-            if (configuration.Ctor == null)
-                throw new InvalidOperationException($"No constructor found for type {configuration.ProjectedType.Name}");
 
             var compiledMemberTargets = compiledMembers.Select(x => new CompiledMemberTargetConfiguration(x.CompiledMember, CompileMemberSource(x.CompiledMember, x.Configuration))).ToList();
             var compiledCtorParamTargets = compiledCtorParams.Select(x => new CompiledCtorParamTargetConfiguration(x.CompiledCtorParam, CompileCtorParameterSource(x.CompiledCtorParam, x.Configuration))).ToList();
@@ -192,6 +187,34 @@ namespace Dynamix.DynamicProjection
             return DynamicTypeBuilder.Instance.CreateType(typeBuilder);
         }
 #endif
+        private ConstructorInfo FindMatchingConstructor()
+        {
+            var ctorParameters = configuration
+                    .CtorParameters
+                        .Select(x => x.ParameterName)
+                    .Concat(configuration.Members
+                        .Where(x => !string.IsNullOrEmpty(x.CtorParameterName)
+                            || x.ProjectionTarget == ProjectionTarget.CtorParameter)
+                        .Select(x => !string.IsNullOrEmpty(x.CtorParameterName)
+                            ? x.CtorParameterName
+                            : GetSourceMemberName(x.Source)))
+                    .OrderBy(x => x)
+                    .ToList();
+
+            return
+                configuration.ProjectedType
+                    .GetConstructors(BindingFlags.Instance | BindingFlags.Public)
+                    .Select(x => new
+                    {
+                        Ctor = x,
+                        Parameters = x.GetParameters()
+                    })
+                    .FirstOrDefault(x =>
+                        x.Parameters.Length == ctorParameters.Count &&
+                        x.Parameters.All(p =>
+                            ctorParameters.Any(cp => configuration.MemberNameMatchStrategy.CtorParameterMatchesSourceMember(p.Name, cp))))
+                    ?.Ctor;
+        }
 
         private string GetSourceMemberNameFromCtorParameter(string parameterName)
         {
@@ -254,6 +277,25 @@ namespace Dynamix.DynamicProjection
                     return Expressions.ExpressionParameterReplacer.Replace(lambdaExpressionProjectionSource.SourceExpression, lambdaExpressionProjectionSource.SourceExpression.Parameters.First(), itParameter);
                 case ConstantProjectionSource constantProjectionSource:
                     return Expression.Constant(constantProjectionSource.Value);
+            }
+
+            throw new InvalidOperationException("Unexpected projection source type");
+        }
+
+        private string GetSourceMemberName(IProjectionSource source)
+        {
+            switch (source)
+            {
+                case StringProjectionSource stringProjectionSource:
+                    return stringProjectionSource.SourceExpression;
+                case ExpressionProjectionSource expressionProjectionSource:
+                    return expressionProjectionSource.SourceExpression is MemberExpression memberExpression ? memberExpression.Member.Name 
+                        : throw new InvalidOperationException("Source expression is not a member expression. Cannot infer name.");
+                case LambdaExpressionProjectionSource lambdaExpressionProjectionSource:
+                    return lambdaExpressionProjectionSource.SourceExpression.Body is MemberExpression lambdaMemberExpression ? lambdaMemberExpression.Member.Name
+                        : throw new InvalidOperationException("Source lambda expression is not a member expression. Cannot infer name.");
+                case ConstantProjectionSource constantProjectionSource:
+                    throw new InvalidOperationException("Cannot infer member name from constant source expression.");
             }
 
             throw new InvalidOperationException("Unexpected projection source type");

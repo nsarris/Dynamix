@@ -6,31 +6,43 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using FluentAssertions;
+using ExpectedObjects;
 
 namespace Dynamix.Tests
 {
     [TestFixture]
-    class DynamicProjectionTests
+    public class DynamicProjectionTests
     {
         class Model
         {
+            private readonly bool active2;
+
             public int Id { get; set; }
             public string Name { get; set; }
             public bool Active { get; set; }
 
-            public Model(bool active)
+            public Model()
             {
+                
+            }
+
+            public Model(int id, string name, bool active)
+            {
+                Id = id;
+                Name = name;
                 Active = active;
             }
         }
+
         [Test]
         public void TestDynamicProjection()
         {
             var data = new List<Model>
             {
-                new Model(true) { Id = 1, Name = "Name1" },
-                new Model(false) { Id = 2, Name = "Name2" },
-                new Model(true) { Id = 3, Name = "Name3" },
+                new Model() { Id = 1, Name = "Name1" },
+                new Model() { Id = 2, Name = "Name2" },
+                new Model() { Id = 3, Name = "Name3" },
             };
 
             var dp = new ProjectionBuilder(typeof(Model), null)
@@ -58,6 +70,76 @@ namespace Dynamix.Tests
                     new[] { "Id","Descr" }, 
                     predicateTreeBuilder.RootNode)
                 .ToList();
+        }
+
+        [Test]
+        public void Can_Project_From_Object_To_Type_Using_Property_Assignment()
+        {
+            var source = new []
+            {
+                new { Prop1 = 1 , Prop2 = "1", Active = true },
+                new { Prop1 = 2 , Prop2 = "2", Active = false },
+                new { Prop1 = 3 , Prop2 = "3", Active = true },
+            };
+
+            var sourceElement = source.First();
+
+            var projection = new ProjectionBuilder(source.First().GetType(), typeof(Model))
+                .Member(nameof(Model.Id), map => map.FromExpression(nameof(sourceElement.Prop1)))
+                .Member(nameof(Model.Name), map => map.FromExpression(nameof(sourceElement.Prop2)))
+                .Auto(nameof(Model.Active))
+                .Build();
+
+            var result = projection
+                .BuildQuery(source.AsQueryable())
+                .ToList();
+
+            var expectedResult = new List<Model>
+            {
+                new Model() { Id = 1, Name = "1", Active = true  },
+                new Model() { Id = 2, Name = "2", Active = false  },
+                new Model() { Id = 3, Name = "3", Active = true  },
+            }
+            .ToExpectedObject();
+
+            expectedResult.ShouldEqual(result.Cast<Model>().ToList());
+        }
+
+        [Test]
+        public void Can_Project_From_Object_To_Type_Using_Ctor()
+        {
+            var source = new[]
+            {
+                new { Prop1 = 1 , Prop2 = "1", Active = true  },
+                new { Prop1 = 2 , Prop2 = "2", Active = false  },
+                new { Prop1 = 3 , Prop2 = "3", Active = true  },
+            };
+
+            var sourceElement = source.First();
+
+            var projection = new ProjectionBuilder(source.First().GetType(), typeof(Model))
+                .Member(nameof(Model.Id), map => map
+                    .UsingCtorParameter(nameof(Model.Id).ToLower())
+                    .FromExpression(nameof(sourceElement.Prop1)))
+                .CtorParameter(nameof(Model.Name).ToLower(), map => map
+                    .FromExpression(nameof(sourceElement.Prop2)))
+                .CtorParameter(nameof(Model.Active).ToLower(), map => map
+                    .FromExpression(nameof(sourceElement.Active)))
+                .Build();
+
+            var result = projection
+                .BuildQuery(source.AsQueryable())
+                .ToList();
+
+            var expectedResult = new List<Model>
+            {
+                new Model() { Id = 1, Name = "1", Active = true  },
+                new Model() { Id = 2, Name = "2", Active = false  },
+                new Model() { Id = 3, Name = "3", Active = true  },
+            }
+            .ToExpectedObject();
+
+            expectedResult.ShouldEqual(result.Cast<Model>().ToList());
         }
     }
 }

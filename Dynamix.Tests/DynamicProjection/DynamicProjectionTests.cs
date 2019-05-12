@@ -16,7 +16,7 @@ namespace Dynamix.Tests
     {
         class Model
         {
-            private readonly bool active2;
+            private readonly bool optional;
 
             public int Id { get; set; }
             public string Name { get; set; }
@@ -27,11 +27,12 @@ namespace Dynamix.Tests
                 
             }
 
-            public Model(int id, string name, bool active)
+            public Model(int id, string name, bool active, bool optional = false)
             {
                 Id = id;
                 Name = name;
                 Active = active;
+                this.optional = optional;
             }
         }
 

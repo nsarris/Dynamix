@@ -97,7 +97,7 @@ namespace Dynamix.DynamicProjection
                 BuildProjectedType();
 #endif
             configuration.Ctor = configuration.Ctor ?? FindMatchingConstructor();
-            
+
             if (configuration.Ctor == null)
                 throw new InvalidOperationException($"No matching constructor found for type {configuration.ProjectedType.Name}");
 
@@ -109,8 +109,6 @@ namespace Dynamix.DynamicProjection
 
             var ctorParameterAssignments =
                 configuration.Ctor.GetParameters().Select(p =>
-                {
-                    var ctorExpression =
                         compiledCtorParamTargets
                             .Where(x => x.CtorParameter.ParameterInfo.Name == p.Name)
                             .Select(x => new CtorParameterAssignment(null, x.Source.SourceExpression))
@@ -118,13 +116,10 @@ namespace Dynamix.DynamicProjection
                         compiledMemberTargets
                             .Where(x => x.Member.ProjectionTarget == ProjectionTarget.CtorParameter && x.Member.CtorParameterName == p.Name)
                             .Select(x => new CtorParameterAssignment(x.Member.MemberInfo.Name, x.Source.SourceExpression))
-                            .FirstOrDefault();
-
-                    if (ctorExpression == null && !p.IsOptional)
-                        throw new InvalidOperationException($"No source given for non optional constructor parameter {p.Name} on type {configuration.ProjectedType.Name}");
-
-                    return ctorExpression;
-                })
+                            .FirstOrDefault() ??
+                        (p.HasDefaultValue
+                                ? new CtorParameterAssignment(null, Expression.Constant(p.DefaultValue))
+                                : throw new InvalidOperationException($"No source given for non optional constructor parameter {p.Name} on type {configuration.ProjectedType.Name}")))
                 .ToList();
 
             var memberInitAssignments =
@@ -198,7 +193,6 @@ namespace Dynamix.DynamicProjection
                         .Select(x => !string.IsNullOrEmpty(x.CtorParameterName)
                             ? x.CtorParameterName
                             : GetSourceMemberName(x.Source)))
-                    .OrderBy(x => x)
                     .ToList();
 
             return
@@ -210,163 +204,159 @@ namespace Dynamix.DynamicProjection
                         Parameters = x.GetParameters()
                     })
                     .FirstOrDefault(x =>
-                        x.Parameters.Length == ctorParameters.Count &&
+                        x.Parameters.Length >= ctorParameters.Count &&
                         x.Parameters.All(p =>
+                            p.HasDefaultValue ||
                             ctorParameters.Any(cp => configuration.MemberNameMatchStrategy.CtorParameterMatchesSourceMember(p.Name, cp))))
-                    ?.Ctor;
+                    ?.Ctor
+                    ??
+                    throw new InvalidOperationException($"No matching constructor found for type {configuration.ProjectedType.Name} with parameters {string.Join(",", ctorParameters)}");
         }
 
         private string GetSourceMemberNameFromCtorParameter(string parameterName)
         {
-            var name = configuration.SourceType.GetProperties().Select(x => x.Name).FirstOrDefault(x => configuration.MemberNameMatchStrategy.CtorParameterMatchesSourceMember(parameterName, x));
-            if (name != null)
-                return name;
-
+            return configuration.SourceType.GetProperties().Select(x => x.Name).FirstOrDefault(x => configuration.MemberNameMatchStrategy.CtorParameterMatchesSourceMember(parameterName, x))
+            ??
             throw new InvalidOperationException($"Cannot infer source member from constructor parameter {parameterName} for source type {configuration.SourceType.Name}");
         }
 
-        private string GetSourceMemberNameFromMemberName(string memberName)
-        {
-            var name = configuration.SourceType.GetProperties().Select(x => x.Name).FirstOrDefault(x => configuration.MemberNameMatchStrategy.MemberMatchesSourceMember(memberName, x));
-            if (name != null)
-                return name;
 
-            throw new InvalidOperationException($"Cannot infer source member from projected member {memberName} for source type {configuration.SourceType.Name}");
-        }
-
-        private ParameterInfo GetCtorParameterFromMemberName(string memberName)
-        {
-            if (string.IsNullOrEmpty(memberName))
-                return null;
-
-            var parameter = configuration.Ctor.GetParameters().FirstOrDefault(x => configuration.MemberNameMatchStrategy.CtorParameterMatchesMember(x.Name, memberName));
-            if (parameter == null)
-                throw new InvalidOperationException($"Cannot infer constructor parameter for member {memberName} for selected constructor of type {configuration.ProjectedType.Name}");
-            return parameter;
-        }
-
-        private ParameterInfo GetCtorParameter(string parameterName)
-        {
-            if (string.IsNullOrEmpty(parameterName))
-                return null;
-
-            var parameter = configuration.Ctor.GetParameters().FirstOrDefault(x => x.Name == parameterName);
-            if (parameter == null)
-                throw new InvalidOperationException($"Cannot find constructor parameter {parameterName} for selected constructor of type {configuration.ProjectedType.Name}");
-            return parameter;
-        }
-
-
-        private Type GetMemberInfoType(MemberInfo memberInfo)
-        {
-            if (memberInfo == null)
-                return null;
-
-            return memberInfo.MemberType == MemberTypes.Property ? ((PropertyInfo)memberInfo).PropertyType : ((FieldInfo)memberInfo).FieldType;
-        }
-
-        private Expression GetExpression(IProjectionSource source, ParameterExpression itParameter)
-        {
-            switch (source)
-            {
-                case StringProjectionSource stringProjectionSource:
-                    return MemberExpressionBuilder.GetExpression(itParameter, stringProjectionSource.SourceExpression);
-                case ExpressionProjectionSource expressionProjectionSource:
-                    return Expressions.ExpressionParameterReplacer.Replace(expressionProjectionSource.SourceExpression, itParameter.Type, itParameter);
-                case LambdaExpressionProjectionSource lambdaExpressionProjectionSource:
-                    return Expressions.ExpressionParameterReplacer.Replace(lambdaExpressionProjectionSource.SourceExpression, lambdaExpressionProjectionSource.SourceExpression.Parameters.First(), itParameter);
-                case ConstantProjectionSource constantProjectionSource:
-                    return Expression.Constant(constantProjectionSource.Value);
-            }
-
-            throw new InvalidOperationException("Unexpected projection source type");
-        }
-
-        private string GetSourceMemberName(IProjectionSource source)
-        {
-            switch (source)
-            {
-                case StringProjectionSource stringProjectionSource:
-                    return stringProjectionSource.SourceExpression;
-                case ExpressionProjectionSource expressionProjectionSource:
-                    return expressionProjectionSource.SourceExpression is MemberExpression memberExpression ? memberExpression.Member.Name 
-                        : throw new InvalidOperationException("Source expression is not a member expression. Cannot infer name.");
-                case LambdaExpressionProjectionSource lambdaExpressionProjectionSource:
-                    return lambdaExpressionProjectionSource.SourceExpression.Body is MemberExpression lambdaMemberExpression ? lambdaMemberExpression.Member.Name
-                        : throw new InvalidOperationException("Source lambda expression is not a member expression. Cannot infer name.");
-                case ConstantProjectionSource constantProjectionSource:
-                    throw new InvalidOperationException("Cannot infer member name from constant source expression.");
-            }
-
-            throw new InvalidOperationException("Unexpected projection source type");
-        }
-
-        private MemberInfo GetMemberInfo(Type sourceType, Type projectedType, ProjectedMember projectedMember)
-        {
-            if (projectedMember == null)
-                return null;
-
-            if (projectedMember is StringProjectedMember stringProjectedMember)
-            {
-                var memberInfo = projectedType
-                    .GetMembers(BindingFlags.Instance | BindingFlags.Public)
-                    .FirstOrDefault(x => x.Name == stringProjectedMember.MemberName);
-
-                if (memberInfo == null)
-                    throw new InvalidOperationException($"Member {stringProjectedMember.MemberName} not found in type {sourceType.Name}");
-
-                if (memberInfo.MemberType != MemberTypes.Property && memberInfo.MemberType != MemberTypes.Field)
-                    throw new InvalidOperationException("The expession is not a field or property expression");
-
-                return memberInfo;
-            }
-            else if (projectedMember is LambdaExpressionProjectedMember lambdaExpressionProjectedMember)
-            {
-                if (lambdaExpressionProjectedMember.PropertyExpression.Body is MemberExpression memberExpression
-                    && memberExpression.Expression.Type == sourceType)
-                    return memberExpression.Member;
-                else
-                    throw new InvalidOperationException("The expession is not a valid member expression");
-            }
-            else
-                throw new InvalidOperationException("Unexpected ProjectedMember type");
-        }
-
-
-        internal Expression CreateValueMapExpression(Expression sourceExpression, ValueMap valueMap, Type targetType)
-        {
-            var defaultValue = Expression.Constant(
-                valueMap.UnmappedValueType == UnmappedValueType.TypeDefault ?
-                    targetType.IsNullable() ? null : targetType.DefaultOf() :
-                valueMap.UnmappedValueType == UnmappedValueType.Constant ?
-                    valueMap.UnmappedValue :
-                //else
-                sourceExpression);
-
-            return valueMap.Values.Reverse().Aggregate(
-                ExpressionEx.ConvertIfNeeded(defaultValue, targetType),
-                (current, next) => Expression.Condition(
-                                        Expression.Equal(sourceExpression, ExpressionEx.ConvertIfNeeded(Expression.Constant(next.Key), sourceExpression.Type)),
-                                        ExpressionEx.ConvertIfNeeded(Expression.Constant(next.Value), targetType),
-                                        current));
-        }
-
-        public LambdaExpression BuildSelector(IEnumerable<string> selectedProperties = null)
-        {
-            if (selectedProperties == null)
-                return CompiledConfiguration.DefaultSelector;
-
-            //filter assignments
-            var ctorAssignments = CompiledConfiguration.CtorParameterAssignments.Where(x => string.IsNullOrEmpty(x.MemberName) || selectedProperties.Any(p => p == x.MemberName)).Select(x => x.SourceExpression);
-            var memberAssignments = CompiledConfiguration.MemberInitAssignments.Where(x => selectedProperties.Any(p => p == x.MemberName)).Select(x => x.MemberAssignement);
-
-            return Expression.Lambda(
-                    Expression.MemberInit(
-                        Expression.New(CompiledConfiguration.Ctor, ctorAssignments),
-                        memberAssignments),
-                    CompiledConfiguration.It);
-        }
-
-
+    private string GetSourceMemberNameFromMemberName(string memberName)
+    {
+        return configuration.SourceType.GetProperties().Select(x => x.Name).FirstOrDefault(x => configuration.MemberNameMatchStrategy.MemberMatchesSourceMember(memberName, x))
+        ??
+        throw new InvalidOperationException($"Cannot infer source member from projected member {memberName} for source type {configuration.SourceType.Name}");
     }
+
+    private ParameterInfo GetCtorParameterFromMemberName(string memberName)
+    {
+       return 
+            string.IsNullOrEmpty(memberName) ?
+            null :
+            configuration.Ctor.GetParameters().FirstOrDefault(x => configuration.MemberNameMatchStrategy.CtorParameterMatchesMember(x.Name, memberName))
+            ??
+            throw new InvalidOperationException($"Cannot infer constructor parameter for member {memberName} for selected constructor of type {configuration.ProjectedType.Name}");
+    }
+
+    private ParameterInfo GetCtorParameter(string parameterName)
+    {
+        return string.IsNullOrEmpty(parameterName) ?
+            null :
+            configuration.Ctor.GetParameters().FirstOrDefault(x => x.Name == parameterName)
+            ??
+            throw new InvalidOperationException($"Cannot find constructor parameter {parameterName} for selected constructor of type {configuration.ProjectedType.Name}");
+    }
+
+
+    private Type GetMemberInfoType(MemberInfo memberInfo)
+    {
+        return memberInfo == null ?
+                null :
+                memberInfo.MemberType == MemberTypes.Property ? ((PropertyInfo)memberInfo).PropertyType : ((FieldInfo)memberInfo).FieldType;
+    }
+
+    private Expression GetExpression(IProjectionSource source, ParameterExpression itParameter)
+    {
+        switch (source)
+        {
+            case StringProjectionSource stringProjectionSource:
+                return MemberExpressionBuilder.GetExpression(itParameter, stringProjectionSource.SourceExpression);
+            case ExpressionProjectionSource expressionProjectionSource:
+                return Expressions.ExpressionParameterReplacer.Replace(expressionProjectionSource.SourceExpression, itParameter.Type, itParameter);
+            case LambdaExpressionProjectionSource lambdaExpressionProjectionSource:
+                return Expressions.ExpressionParameterReplacer.Replace(lambdaExpressionProjectionSource.SourceExpression, lambdaExpressionProjectionSource.SourceExpression.Parameters.First(), itParameter);
+            case ConstantProjectionSource constantProjectionSource:
+                return Expression.Constant(constantProjectionSource.Value);
+        }
+
+        throw new InvalidOperationException("Unexpected projection source type");
+    }
+
+    private string GetSourceMemberName(IProjectionSource source)
+    {
+        switch (source)
+        {
+            case StringProjectionSource stringProjectionSource:
+                return stringProjectionSource.SourceExpression;
+            case ExpressionProjectionSource expressionProjectionSource:
+                return expressionProjectionSource.SourceExpression is MemberExpression memberExpression ? memberExpression.Member.Name
+                    : throw new InvalidOperationException("Source expression is not a member expression. Cannot infer name.");
+            case LambdaExpressionProjectionSource lambdaExpressionProjectionSource:
+                return lambdaExpressionProjectionSource.SourceExpression.Body is MemberExpression lambdaMemberExpression ? lambdaMemberExpression.Member.Name
+                    : throw new InvalidOperationException("Source lambda expression is not a member expression. Cannot infer name.");
+            case ConstantProjectionSource constantProjectionSource:
+                throw new InvalidOperationException("Cannot infer member name from constant source expression.");
+        }
+
+        throw new InvalidOperationException("Unexpected projection source type");
+    }
+
+    private MemberInfo GetMemberInfo(Type sourceType, Type projectedType, ProjectedMember projectedMember)
+    {
+        if (projectedMember == null)
+            return null;
+
+        if (projectedMember is StringProjectedMember stringProjectedMember)
+        {
+            var memberInfo = projectedType
+                .GetMembers(BindingFlags.Instance | BindingFlags.Public)
+                .FirstOrDefault(x => x.Name == stringProjectedMember.MemberName);
+
+            if (memberInfo == null)
+                throw new InvalidOperationException($"Member {stringProjectedMember.MemberName} not found in type {sourceType.Name}");
+
+            if (memberInfo.MemberType != MemberTypes.Property && memberInfo.MemberType != MemberTypes.Field)
+                throw new InvalidOperationException("The expession is not a field or property expression");
+
+            return memberInfo;
+        }
+        else if (projectedMember is LambdaExpressionProjectedMember lambdaExpressionProjectedMember)
+        {
+            if (lambdaExpressionProjectedMember.PropertyExpression.Body is MemberExpression memberExpression
+                && memberExpression.Expression.Type == sourceType)
+                return memberExpression.Member;
+            else
+                throw new InvalidOperationException("The expession is not a valid member expression");
+        }
+        else
+            throw new InvalidOperationException("Unexpected ProjectedMember type");
+    }
+
+
+    internal Expression CreateValueMapExpression(Expression sourceExpression, ValueMap valueMap, Type targetType)
+    {
+        var defaultValue = Expression.Constant(
+            valueMap.UnmappedValueType == UnmappedValueType.TypeDefault ?
+                targetType.IsNullable() ? null : targetType.DefaultOf() :
+            valueMap.UnmappedValueType == UnmappedValueType.Constant ?
+                valueMap.UnmappedValue :
+            //else
+            sourceExpression);
+
+        return valueMap.Values.Reverse().Aggregate(
+            ExpressionEx.ConvertIfNeeded(defaultValue, targetType),
+            (current, next) => Expression.Condition(
+                                    Expression.Equal(sourceExpression, ExpressionEx.ConvertIfNeeded(Expression.Constant(next.Key), sourceExpression.Type)),
+                                    ExpressionEx.ConvertIfNeeded(Expression.Constant(next.Value), targetType),
+                                    current));
+    }
+
+    public LambdaExpression BuildSelector(IEnumerable<string> selectedProperties = null)
+    {
+        if (selectedProperties == null)
+            return CompiledConfiguration.DefaultSelector;
+
+        //filter assignments
+        var ctorAssignments = CompiledConfiguration.CtorParameterAssignments.Where(x => string.IsNullOrEmpty(x.MemberName) || selectedProperties.Any(p => p == x.MemberName)).Select(x => x.SourceExpression);
+        var memberAssignments = CompiledConfiguration.MemberInitAssignments.Where(x => selectedProperties.Any(p => p == x.MemberName)).Select(x => x.MemberAssignement);
+
+        return Expression.Lambda(
+                Expression.MemberInit(
+                    Expression.New(CompiledConfiguration.Ctor, ctorAssignments),
+                    memberAssignments),
+                CompiledConfiguration.It);
+    }
+
+
+}
 }
